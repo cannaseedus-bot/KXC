@@ -1,6 +1,8 @@
 # KXC v1.0.0
 
 **GitHub:** https://github.com/cannaseedus-bot/KXC
+**KHLC (semantic compiler):** https://github.com/cannaseedus-bot/KHLC-PY
+**SMCA registry:** https://github.com/cannaseedus-bot/SMCA
 
 Version boundary for the KXC kernel compiler with all three binary patches applied
 and verified. See [`KXC.md`](../../KXC.md) for full architecture and grammar reference.
