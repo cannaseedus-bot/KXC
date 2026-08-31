@@ -1,0 +1,36 @@
+{
+  "@schema": "kxc.kernel-extras.v1",
+  "@description": "Extra KXC registry overlays: caps hints, backend preference, and smca annotations.",
+  "extras": {
+    "binary_split": {
+      "smcaAnnotation": "@kernel binary_split",
+      "threadsHint": [32, 1, 1],
+      "fallback": "cpu"
+    },
+    "tensor_attention_fused": {
+      "smcaAnnotation": "@kernel tensor_attention_fused",
+      "threadsHint": [64, 1, 1],
+      "fallback": "cpu"
+    },
+    "neural_layer_dense": {
+      "smcaAnnotation": "@kernel neural_layer_dense",
+      "threadsHint": [32, 16, 1],
+      "fallback": "cpu"
+    },
+    "optical_wave_sim": {
+      "smcaAnnotation": "@kernel optical_wave_sim",
+      "threadsHint": [64, 1, 1],
+      "fallback": "cpu"
+    },
+    "gemm_matmul": {
+      "smcaAnnotation": "@kernel gemm_matmul",
+      "threadsHint": [64, 1, 1],
+      "fallback": "cpu"
+    },
+    "micronaut_residual_gate": {
+      "smcaAnnotation": "@kernel micronaut_residual_gate",
+      "threadsHint": [32, 1, 1],
+      "fallback": "webgl2"
+    }
+  }
+}

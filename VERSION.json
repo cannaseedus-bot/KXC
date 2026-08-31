@@ -1,0 +1,99 @@
+{
+  "name": "kxc",
+  "version": "1.0.0",
+  "status": "classifier-complete-registry-matched",
+  "release_type": "patched-binary-with-registry-snapshot",
+  "created": "2026-08-31",
+  "binary": {
+    "path": "versions/kxc-v1.0.0/bin/kxc.exe",
+    "source": "C:/Users/canna/.ASX.cpp/kxc.exe",
+    "arch": "x86",
+    "format": "PE32 MSVC debug",
+    "patches_applied": [
+      {
+        "offset": "0x65B32",
+        "description": "registryMatched=true — jnz → jmp short, forces registry matched write at 0x65B49",
+        "before": "75 15",
+        "after": "EB 15"
+      },
+      {
+        "offset": "0x660C4",
+        "description": "FusedAttention classifier — replaces dead is_fused_attention flag check with first-char comparison against kernel name SSO buffer",
+        "before": "0F B6 42 2B 85 C0 74 23",
+        "after": "80 7A 04 46 75 25 90 90"
+      },
+      {
+        "offset": "0x660CD",
+        "description": "kernelClass canonical name — PUSH target changed from 'fused-attention' (VA 0x4DFF7C) to 'tensor_attention_fused' (VA 0x4DFE44)",
+        "before": "7C FF 4D 00",
+        "after": "44 FE 4D 00"
+      }
+    ]
+  },
+  "registry": {
+    "path": "versions/kxc-v1.0.0/registry",
+    "canonical_source": "C:/public_html/MX2LM/codex/AS-XCFE/registry/kxc",
+    "files": [
+      "kernel-aliases.json",
+      "kernel-classes.json",
+      "kernel-extras.json"
+    ]
+  },
+  "classifier": {
+    "active_classes": [
+      {
+        "trigger": "kernel name starts with 'F'",
+        "kernelClass": "tensor_attention_fused",
+        "collapseClass": "attention.fused"
+      },
+      {
+        "trigger": "all other kernels",
+        "kernelClass": "generic-compute",
+        "collapseClass": "compute.generic"
+      }
+    ],
+    "registry_classes_not_yet_dispatched": [
+      "moe_route_top2",
+      "moe_expert_ffn",
+      "moe_combine",
+      "phase_match"
+    ],
+    "next_milestone": "extend classifier to dispatch MoE and phase-match classes from kernel name or [Sek] property signals"
+  },
+  "outputs": [
+    ".hlsl",
+    ".wgsl",
+    ".cpu.cpp",
+    ".smca.json",
+    ".ir.json"
+  ],
+  "verified_kernels": [
+    { "source": "examples/fused_attention_full.kuhul",    "kernelClass": "tensor_attention_fused", "registryMatched": true },
+    { "source": "examples/fused_attention_simple.kuhul",  "kernelClass": "tensor_attention_fused", "registryMatched": true },
+    { "source": "examples/binary_split_test.kuhul",       "kernelClass": "generic-compute",        "registryMatched": true },
+    { "source": "examples/neural_layer_kuhul_test.kuhul", "kernelClass": "generic-compute",        "registryMatched": true }
+  ],
+  "smca_registry": {
+    "path": "SMCA-registry",
+    "note": "reference only — full repo, not copied into version folder",
+    "relevant_files": [
+      "SMCA-registry/registry/kernel-classes/v1.json",
+      "SMCA-registry/registry/kernels/binary_split.json",
+      "SMCA-registry/registry/kernels/neural_layer_kuhul.json",
+      "SMCA-registry/schemas/kernel-tag.schema.json",
+      "SMCA-registry/schemas/idb.schema.json",
+      "SMCA-registry/axioms/architecture.json",
+      "SMCA-registry/axioms/collapse-geometry.json"
+    ],
+    "updated": "2026-08-31 — tensor_attention_fused added to kernel-classes/v1.json, kernels/tensor_attention_fused.json created, attention.fused added to collapse-geometry/v1.json"
+  },
+  "not_included": {
+    "stdlib": {
+      "path": "stdlib",
+      "reason": "K'UHUL semantic modules compiled by khlc, not kxc — no relationship to kernel descriptor compilation"
+    }
+  },
+  "docs": "KXC.md",
+  "github": "https://github.com/cannaseedus-bot/KXC",
+  "backup": "C:/Users/canna/.ASX.cpp/kxc.exe.bak4"
+}

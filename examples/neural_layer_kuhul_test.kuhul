@@ -1,0 +1,16 @@
+// neural_layer_kuhul_test.kuhul
+// kxc kernel dispatch descriptor for the neural_layer_kuhul KLSL linear layer.
+//
+// Kernel:   neural_layer_kuhul
+// KLSL src: neural_layer_kuhul.klsl   (klslc -> neural_layer_kuhul.hlsl)
+// CSO:      ../../../native/khanary-ui/../../../dist/ ...
+//           drivers/cs5_shaders/neural_layer_kuhul.cso
+//
+// Thread groups: ceil(out_dim/16) x ceil(n_rows/16) x 1
+//   For out_dim=512, n_rows=256 → dispatch 32 x 16 x 1
+//
+// [Muwan dispatch X Y Z] — XVM dispatch dimensions (thread groups)
+
+[Pop neural_layer_kuhul]
+  [Muwan dispatch 32 16 1]
+[Xul]
