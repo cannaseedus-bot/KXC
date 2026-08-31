@@ -1,58 +1,121 @@
-# KXC v1.0.0
+# KXC — K'UHUL Kernel Compiler
 
 **GitHub:** https://github.com/cannaseedus-bot/KXC
 **KHLC (semantic compiler):** https://github.com/cannaseedus-bot/KHLC-PY
 **SMCA registry:** https://github.com/cannaseedus-bot/SMCA
 
-Version boundary for the KXC kernel compiler with all three binary patches applied
-and verified. See [`KXC.md`](../../KXC.md) for full architecture and grammar reference.
+KXC compiles `.kuhul` kernel descriptors into executable GPU and CPU artifacts.
 
-## What changed
+---
 
-Three patches to `kxc.exe` (32-bit x86 MSVC debug, ImageBase=0x400000):
+## Writing a kernel takes three lines
 
-| Offset | Change |
-|--------|--------|
-| `0x65B32` | `jnz` → `jmp` — forces `registryMatched=true` write for all kernels |
-| `0x660C4` | Dead `is_fused_attention` flag check replaced with first-char comparison against kernel name |
-| `0x660CD` | `PUSH` target changed from `"fused-attention"` to `"tensor_attention_fused"` — canonical class assigned directly |
-
-## Verified output
-
-```
-fused_attention_full      kernelClass: tensor_attention_fused  registryMatched: true
-fused_attention_simple    kernelClass: tensor_attention_fused  registryMatched: true
-binary_split_test         kernelClass: generic-compute         registryMatched: true
-neural_layer_kuhul_test   kernelClass: generic-compute         registryMatched: true
+```kuhul
+[Pop FusedAttention]
+  [Muwan dispatch 64 1 1]
+  [Sek needsSoftmax true]
+  [Sek needsMatMul true]
+[Xul]
 ```
 
-## Contents
-
-```
-bin/
-  kxc.exe                 patched compiler binary (~1 MB)
-registry/
-  kernel-aliases.json     intermediate key → canonical class map
-  kernel-classes.json     canonical class definitions (requires/forbids/backend/layers)
-  kernel-extras.json      caps hints and fallback backends
-examples/
-  fused_attention_full.kuhul
-  fused_attention_simple.kuhul
-  binary_split_test.kuhul
-  neural_layer_kuhul_test.kuhul
-VERSION.json
-README.md
-```
-
-## Usage
+Run it:
 
 ```powershell
-cd C:\Users\canna\_khanary_inspect\versions\kxc-v1.0.0\bin
-.\kxc.exe ..\examples\fused_attention_full.kuhul
+.\kxc.exe fused_attention.kuhul
 ```
 
-## Known limitation
+Output:
 
-Registry defines `moe_route_top2` and related classes but the classifier resolves
-to two effective `kernelClass` values only (`tensor_attention_fused` / `generic-compute`).
-MoE dispatch is the next classifier milestone.
+```
+FusedAttention.hlsl        HLSL compute shader  (D3D12 / DirectML)
+FusedAttention.wgsl        WGSL compute shader  (WebGPU)
+FusedAttention.cpu.cpp     CPU fallback
+FusedAttention.smca.json   compiled kernel contract
+FusedAttention.ir.json     SCXQ2-lowered IR
+```
+
+---
+
+## The compiled kernel contract
+
+`.smca.json` is what the runtime inspects before dispatch — kernel identity,
+thread shape, hardware caps, classification, and legality in one document:
+
+```json
+{
+  "kernel": "FusedAttention",
+  "threads": [64, 1, 1],
+  "caps": { "waveOps": false, "heapTier": 1, "bindingTier": 1, "uma": true },
+  "smca": {
+    "kernelClass": "tensor_attention_fused",
+    "collapseClass": "attention.fused",
+    "lawful": true,
+    "registryMatched": true,
+    "layers": ["MATRIX", "SCXQ2", "SCXQ7", "SCO/1", "IDB"],
+    "requires": ["deterministic_join", "bounded_reduction"],
+    "forbids": ["side_effects", "order_dependence"]
+  }
+}
+```
+
+---
+
+## Grammar
+
+| Token | Role |
+|-------|------|
+| `[Pop KernelName]` | open kernel block — sets the kernel name |
+| `[Muwan dispatch X Y Z]` | thread group dimensions |
+| `[Sek property value]` | kernel property flag (bool / int / string) |
+| `[Xul]` | close block and compile |
+
+Known `[Sek]` properties: `needsDecompress`, `needsSoftmax`, `needsMatMul`,
+`kvInt4`, `needsMoERoute`, `needsMoEExpertFFN`, `needsMoECombine`, `needsPhaseMatch`
+
+---
+
+## Pipeline layers
+
+| Layer | Meaning |
+|-------|---------|
+| MATRIX | source parsed into AST |
+| SCXQ2 | lowered to backend-neutral IR |
+| SCXQ7 | legality + caps-aware optimization |
+| SCO/1 | backend emitters produce artifacts |
+| IDB | sidecar metadata for external verification |
+
+---
+
+## Registry
+
+Kernel classification is driven by three files in `registry/`:
+
+- **`kernel-aliases.json`** — maps intermediate class names to canonical names
+- **`kernel-classes.json`** — canonical class definitions (requires / forbids / backend / layers)
+- **`kernel-extras.json`** — caps hints and fallback backends
+
+The SMCA registry (architecture spec) lives at https://github.com/cannaseedus-bot/SMCA
+
+---
+
+## Verified kernels
+
+```
+examples/fused_attention_full.kuhul      kernelClass: tensor_attention_fused
+examples/fused_attention_simple.kuhul    kernelClass: tensor_attention_fused
+examples/binary_split_test.kuhul         kernelClass: generic-compute
+examples/neural_layer_kuhul_test.kuhul   kernelClass: generic-compute
+```
+
+All four: `registryMatched: true`, exit 0.
+
+---
+
+## Relationship to KHLC
+
+KXC and KHLC are two compilers for the same language, different domains:
+
+```
+.kuhul kernel descriptor  →  KXC   →  HLSL / WGSL / SMCA JSON   (compute shaders)
+.kuhul / .khl source      →  KHLC  →  KAST / KSON               (programs)
+```
