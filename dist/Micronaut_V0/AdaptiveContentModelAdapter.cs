@@ -18,11 +18,13 @@ namespace Micronaut.Streaming.Adapter
         {
             TilesRoot = tilesRoot ?? throw new ArgumentNullException(nameof(tilesRoot));
             WeightFile = weightFile;
-            // default lane->frame map (can be replaced by manifest)
-            LaneToFrame["code"] = "COMPUTE_FRAME";
-            LaneToFrame["dialog"] = "DIALOG_FRAME";
-            LaneToFrame["instruction"] = "INSTRUCTION_FRAME";
-            LaneToFrame["metadata"] = "META_FRAME";
+            // DDS fold lanes — matches Fold enum in unified_swarm_runtime + SCXQDDS tile format
+            LaneToFrame["COMPUTE"] = "COMPUTE_FOLD";
+            LaneToFrame["CONTROL"] = "CONTROL_FOLD";
+            LaneToFrame["STATE"]   = "STATE_FOLD";
+            LaneToFrame["UI"]      = "UI_FOLD";
+            LaneToFrame["META"]    = "META_FOLD";
+            LaneToFrame["DATA"]    = "DATA_FOLD";
         }
 
         public void MapLanes(Dictionary<string,string> mapping)
