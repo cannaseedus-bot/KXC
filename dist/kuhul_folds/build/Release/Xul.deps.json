@@ -1,0 +1,39 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v8.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v8.0": {
+      "Xul/1.0.0": {
+        "dependencies": {
+          "Kuhul.Folds.Contract": "1.0.0"
+        },
+        "runtime": {
+          "Xul.dll": {}
+        }
+      },
+      "Kuhul.Folds.Contract/1.0.0": {
+        "runtime": {
+          "Kuhul.Folds.Contract.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      }
+    }
+  },
+  "libraries": {
+    "Xul/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Kuhul.Folds.Contract/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}

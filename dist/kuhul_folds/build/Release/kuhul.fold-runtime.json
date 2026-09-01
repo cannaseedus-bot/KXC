@@ -1,0 +1,36 @@
+{
+  "@runtime": "kuhul.fold-runtime/1",
+  "max_folds": 2,
+
+  "cycle": [
+    { "phase": "Pop",  "assembly": "Pop.dll",  "theta": 0.0 },
+    { "phase": "Wo",   "assembly": "Wo.dll",   "theta": 1.0471975511965976 },
+    { "phase": "Yax",  "assembly": "Yax.dll",  "theta": 2.0943951023931953 },
+    { "phase": "Sek",  "assembly": "Sek.dll",  "theta": 3.141592653589793  },
+    { "phase": "Chen", "assembly": "Chen.dll", "theta": 4.1887902047863905 },
+    { "phase": "Xul",  "assembly": "Xul.dll",  "theta": 5.235987755982988  }
+  ],
+
+  "phase_transitions": {
+    "legal":      ["Pop", "Wo", "Yax", "Sek", "Chen", "Xul"],
+    "default":    "sequential",
+    "on_illegal": "halt"
+  },
+
+  "admission": {
+    "strong_threshold": 0.50,
+    "weak_threshold":   0.15,
+    "reward_lr":        0.10,
+    "_note": "Yax: score>=strong→STRONG, >=weak→WEAK (evolve), <weak→NONE (factory). Chen: C←C+lr*(reward-C). W deferred to MX-2."
+  },
+
+  "_notes": {
+    "composition":      "JSON",
+    "law_abi":          "Kuhul.Folds.Contract.dll",
+    "transformation":   "phase DLL",
+    "accumulating_field": "FoldContext (ref)",
+    "traversal":        "FoldOrchestrator",
+    "physical_compute": "provider (cpu / d3d11 / dml / glsl)",
+    "cycle_identity":   "SHA256(SHA256(Pop)||...||SHA256(Xul))"
+  }
+}

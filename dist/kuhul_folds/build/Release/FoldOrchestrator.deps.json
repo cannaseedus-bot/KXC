@@ -1,0 +1,141 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v8.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v8.0": {
+      "FoldOrchestrator/1.0.0": {
+        "dependencies": {
+          "Chen": "1.0.0",
+          "Kuhul.Folds.Contract": "1.0.0",
+          "Pop": "1.0.0",
+          "Sek": "1.0.0",
+          "Wo": "1.0.0",
+          "Xul": "1.0.0",
+          "Yax": "1.0.0"
+        },
+        "runtime": {
+          "FoldOrchestrator.dll": {}
+        }
+      },
+      "Chen/1.0.0": {
+        "dependencies": {
+          "Kuhul.Folds.Contract": "1.0.0"
+        },
+        "runtime": {
+          "Chen.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      },
+      "Kuhul.Folds.Contract/1.0.0": {
+        "runtime": {
+          "Kuhul.Folds.Contract.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      },
+      "Pop/1.0.0": {
+        "dependencies": {
+          "Kuhul.Folds.Contract": "1.0.0"
+        },
+        "runtime": {
+          "Pop.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      },
+      "Sek/1.0.0": {
+        "dependencies": {
+          "Kuhul.Folds.Contract": "1.0.0"
+        },
+        "runtime": {
+          "Sek.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      },
+      "Wo/1.0.0": {
+        "dependencies": {
+          "Kuhul.Folds.Contract": "1.0.0"
+        },
+        "runtime": {
+          "Wo.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      },
+      "Xul/1.0.0": {
+        "dependencies": {
+          "Kuhul.Folds.Contract": "1.0.0"
+        },
+        "runtime": {
+          "Xul.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      },
+      "Yax/1.0.0": {
+        "dependencies": {
+          "Kuhul.Folds.Contract": "1.0.0"
+        },
+        "runtime": {
+          "Yax.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      }
+    }
+  },
+  "libraries": {
+    "FoldOrchestrator/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Chen/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Kuhul.Folds.Contract/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Pop/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Sek/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Wo/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Xul/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Yax/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}
