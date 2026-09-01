@@ -1,0 +1,32 @@
+/* ========================================================
+   matrices.kuhul — K'UHUL Standard Library
+   Depends on: vectors.kuhul
+   ======================================================== */
+
+include "vectors.kuhul"
+
+⟁ Pop ⟁
+  bind matrix2
+  bind matrix3
+  bind matrix4
+  bind identity()
+  bind transpose()
+  bind inverse()
+
+⟁ Wo ⟁
+  bind determinant
+  bind trace
+  bind basis_change
+
+⟁ Yax ⟁
+  resolve matrix.multiply
+  resolve matrix.transform
+
+⟁ Sek ⟁
+  dispatch matrix.compute
+
+⟁ Ch'en ⟁
+  collect_status matrix
+
+⟁ Xul ⟁
+  commit matrix.state

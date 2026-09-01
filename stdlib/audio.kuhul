@@ -1,0 +1,30 @@
+/* ========================================================
+   audio.kuhul — K'UHUL Standard Library
+   Depends on: functions.kuhul
+   ======================================================== */
+
+include "functions.kuhul"
+
+⟁ Pop ⟁
+  bind sample
+  bind waveform
+  bind freq
+  bind amplitude
+  bind envelope()
+
+⟁ Wo ⟁
+  bind sample_rate
+  bind channels
+
+⟁ Yax ⟁
+  resolve audio.synthesize
+  resolve audio.analyze
+
+⟁ Sek ⟁
+  dispatch audio.compute
+
+⟁ Ch'en ⟁
+  collect_status audio
+
+⟁ Xul ⟁
+  commit audio.state

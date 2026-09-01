@@ -1,0 +1,2098 @@
+{
+  "protocol": "kast/1",
+  "registry_hash": "0b521cd31a378c53d5439c00a45f6fb151d6e86950dc579aacb28db16ade59a5",
+  "source_kind": "khl",
+  "source_id": "tensors.kuhul",
+  "entry_node_id": "n0",
+  "nodes": [
+    {
+      "id": "n0",
+      "kind": "bind",
+      "fold": "Pop",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "folds",
+      "type": "constant",
+      "operands": [
+        "folds"
+      ],
+      "attributes": {
+        "value": "Pop Wo Yax Sek Ch'en Xul"
+      }
+    },
+    {
+      "id": "n1",
+      "kind": "bind",
+      "fold": "Pop",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "lanes",
+      "type": "constant",
+      "operands": [
+        "lanes"
+      ],
+      "attributes": {
+        "value": "config compute control output driver"
+      }
+    },
+    {
+      "id": "n2",
+      "kind": "bind",
+      "fold": "Pop",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "types",
+      "type": "constant",
+      "operands": [
+        "types"
+      ],
+      "attributes": {
+        "value": "constant operator_call control_flow return_value expression manifest_ref driver_glyph"
+      }
+    },
+    {
+      "id": "n3",
+      "kind": "bind",
+      "fold": "Wo",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "glyphs",
+      "type": "constant",
+      "operands": [
+        "glyphs"
+      ],
+      "attributes": {
+        "value": "bind probe resolve dispatch collect_status commit call yield"
+      }
+    },
+    {
+      "id": "n4",
+      "kind": "bind",
+      "fold": "Wo",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "opcodes",
+      "type": "constant",
+      "operands": [
+        "opcodes"
+      ],
+      "attributes": {
+        "value": "BIND PROBE RESOLVE DISPATCH COLLECT COMMIT CALL YIELD GLYPH STMT"
+      }
+    },
+    {
+      "id": "n5",
+      "kind": "bind",
+      "fold": "Wo",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "contracts",
+      "type": "constant",
+      "operands": [
+        "contracts"
+      ],
+      "attributes": {
+        "value": "driver abi requires capabilities phase_hooks provider resources hash"
+      }
+    },
+    {
+      "id": "n6",
+      "kind": "call",
+      "fold": "Yax",
+      "lane": "compute",
+      "glyph": "resolve",
+      "opcode": "RESOLVE",
+      "symbol": "capability.semantic",
+      "type": "operator_call",
+      "operands": [],
+      "attributes": {
+        "result": ""
+      }
+    },
+    {
+      "id": "n7",
+      "kind": "call",
+      "fold": "Yax",
+      "lane": "compute",
+      "glyph": "resolve",
+      "opcode": "RESOLVE",
+      "symbol": "provider.registry",
+      "type": "operator_call",
+      "operands": [],
+      "attributes": {
+        "result": ""
+      }
+    },
+    {
+      "id": "n8",
+      "kind": "call",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "dispatch",
+      "opcode": "DISPATCH",
+      "symbol": "core.admit",
+      "type": "operator_call",
+      "operands": [],
+      "attributes": {
+        "result": ""
+      }
+    },
+    {
+      "id": "n9",
+      "kind": "call",
+      "fold": "Ch'en",
+      "lane": "compute",
+      "glyph": "collect_status",
+      "opcode": "COLLECT",
+      "symbol": "contract",
+      "type": "operator_call",
+      "operands": [],
+      "attributes": {
+        "result": ""
+      }
+    },
+    {
+      "id": "n10",
+      "kind": "call",
+      "fold": "Ch'en",
+      "lane": "compute",
+      "glyph": "collect_status",
+      "opcode": "COLLECT",
+      "symbol": "registry",
+      "type": "operator_call",
+      "operands": [],
+      "attributes": {
+        "result": ""
+      }
+    },
+    {
+      "id": "n11",
+      "kind": "call",
+      "fold": "Xul",
+      "lane": "compute",
+      "glyph": "commit",
+      "opcode": "COMMIT",
+      "symbol": "core.state",
+      "type": "operator_call",
+      "operands": [],
+      "attributes": {
+        "result": ""
+      }
+    },
+    {
+      "id": "n12",
+      "kind": "bind",
+      "fold": "Pop",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "e",
+      "type": "constant",
+      "operands": [
+        "e"
+      ],
+      "attributes": {
+        "value": "2.718281828459045"
+      }
+    },
+    {
+      "id": "n13",
+      "kind": "bind",
+      "fold": "Pop",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "tau",
+      "type": "constant",
+      "operands": [
+        "tau"
+      ],
+      "attributes": {
+        "value": "6.283185307179586"
+      }
+    },
+    {
+      "id": "n14",
+      "kind": "bind",
+      "fold": "Pop",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "phi",
+      "type": "constant",
+      "operands": [
+        "phi"
+      ],
+      "attributes": {
+        "value": "1.618033988749895"
+      }
+    },
+    {
+      "id": "n15",
+      "kind": "bind",
+      "fold": "Wo",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "speed_of_light",
+      "type": "constant",
+      "operands": [
+        "speed_of_light"
+      ],
+      "attributes": {
+        "value": "299792458"
+      }
+    },
+    {
+      "id": "n16",
+      "kind": "bind",
+      "fold": "Wo",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "planck",
+      "type": "constant",
+      "operands": [
+        "planck"
+      ],
+      "attributes": {
+        "value": "6.62607015e-34"
+      }
+    },
+    {
+      "id": "n17",
+      "kind": "bind",
+      "fold": "Wo",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "avogadro",
+      "type": "constant",
+      "operands": [
+        "avogadro"
+      ],
+      "attributes": {
+        "value": "6.02214076e23"
+      }
+    },
+    {
+      "id": "n18",
+      "kind": "call",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "dispatch",
+      "opcode": "DISPATCH",
+      "symbol": "constants.resolve",
+      "type": "operator_call",
+      "operands": [],
+      "attributes": {
+        "result": ""
+      }
+    },
+    {
+      "id": "n19",
+      "kind": "call",
+      "fold": "Xul",
+      "lane": "compute",
+      "glyph": "commit",
+      "opcode": "COMMIT",
+      "symbol": "constants.state",
+      "type": "operator_call",
+      "operands": [],
+      "attributes": {
+        "result": ""
+      }
+    },
+    {
+      "id": "n20",
+      "kind": "bind",
+      "fold": "Pop",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "\u03c0",
+      "type": "constant",
+      "operands": [
+        "\u03c0"
+      ],
+      "attributes": {
+        "value": "3.141592653589793"
+      }
+    },
+    {
+      "id": "n21",
+      "kind": "call",
+      "fold": "Pop",
+      "lane": "compute",
+      "glyph": "probe",
+      "opcode": "PROBE",
+      "symbol": "geometry",
+      "type": "operator_call",
+      "operands": [],
+      "attributes": {
+        "result": ""
+      }
+    },
+    {
+      "id": "n22",
+      "kind": "bind",
+      "fold": "Wo",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "radius",
+      "type": "constant",
+      "operands": [
+        "radius"
+      ],
+      "attributes": {
+        "value": "8"
+      }
+    },
+    {
+      "id": "n23",
+      "kind": "bind",
+      "fold": "Wo",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "area",
+      "type": "constant",
+      "operands": [
+        "area"
+      ],
+      "attributes": {
+        "value": "\u03c0 * radius * radius"
+      }
+    },
+    {
+      "id": "n24",
+      "kind": "call",
+      "fold": "Yax",
+      "lane": "compute",
+      "glyph": "resolve",
+      "opcode": "RESOLVE",
+      "symbol": "provider = geometry.compute",
+      "type": "operator_call",
+      "operands": [],
+      "attributes": {
+        "result": ""
+      }
+    },
+    {
+      "id": "n25",
+      "kind": "call",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "dispatch",
+      "opcode": "DISPATCH",
+      "symbol": "provider(area)",
+      "type": "operator_call",
+      "operands": [],
+      "attributes": {
+        "result": ""
+      }
+    },
+    {
+      "id": "n26",
+      "kind": "call",
+      "fold": "Ch'en",
+      "lane": "compute",
+      "glyph": "collect_status",
+      "opcode": "COLLECT",
+      "symbol": "result",
+      "type": "operator_call",
+      "operands": [],
+      "attributes": {
+        "result": ""
+      }
+    },
+    {
+      "id": "n27",
+      "kind": "call",
+      "fold": "Xul",
+      "lane": "compute",
+      "glyph": "commit",
+      "opcode": "COMMIT",
+      "symbol": "result",
+      "type": "operator_call",
+      "operands": [],
+      "attributes": {
+        "result": ""
+      }
+    },
+    {
+      "id": "n28",
+      "kind": "bind",
+      "fold": "Pop",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "length()",
+      "type": "constant",
+      "operands": [
+        "length()"
+      ],
+      "attributes": {
+        "value": ""
+      }
+    },
+    {
+      "id": "n29",
+      "kind": "bind",
+      "fold": "Pop",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "normalize()",
+      "type": "constant",
+      "operands": [
+        "normalize()"
+      ],
+      "attributes": {
+        "value": ""
+      }
+    },
+    {
+      "id": "n30",
+      "kind": "bind",
+      "fold": "Pop",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "clamp()",
+      "type": "constant",
+      "operands": [
+        "clamp()"
+      ],
+      "attributes": {
+        "value": ""
+      }
+    },
+    {
+      "id": "n31",
+      "kind": "bind",
+      "fold": "Pop",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "lerp()",
+      "type": "constant",
+      "operands": [
+        "lerp()"
+      ],
+      "attributes": {
+        "value": ""
+      }
+    },
+    {
+      "id": "n32",
+      "kind": "bind",
+      "fold": "Pop",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "dot()",
+      "type": "constant",
+      "operands": [
+        "dot()"
+      ],
+      "attributes": {
+        "value": ""
+      }
+    },
+    {
+      "id": "n33",
+      "kind": "bind",
+      "fold": "Pop",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "cross()",
+      "type": "constant",
+      "operands": [
+        "cross()"
+      ],
+      "attributes": {
+        "value": ""
+      }
+    },
+    {
+      "id": "n34",
+      "kind": "bind",
+      "fold": "Pop",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "sin()",
+      "type": "constant",
+      "operands": [
+        "sin()"
+      ],
+      "attributes": {
+        "value": ""
+      }
+    },
+    {
+      "id": "n35",
+      "kind": "bind",
+      "fold": "Pop",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "cos()",
+      "type": "constant",
+      "operands": [
+        "cos()"
+      ],
+      "attributes": {
+        "value": ""
+      }
+    },
+    {
+      "id": "n36",
+      "kind": "bind",
+      "fold": "Pop",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "sqrt()",
+      "type": "constant",
+      "operands": [
+        "sqrt()"
+      ],
+      "attributes": {
+        "value": ""
+      }
+    },
+    {
+      "id": "n37",
+      "kind": "bind",
+      "fold": "Pop",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "abs()",
+      "type": "constant",
+      "operands": [
+        "abs()"
+      ],
+      "attributes": {
+        "value": ""
+      }
+    },
+    {
+      "id": "n38",
+      "kind": "bind",
+      "fold": "Pop",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "min()",
+      "type": "constant",
+      "operands": [
+        "min()"
+      ],
+      "attributes": {
+        "value": ""
+      }
+    },
+    {
+      "id": "n39",
+      "kind": "bind",
+      "fold": "Pop",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "max()",
+      "type": "constant",
+      "operands": [
+        "max()"
+      ],
+      "attributes": {
+        "value": ""
+      }
+    },
+    {
+      "id": "n40",
+      "kind": "bind",
+      "fold": "Wo",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "scalar_functions",
+      "type": "constant",
+      "operands": [
+        "scalar_functions"
+      ],
+      "attributes": {
+        "value": ""
+      }
+    },
+    {
+      "id": "n41",
+      "kind": "bind",
+      "fold": "Wo",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "vector_functions",
+      "type": "constant",
+      "operands": [
+        "vector_functions"
+      ],
+      "attributes": {
+        "value": ""
+      }
+    },
+    {
+      "id": "n42",
+      "kind": "bind",
+      "fold": "Wo",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "geometric_functions",
+      "type": "constant",
+      "operands": [
+        "geometric_functions"
+      ],
+      "attributes": {
+        "value": ""
+      }
+    },
+    {
+      "id": "n43",
+      "kind": "call",
+      "fold": "Yax",
+      "lane": "compute",
+      "glyph": "resolve",
+      "opcode": "RESOLVE",
+      "symbol": "capability.function.dispatch",
+      "type": "operator_call",
+      "operands": [],
+      "attributes": {
+        "result": ""
+      }
+    },
+    {
+      "id": "n44",
+      "kind": "call",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "dispatch",
+      "opcode": "DISPATCH",
+      "symbol": "functions.evaluate",
+      "type": "operator_call",
+      "operands": [],
+      "attributes": {
+        "result": ""
+      }
+    },
+    {
+      "id": "n45",
+      "kind": "call",
+      "fold": "Ch'en",
+      "lane": "compute",
+      "glyph": "collect_status",
+      "opcode": "COLLECT",
+      "symbol": "result",
+      "type": "operator_call",
+      "operands": [],
+      "attributes": {
+        "result": ""
+      }
+    },
+    {
+      "id": "n46",
+      "kind": "call",
+      "fold": "Xul",
+      "lane": "compute",
+      "glyph": "commit",
+      "opcode": "COMMIT",
+      "symbol": "functions.state",
+      "type": "operator_call",
+      "operands": [],
+      "attributes": {
+        "result": ""
+      }
+    },
+    {
+      "id": "n47",
+      "kind": "bind",
+      "fold": "Pop",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "vector2",
+      "type": "constant",
+      "operands": [
+        "vector2"
+      ],
+      "attributes": {
+        "value": ""
+      }
+    },
+    {
+      "id": "n48",
+      "kind": "bind",
+      "fold": "Pop",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "vector3",
+      "type": "constant",
+      "operands": [
+        "vector3"
+      ],
+      "attributes": {
+        "value": ""
+      }
+    },
+    {
+      "id": "n49",
+      "kind": "bind",
+      "fold": "Pop",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "vector4",
+      "type": "constant",
+      "operands": [
+        "vector4"
+      ],
+      "attributes": {
+        "value": ""
+      }
+    },
+    {
+      "id": "n50",
+      "kind": "bind",
+      "fold": "Pop",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "magnitude()",
+      "type": "constant",
+      "operands": [
+        "magnitude()"
+      ],
+      "attributes": {
+        "value": ""
+      }
+    },
+    {
+      "id": "n51",
+      "kind": "bind",
+      "fold": "Pop",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "normalize()",
+      "type": "constant",
+      "operands": [
+        "normalize()"
+      ],
+      "attributes": {
+        "value": ""
+      }
+    },
+    {
+      "id": "n52",
+      "kind": "bind",
+      "fold": "Pop",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "dot()",
+      "type": "constant",
+      "operands": [
+        "dot()"
+      ],
+      "attributes": {
+        "value": ""
+      }
+    },
+    {
+      "id": "n53",
+      "kind": "bind",
+      "fold": "Pop",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "cross()",
+      "type": "constant",
+      "operands": [
+        "cross()"
+      ],
+      "attributes": {
+        "value": ""
+      }
+    },
+    {
+      "id": "n54",
+      "kind": "bind",
+      "fold": "Wo",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "basis",
+      "type": "constant",
+      "operands": [
+        "basis"
+      ],
+      "attributes": {
+        "value": ""
+      }
+    },
+    {
+      "id": "n55",
+      "kind": "bind",
+      "fold": "Wo",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "components",
+      "type": "constant",
+      "operands": [
+        "components"
+      ],
+      "attributes": {
+        "value": ""
+      }
+    },
+    {
+      "id": "n56",
+      "kind": "call",
+      "fold": "Yax",
+      "lane": "compute",
+      "glyph": "resolve",
+      "opcode": "RESOLVE",
+      "symbol": "vector.add",
+      "type": "operator_call",
+      "operands": [],
+      "attributes": {
+        "result": ""
+      }
+    },
+    {
+      "id": "n57",
+      "kind": "call",
+      "fold": "Yax",
+      "lane": "compute",
+      "glyph": "resolve",
+      "opcode": "RESOLVE",
+      "symbol": "vector.scale",
+      "type": "operator_call",
+      "operands": [],
+      "attributes": {
+        "result": ""
+      }
+    },
+    {
+      "id": "n58",
+      "kind": "call",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "dispatch",
+      "opcode": "DISPATCH",
+      "symbol": "vector.compute",
+      "type": "operator_call",
+      "operands": [],
+      "attributes": {
+        "result": ""
+      }
+    },
+    {
+      "id": "n59",
+      "kind": "call",
+      "fold": "Ch'en",
+      "lane": "compute",
+      "glyph": "collect_status",
+      "opcode": "COLLECT",
+      "symbol": "vector",
+      "type": "operator_call",
+      "operands": [],
+      "attributes": {
+        "result": ""
+      }
+    },
+    {
+      "id": "n60",
+      "kind": "call",
+      "fold": "Xul",
+      "lane": "compute",
+      "glyph": "commit",
+      "opcode": "COMMIT",
+      "symbol": "vector.state",
+      "type": "operator_call",
+      "operands": [],
+      "attributes": {
+        "result": ""
+      }
+    },
+    {
+      "id": "n61",
+      "kind": "bind",
+      "fold": "Pop",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "matrix2",
+      "type": "constant",
+      "operands": [
+        "matrix2"
+      ],
+      "attributes": {
+        "value": ""
+      }
+    },
+    {
+      "id": "n62",
+      "kind": "bind",
+      "fold": "Pop",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "matrix3",
+      "type": "constant",
+      "operands": [
+        "matrix3"
+      ],
+      "attributes": {
+        "value": ""
+      }
+    },
+    {
+      "id": "n63",
+      "kind": "bind",
+      "fold": "Pop",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "matrix4",
+      "type": "constant",
+      "operands": [
+        "matrix4"
+      ],
+      "attributes": {
+        "value": ""
+      }
+    },
+    {
+      "id": "n64",
+      "kind": "bind",
+      "fold": "Pop",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "identity()",
+      "type": "constant",
+      "operands": [
+        "identity()"
+      ],
+      "attributes": {
+        "value": ""
+      }
+    },
+    {
+      "id": "n65",
+      "kind": "bind",
+      "fold": "Pop",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "transpose()",
+      "type": "constant",
+      "operands": [
+        "transpose()"
+      ],
+      "attributes": {
+        "value": ""
+      }
+    },
+    {
+      "id": "n66",
+      "kind": "bind",
+      "fold": "Pop",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "inverse()",
+      "type": "constant",
+      "operands": [
+        "inverse()"
+      ],
+      "attributes": {
+        "value": ""
+      }
+    },
+    {
+      "id": "n67",
+      "kind": "bind",
+      "fold": "Wo",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "determinant",
+      "type": "constant",
+      "operands": [
+        "determinant"
+      ],
+      "attributes": {
+        "value": ""
+      }
+    },
+    {
+      "id": "n68",
+      "kind": "bind",
+      "fold": "Wo",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "trace",
+      "type": "constant",
+      "operands": [
+        "trace"
+      ],
+      "attributes": {
+        "value": ""
+      }
+    },
+    {
+      "id": "n69",
+      "kind": "bind",
+      "fold": "Wo",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "basis_change",
+      "type": "constant",
+      "operands": [
+        "basis_change"
+      ],
+      "attributes": {
+        "value": ""
+      }
+    },
+    {
+      "id": "n70",
+      "kind": "call",
+      "fold": "Yax",
+      "lane": "compute",
+      "glyph": "resolve",
+      "opcode": "RESOLVE",
+      "symbol": "matrix.multiply",
+      "type": "operator_call",
+      "operands": [],
+      "attributes": {
+        "result": ""
+      }
+    },
+    {
+      "id": "n71",
+      "kind": "call",
+      "fold": "Yax",
+      "lane": "compute",
+      "glyph": "resolve",
+      "opcode": "RESOLVE",
+      "symbol": "matrix.transform",
+      "type": "operator_call",
+      "operands": [],
+      "attributes": {
+        "result": ""
+      }
+    },
+    {
+      "id": "n72",
+      "kind": "call",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "dispatch",
+      "opcode": "DISPATCH",
+      "symbol": "matrix.compute",
+      "type": "operator_call",
+      "operands": [],
+      "attributes": {
+        "result": ""
+      }
+    },
+    {
+      "id": "n73",
+      "kind": "call",
+      "fold": "Ch'en",
+      "lane": "compute",
+      "glyph": "collect_status",
+      "opcode": "COLLECT",
+      "symbol": "matrix",
+      "type": "operator_call",
+      "operands": [],
+      "attributes": {
+        "result": ""
+      }
+    },
+    {
+      "id": "n74",
+      "kind": "call",
+      "fold": "Xul",
+      "lane": "compute",
+      "glyph": "commit",
+      "opcode": "COMMIT",
+      "symbol": "matrix.state",
+      "type": "operator_call",
+      "operands": [],
+      "attributes": {
+        "result": ""
+      }
+    },
+    {
+      "id": "n75",
+      "kind": "bind",
+      "fold": "Pop",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "tensor_0d",
+      "type": "constant",
+      "operands": [
+        "tensor_0d"
+      ],
+      "attributes": {
+        "value": ""
+      }
+    },
+    {
+      "id": "n76",
+      "kind": "bind",
+      "fold": "Pop",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "tensor_1d",
+      "type": "constant",
+      "operands": [
+        "tensor_1d"
+      ],
+      "attributes": {
+        "value": ""
+      }
+    },
+    {
+      "id": "n77",
+      "kind": "bind",
+      "fold": "Pop",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "tensor_2d",
+      "type": "constant",
+      "operands": [
+        "tensor_2d"
+      ],
+      "attributes": {
+        "value": ""
+      }
+    },
+    {
+      "id": "n78",
+      "kind": "bind",
+      "fold": "Pop",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "tensor_3d",
+      "type": "constant",
+      "operands": [
+        "tensor_3d"
+      ],
+      "attributes": {
+        "value": ""
+      }
+    },
+    {
+      "id": "n79",
+      "kind": "bind",
+      "fold": "Pop",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "tensor_4d",
+      "type": "constant",
+      "operands": [
+        "tensor_4d"
+      ],
+      "attributes": {
+        "value": ""
+      }
+    },
+    {
+      "id": "n80",
+      "kind": "bind",
+      "fold": "Pop",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "reshape()",
+      "type": "constant",
+      "operands": [
+        "reshape()"
+      ],
+      "attributes": {
+        "value": ""
+      }
+    },
+    {
+      "id": "n81",
+      "kind": "bind",
+      "fold": "Wo",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "dtype",
+      "type": "constant",
+      "operands": [
+        "dtype"
+      ],
+      "attributes": {
+        "value": ""
+      }
+    },
+    {
+      "id": "n82",
+      "kind": "bind",
+      "fold": "Wo",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "strides",
+      "type": "constant",
+      "operands": [
+        "strides"
+      ],
+      "attributes": {
+        "value": ""
+      }
+    },
+    {
+      "id": "n83",
+      "kind": "bind",
+      "fold": "Wo",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "contiguity",
+      "type": "constant",
+      "operands": [
+        "contiguity"
+      ],
+      "attributes": {
+        "value": ""
+      }
+    },
+    {
+      "id": "n84",
+      "kind": "call",
+      "fold": "Yax",
+      "lane": "compute",
+      "glyph": "resolve",
+      "opcode": "RESOLVE",
+      "symbol": "tensor.contract",
+      "type": "operator_call",
+      "operands": [],
+      "attributes": {
+        "result": ""
+      }
+    },
+    {
+      "id": "n85",
+      "kind": "call",
+      "fold": "Yax",
+      "lane": "compute",
+      "glyph": "resolve",
+      "opcode": "RESOLVE",
+      "symbol": "tensor.transpose",
+      "type": "operator_call",
+      "operands": [],
+      "attributes": {
+        "result": ""
+      }
+    },
+    {
+      "id": "n86",
+      "kind": "call",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "dispatch",
+      "opcode": "DISPATCH",
+      "symbol": "tensor.compute",
+      "type": "operator_call",
+      "operands": [],
+      "attributes": {
+        "result": ""
+      }
+    },
+    {
+      "id": "n87",
+      "kind": "call",
+      "fold": "Ch'en",
+      "lane": "compute",
+      "glyph": "collect_status",
+      "opcode": "COLLECT",
+      "symbol": "tensor",
+      "type": "operator_call",
+      "operands": [],
+      "attributes": {
+        "result": ""
+      }
+    },
+    {
+      "id": "n88",
+      "kind": "call",
+      "fold": "Xul",
+      "lane": "compute",
+      "glyph": "commit",
+      "opcode": "COMMIT",
+      "symbol": "tensor.state",
+      "type": "operator_call",
+      "operands": [],
+      "attributes": {
+        "result": ""
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e0",
+      "from": "n0",
+      "to": "n1",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 0
+    },
+    {
+      "id": "e1",
+      "from": "n1",
+      "to": "n2",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 1
+    },
+    {
+      "id": "e2",
+      "from": "n2",
+      "to": "n3",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 2
+    },
+    {
+      "id": "e3",
+      "from": "n3",
+      "to": "n4",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 3
+    },
+    {
+      "id": "e4",
+      "from": "n4",
+      "to": "n5",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 4
+    },
+    {
+      "id": "e5",
+      "from": "n5",
+      "to": "n6",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 5
+    },
+    {
+      "id": "e6",
+      "from": "n6",
+      "to": "n7",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 6
+    },
+    {
+      "id": "e7",
+      "from": "n7",
+      "to": "n8",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 7
+    },
+    {
+      "id": "e8",
+      "from": "n8",
+      "to": "n9",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 8
+    },
+    {
+      "id": "e9",
+      "from": "n9",
+      "to": "n10",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 9
+    },
+    {
+      "id": "e10",
+      "from": "n10",
+      "to": "n11",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 10
+    },
+    {
+      "id": "e11",
+      "from": "n11",
+      "to": "n12",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 11
+    },
+    {
+      "id": "e12",
+      "from": "n12",
+      "to": "n13",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 12
+    },
+    {
+      "id": "e13",
+      "from": "n13",
+      "to": "n14",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 13
+    },
+    {
+      "id": "e14",
+      "from": "n14",
+      "to": "n15",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 14
+    },
+    {
+      "id": "e15",
+      "from": "n15",
+      "to": "n16",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 15
+    },
+    {
+      "id": "e16",
+      "from": "n16",
+      "to": "n17",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 16
+    },
+    {
+      "id": "e17",
+      "from": "n17",
+      "to": "n18",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 17
+    },
+    {
+      "id": "e18",
+      "from": "n18",
+      "to": "n19",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 18
+    },
+    {
+      "id": "e19",
+      "from": "n19",
+      "to": "n20",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 19
+    },
+    {
+      "id": "e20",
+      "from": "n20",
+      "to": "n21",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 20
+    },
+    {
+      "id": "e21",
+      "from": "n21",
+      "to": "n22",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 21
+    },
+    {
+      "id": "e22",
+      "from": "n22",
+      "to": "n23",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 22
+    },
+    {
+      "id": "e23",
+      "from": "n23",
+      "to": "n24",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 23
+    },
+    {
+      "id": "e24",
+      "from": "n24",
+      "to": "n25",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 24
+    },
+    {
+      "id": "e25",
+      "from": "n25",
+      "to": "n26",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 25
+    },
+    {
+      "id": "e26",
+      "from": "n26",
+      "to": "n27",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 26
+    },
+    {
+      "id": "e27",
+      "from": "n27",
+      "to": "n28",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 27
+    },
+    {
+      "id": "e28",
+      "from": "n28",
+      "to": "n29",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 28
+    },
+    {
+      "id": "e29",
+      "from": "n29",
+      "to": "n30",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 29
+    },
+    {
+      "id": "e30",
+      "from": "n30",
+      "to": "n31",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 30
+    },
+    {
+      "id": "e31",
+      "from": "n31",
+      "to": "n32",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 31
+    },
+    {
+      "id": "e32",
+      "from": "n32",
+      "to": "n33",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 32
+    },
+    {
+      "id": "e33",
+      "from": "n33",
+      "to": "n34",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 33
+    },
+    {
+      "id": "e34",
+      "from": "n34",
+      "to": "n35",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 34
+    },
+    {
+      "id": "e35",
+      "from": "n35",
+      "to": "n36",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 35
+    },
+    {
+      "id": "e36",
+      "from": "n36",
+      "to": "n37",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 36
+    },
+    {
+      "id": "e37",
+      "from": "n37",
+      "to": "n38",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 37
+    },
+    {
+      "id": "e38",
+      "from": "n38",
+      "to": "n39",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 38
+    },
+    {
+      "id": "e39",
+      "from": "n39",
+      "to": "n40",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 39
+    },
+    {
+      "id": "e40",
+      "from": "n40",
+      "to": "n41",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 40
+    },
+    {
+      "id": "e41",
+      "from": "n41",
+      "to": "n42",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 41
+    },
+    {
+      "id": "e42",
+      "from": "n42",
+      "to": "n43",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 42
+    },
+    {
+      "id": "e43",
+      "from": "n43",
+      "to": "n44",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 43
+    },
+    {
+      "id": "e44",
+      "from": "n44",
+      "to": "n45",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 44
+    },
+    {
+      "id": "e45",
+      "from": "n45",
+      "to": "n46",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 45
+    },
+    {
+      "id": "e46",
+      "from": "n46",
+      "to": "n47",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 46
+    },
+    {
+      "id": "e47",
+      "from": "n47",
+      "to": "n48",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 47
+    },
+    {
+      "id": "e48",
+      "from": "n48",
+      "to": "n49",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 48
+    },
+    {
+      "id": "e49",
+      "from": "n49",
+      "to": "n50",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 49
+    },
+    {
+      "id": "e50",
+      "from": "n50",
+      "to": "n51",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 50
+    },
+    {
+      "id": "e51",
+      "from": "n51",
+      "to": "n52",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 51
+    },
+    {
+      "id": "e52",
+      "from": "n52",
+      "to": "n53",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 52
+    },
+    {
+      "id": "e53",
+      "from": "n53",
+      "to": "n54",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 53
+    },
+    {
+      "id": "e54",
+      "from": "n54",
+      "to": "n55",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 54
+    },
+    {
+      "id": "e55",
+      "from": "n55",
+      "to": "n56",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 55
+    },
+    {
+      "id": "e56",
+      "from": "n56",
+      "to": "n57",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 56
+    },
+    {
+      "id": "e57",
+      "from": "n57",
+      "to": "n58",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 57
+    },
+    {
+      "id": "e58",
+      "from": "n58",
+      "to": "n59",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 58
+    },
+    {
+      "id": "e59",
+      "from": "n59",
+      "to": "n60",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 59
+    },
+    {
+      "id": "e60",
+      "from": "n60",
+      "to": "n61",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 60
+    },
+    {
+      "id": "e61",
+      "from": "n61",
+      "to": "n62",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 61
+    },
+    {
+      "id": "e62",
+      "from": "n62",
+      "to": "n63",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 62
+    },
+    {
+      "id": "e63",
+      "from": "n63",
+      "to": "n64",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 63
+    },
+    {
+      "id": "e64",
+      "from": "n64",
+      "to": "n65",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 64
+    },
+    {
+      "id": "e65",
+      "from": "n65",
+      "to": "n66",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 65
+    },
+    {
+      "id": "e66",
+      "from": "n66",
+      "to": "n67",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 66
+    },
+    {
+      "id": "e67",
+      "from": "n67",
+      "to": "n68",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 67
+    },
+    {
+      "id": "e68",
+      "from": "n68",
+      "to": "n69",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 68
+    },
+    {
+      "id": "e69",
+      "from": "n69",
+      "to": "n70",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 69
+    },
+    {
+      "id": "e70",
+      "from": "n70",
+      "to": "n71",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 70
+    },
+    {
+      "id": "e71",
+      "from": "n71",
+      "to": "n72",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 71
+    },
+    {
+      "id": "e72",
+      "from": "n72",
+      "to": "n73",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 72
+    },
+    {
+      "id": "e73",
+      "from": "n73",
+      "to": "n74",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 73
+    },
+    {
+      "id": "e74",
+      "from": "n74",
+      "to": "n75",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 74
+    },
+    {
+      "id": "e75",
+      "from": "n75",
+      "to": "n76",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 75
+    },
+    {
+      "id": "e76",
+      "from": "n76",
+      "to": "n77",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 76
+    },
+    {
+      "id": "e77",
+      "from": "n77",
+      "to": "n78",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 77
+    },
+    {
+      "id": "e78",
+      "from": "n78",
+      "to": "n79",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 78
+    },
+    {
+      "id": "e79",
+      "from": "n79",
+      "to": "n80",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 79
+    },
+    {
+      "id": "e80",
+      "from": "n80",
+      "to": "n81",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 80
+    },
+    {
+      "id": "e81",
+      "from": "n81",
+      "to": "n82",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 81
+    },
+    {
+      "id": "e82",
+      "from": "n82",
+      "to": "n83",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 82
+    },
+    {
+      "id": "e83",
+      "from": "n83",
+      "to": "n84",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 83
+    },
+    {
+      "id": "e84",
+      "from": "n84",
+      "to": "n85",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 84
+    },
+    {
+      "id": "e85",
+      "from": "n85",
+      "to": "n86",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 85
+    },
+    {
+      "id": "e86",
+      "from": "n86",
+      "to": "n87",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 86
+    },
+    {
+      "id": "e87",
+      "from": "n87",
+      "to": "n88",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 87
+    }
+  ],
+  "semantic_hash": "f792ef1561428c41a75b7e7221b97ea64c0ab849afae4906823430d8ef425d89",
+  "@driver": {
+    "@abi": 1,
+    "@requires": {
+      "kuhul": ">= 1.0",
+      "khl_abi": 1,
+      "scxq2": ">= 2.0"
+    },
+    "@capabilities": [
+      "tensor.map"
+    ],
+    "@phase_hooks": {
+      "Sek": "dispatch",
+      "Ch'en": "collect_status",
+      "Xul": "commit_tensor_state"
+    },
+    "@provider": "tensors",
+    "@resources": [],
+    "@hash": "f792ef1561428c41a75b7e7221b97ea64c0ab849afae4906823430d8ef425d89"
+  },
+  "includes": [
+    "matrices.kuhul"
+  ]
+}

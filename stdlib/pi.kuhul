@@ -1,0 +1,30 @@
+/* ========================================================
+   pi.kuhul — canonical π / geometry semantics
+   Reference conformance program: demonstrates the whole
+   execution model (folds, nodes, glyphs, lanes, opcodes,
+   phase legality, provider binding) in one small file.
+   Backend-independent — does not know GLSL.
+   Depends on: constants.kuhul
+   ======================================================== */
+
+include "constants.kuhul"
+
+⟁ Pop ⟁
+  bind π = 3.141592653589793
+  probe geometry
+
+⟁ Wo ⟁
+  bind radius = 8
+  bind area = π * radius * radius
+
+⟁ Yax ⟁
+  resolve provider = geometry.compute
+
+⟁ Sek ⟁
+  dispatch provider(area)
+
+⟁ Ch'en ⟁
+  collect_status result
+
+⟁ Xul ⟁
+  commit result

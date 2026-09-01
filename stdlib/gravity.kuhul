@@ -1,0 +1,34 @@
+/* ========================================================
+   gravity.kuhul — gravity / field physics semantics.
+   Backend-independent: reusable across CPU, GLSL, HLSL,
+   simulation, SVG-3D tensor geometry, and SCXQ2.
+   Depends on: geometry.kuhul (transitively pi, functions,
+   constants, core)
+   ======================================================== */
+
+include "geometry.kuhul"
+
+⟁ Pop ⟁
+  bind G = 9.80665
+  bind mass
+  bind position
+  bind radius
+
+⟁ Wo ⟁
+  bind distance
+  bind field
+  bind potential
+
+⟁ Yax ⟁
+  resolve gravity.field
+  resolve gravity.acceleration
+
+⟁ Sek ⟁
+  dispatch gravity.solve
+
+⟁ Ch'en ⟁
+  collect_status field
+  collect_status acceleration
+
+⟁ Xul ⟁
+  commit gravity.state

@@ -1,0 +1,30 @@
+/* ========================================================
+   image.kuhul — K'UHUL Standard Library
+   Depends on: functions.kuhul
+   ======================================================== */
+
+include "functions.kuhul"
+
+⟁ Pop ⟁
+  bind pixel
+  bind width
+  bind height
+  bind channel
+  bind filter()
+
+⟁ Wo ⟁
+  bind color_space
+  bind stride
+
+⟁ Yax ⟁
+  resolve image.convolve
+  resolve image.transform
+
+⟁ Sek ⟁
+  dispatch image.compute
+
+⟁ Ch'en ⟁
+  collect_status image
+
+⟁ Xul ⟁
+  commit image.state

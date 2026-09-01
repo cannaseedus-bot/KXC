@@ -1,0 +1,490 @@
+{
+  "protocol": "kast/1",
+  "registry_hash": "44d47c88ead5d02c2a92b704b8f3f4923e15877b80c70d0367bb579d639b3b53",
+  "source_kind": "khl",
+  "source_id": "constants.kuhul",
+  "entry_node_id": "n0",
+  "nodes": [
+    {
+      "id": "n0",
+      "kind": "bind",
+      "fold": "Pop",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "folds",
+      "type": "constant",
+      "operands": [
+        "folds"
+      ],
+      "attributes": {
+        "value": "Pop Wo Yax Sek Ch'en Xul"
+      }
+    },
+    {
+      "id": "n1",
+      "kind": "bind",
+      "fold": "Pop",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "lanes",
+      "type": "constant",
+      "operands": [
+        "lanes"
+      ],
+      "attributes": {
+        "value": "config compute control output driver"
+      }
+    },
+    {
+      "id": "n2",
+      "kind": "bind",
+      "fold": "Pop",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "types",
+      "type": "constant",
+      "operands": [
+        "types"
+      ],
+      "attributes": {
+        "value": "constant operator_call control_flow return_value expression manifest_ref driver_glyph"
+      }
+    },
+    {
+      "id": "n3",
+      "kind": "bind",
+      "fold": "Wo",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "glyphs",
+      "type": "constant",
+      "operands": [
+        "glyphs"
+      ],
+      "attributes": {
+        "value": "bind probe resolve dispatch collect_status commit call yield"
+      }
+    },
+    {
+      "id": "n4",
+      "kind": "bind",
+      "fold": "Wo",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "opcodes",
+      "type": "constant",
+      "operands": [
+        "opcodes"
+      ],
+      "attributes": {
+        "value": "BIND PROBE RESOLVE DISPATCH COLLECT COMMIT CALL YIELD GLYPH STMT"
+      }
+    },
+    {
+      "id": "n5",
+      "kind": "bind",
+      "fold": "Wo",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "contracts",
+      "type": "constant",
+      "operands": [
+        "contracts"
+      ],
+      "attributes": {
+        "value": "driver abi requires capabilities phase_hooks provider resources hash"
+      }
+    },
+    {
+      "id": "n6",
+      "kind": "call",
+      "fold": "Yax",
+      "lane": "compute",
+      "glyph": "resolve",
+      "opcode": "RESOLVE",
+      "symbol": "capability.semantic",
+      "type": "operator_call",
+      "operands": [],
+      "attributes": {
+        "result": ""
+      }
+    },
+    {
+      "id": "n7",
+      "kind": "call",
+      "fold": "Yax",
+      "lane": "compute",
+      "glyph": "resolve",
+      "opcode": "RESOLVE",
+      "symbol": "provider.registry",
+      "type": "operator_call",
+      "operands": [],
+      "attributes": {
+        "result": ""
+      }
+    },
+    {
+      "id": "n8",
+      "kind": "call",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "dispatch",
+      "opcode": "DISPATCH",
+      "symbol": "core.admit",
+      "type": "operator_call",
+      "operands": [],
+      "attributes": {
+        "result": ""
+      }
+    },
+    {
+      "id": "n9",
+      "kind": "call",
+      "fold": "Ch'en",
+      "lane": "compute",
+      "glyph": "collect_status",
+      "opcode": "COLLECT",
+      "symbol": "contract",
+      "type": "operator_call",
+      "operands": [],
+      "attributes": {
+        "result": ""
+      }
+    },
+    {
+      "id": "n10",
+      "kind": "call",
+      "fold": "Ch'en",
+      "lane": "compute",
+      "glyph": "collect_status",
+      "opcode": "COLLECT",
+      "symbol": "registry",
+      "type": "operator_call",
+      "operands": [],
+      "attributes": {
+        "result": ""
+      }
+    },
+    {
+      "id": "n11",
+      "kind": "call",
+      "fold": "Xul",
+      "lane": "compute",
+      "glyph": "commit",
+      "opcode": "COMMIT",
+      "symbol": "core.state",
+      "type": "operator_call",
+      "operands": [],
+      "attributes": {
+        "result": ""
+      }
+    },
+    {
+      "id": "n12",
+      "kind": "bind",
+      "fold": "Pop",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "e",
+      "type": "constant",
+      "operands": [
+        "e"
+      ],
+      "attributes": {
+        "value": "2.718281828459045"
+      }
+    },
+    {
+      "id": "n13",
+      "kind": "bind",
+      "fold": "Pop",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "tau",
+      "type": "constant",
+      "operands": [
+        "tau"
+      ],
+      "attributes": {
+        "value": "6.283185307179586"
+      }
+    },
+    {
+      "id": "n14",
+      "kind": "bind",
+      "fold": "Pop",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "phi",
+      "type": "constant",
+      "operands": [
+        "phi"
+      ],
+      "attributes": {
+        "value": "1.618033988749895"
+      }
+    },
+    {
+      "id": "n15",
+      "kind": "bind",
+      "fold": "Wo",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "speed_of_light",
+      "type": "constant",
+      "operands": [
+        "speed_of_light"
+      ],
+      "attributes": {
+        "value": "299792458"
+      }
+    },
+    {
+      "id": "n16",
+      "kind": "bind",
+      "fold": "Wo",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "planck",
+      "type": "constant",
+      "operands": [
+        "planck"
+      ],
+      "attributes": {
+        "value": "6.62607015e-34"
+      }
+    },
+    {
+      "id": "n17",
+      "kind": "bind",
+      "fold": "Wo",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "avogadro",
+      "type": "constant",
+      "operands": [
+        "avogadro"
+      ],
+      "attributes": {
+        "value": "6.02214076e23"
+      }
+    },
+    {
+      "id": "n18",
+      "kind": "call",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "dispatch",
+      "opcode": "DISPATCH",
+      "symbol": "constants.resolve",
+      "type": "operator_call",
+      "operands": [],
+      "attributes": {
+        "result": ""
+      }
+    },
+    {
+      "id": "n19",
+      "kind": "call",
+      "fold": "Xul",
+      "lane": "compute",
+      "glyph": "commit",
+      "opcode": "COMMIT",
+      "symbol": "constants.state",
+      "type": "operator_call",
+      "operands": [],
+      "attributes": {
+        "result": ""
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e0",
+      "from": "n0",
+      "to": "n1",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 0
+    },
+    {
+      "id": "e1",
+      "from": "n1",
+      "to": "n2",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 1
+    },
+    {
+      "id": "e2",
+      "from": "n2",
+      "to": "n3",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 2
+    },
+    {
+      "id": "e3",
+      "from": "n3",
+      "to": "n4",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 3
+    },
+    {
+      "id": "e4",
+      "from": "n4",
+      "to": "n5",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 4
+    },
+    {
+      "id": "e5",
+      "from": "n5",
+      "to": "n6",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 5
+    },
+    {
+      "id": "e6",
+      "from": "n6",
+      "to": "n7",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 6
+    },
+    {
+      "id": "e7",
+      "from": "n7",
+      "to": "n8",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 7
+    },
+    {
+      "id": "e8",
+      "from": "n8",
+      "to": "n9",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 8
+    },
+    {
+      "id": "e9",
+      "from": "n9",
+      "to": "n10",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 9
+    },
+    {
+      "id": "e10",
+      "from": "n10",
+      "to": "n11",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 10
+    },
+    {
+      "id": "e11",
+      "from": "n11",
+      "to": "n12",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 11
+    },
+    {
+      "id": "e12",
+      "from": "n12",
+      "to": "n13",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 12
+    },
+    {
+      "id": "e13",
+      "from": "n13",
+      "to": "n14",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 13
+    },
+    {
+      "id": "e14",
+      "from": "n14",
+      "to": "n15",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 14
+    },
+    {
+      "id": "e15",
+      "from": "n15",
+      "to": "n16",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 15
+    },
+    {
+      "id": "e16",
+      "from": "n16",
+      "to": "n17",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 16
+    },
+    {
+      "id": "e17",
+      "from": "n17",
+      "to": "n18",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 17
+    },
+    {
+      "id": "e18",
+      "from": "n18",
+      "to": "n19",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 18
+    }
+  ],
+  "semantic_hash": "d377afcbe3b19929c1ddf1ce1f1e13e9c96695c0cc00f625919fba198467b34e",
+  "@driver": {
+    "@abi": 1,
+    "@requires": {
+      "kuhul": ">= 1.0",
+      "khl_abi": 1,
+      "scxq2": ">= 2.0"
+    },
+    "@capabilities": [
+      "tensor.map"
+    ],
+    "@phase_hooks": {
+      "Sek": "dispatch",
+      "Ch'en": "collect_status",
+      "Xul": "commit_tensor_state"
+    },
+    "@provider": "constants",
+    "@resources": [],
+    "@hash": "d377afcbe3b19929c1ddf1ce1f1e13e9c96695c0cc00f625919fba198467b34e"
+  },
+  "includes": [
+    "core.kuhul"
+  ]
+}

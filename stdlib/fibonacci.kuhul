@@ -1,0 +1,33 @@
+/* ========================================================
+   fibonacci.kuhul — golden-ratio geometry semantics.
+   Not merely "compute Fibonacci numbers" — φ, F(n),
+   golden_ratio(), golden_spiral(), golden_rectangle(),
+   fibonacci_lattice() as geometric concepts.
+   Depends on: functions.kuhul
+   ======================================================== */
+
+include "functions.kuhul"
+
+⟁ Pop ⟁
+  bind φ = 1.618033988749895
+  bind F(0) = 0
+  bind F(1) = 1
+
+⟁ Wo ⟁
+  bind golden_ratio()
+  bind golden_spiral()
+  bind golden_rectangle()
+  bind fibonacci_lattice()
+
+⟁ Yax ⟁
+  resolve fibonacci.nth
+  resolve tiling.lattice
+
+⟁ Sek ⟁
+  dispatch fibonacci.compute
+
+⟁ Ch'en ⟁
+  collect_status sequence
+
+⟁ Xul ⟁
+  commit fibonacci.state

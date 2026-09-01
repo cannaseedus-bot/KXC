@@ -1,0 +1,31 @@
+/* ========================================================
+   colors.kuhul — K'UHUL Standard Library
+   Depends on: functions.kuhul
+   ======================================================== */
+
+include "functions.kuhul"
+
+⟁ Pop ⟁
+  bind rgb
+  bind hsl
+  bind hsv
+  bind hex
+  bind alpha
+  bind blend()
+
+⟁ Wo ⟁
+  bind color_space
+  bind gamma
+
+⟁ Yax ⟁
+  resolve color.convert
+  resolve color.blend
+
+⟁ Sek ⟁
+  dispatch color.compute
+
+⟁ Ch'en ⟁
+  collect_status color
+
+⟁ Xul ⟁
+  commit color.state

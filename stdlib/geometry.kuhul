@@ -1,0 +1,32 @@
+/* ========================================================
+   geometry.kuhul — geometry / spatial semantics
+   Depends on: functions.kuhul (transitively pi, constants, core)
+   ======================================================== */
+
+include "functions.kuhul"
+
+⟁ Pop ⟁
+  bind point
+  bind line
+  bind plane
+  bind circle
+  bind sphere
+
+⟁ Wo ⟁
+  bind distance
+  bind angle
+  bind area
+  bind volume
+
+⟁ Yax ⟁
+  resolve geometry.distance
+  resolve geometry.intersect
+
+⟁ Sek ⟁
+  dispatch geometry.compute
+
+⟁ Ch'en ⟁
+  collect_status geometry
+
+⟁ Xul ⟁
+  commit geometry.state

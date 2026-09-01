@@ -1,0 +1,22 @@
+/* ========================================================
+   constants.kuhul — universal constants
+   Depends on: core.kuhul
+   ======================================================== */
+
+include "core.kuhul"
+
+⟁ Pop ⟁
+  bind e = 2.718281828459045
+  bind tau = 6.283185307179586
+  bind phi = 1.618033988749895
+
+⟁ Wo ⟁
+  bind speed_of_light = 299792458
+  bind planck = 6.62607015e-34
+  bind avogadro = 6.02214076e23
+
+⟁ Sek ⟁
+  dispatch constants.resolve
+
+⟁ Xul ⟁
+  commit constants.state

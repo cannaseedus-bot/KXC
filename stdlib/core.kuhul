@@ -1,0 +1,34 @@
+/* ========================================================
+   core.kuhul — K'UHUL Standard Library core
+
+   The universally available semantic foundation that every
+   library module builds upon: folds, nodes, lanes, glyphs,
+   opcodes, contracts, providers, types.
+
+   Compile:  python tools/khlc.py --provider core stdlib/core.kuhul
+   Admit:    python tools/kson_validate.py stdlib/core.kson
+   ======================================================== */
+
+⟁ Pop ⟁
+  bind folds = Pop Wo Yax Sek Ch'en Xul
+  bind lanes = config compute control output driver
+  bind types = constant operator_call control_flow return_value expression manifest_ref driver_glyph
+
+⟁ Wo ⟁
+  bind glyphs = bind probe resolve dispatch collect_status commit call yield
+  bind opcodes = BIND PROBE RESOLVE DISPATCH COLLECT COMMIT CALL YIELD GLYPH STMT
+  bind contracts = driver abi requires capabilities phase_hooks provider resources hash
+
+⟁ Yax ⟁
+  resolve capability.semantic
+  resolve provider.registry
+
+⟁ Sek ⟁
+  dispatch core.admit
+
+⟁ Ch'en ⟁
+  collect_status contract
+  collect_status registry
+
+⟁ Xul ⟁
+  commit core.state

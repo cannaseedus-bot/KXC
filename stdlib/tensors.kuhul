@@ -1,0 +1,32 @@
+/* ========================================================
+   tensors.kuhul — K'UHUL Standard Library
+   Depends on: matrices.kuhul
+   ======================================================== */
+
+include "matrices.kuhul"
+
+⟁ Pop ⟁
+  bind tensor_0d
+  bind tensor_1d
+  bind tensor_2d
+  bind tensor_3d
+  bind tensor_4d
+  bind reshape()
+
+⟁ Wo ⟁
+  bind dtype
+  bind strides
+  bind contiguity
+
+⟁ Yax ⟁
+  resolve tensor.contract
+  resolve tensor.transpose
+
+⟁ Sek ⟁
+  dispatch tensor.compute
+
+⟁ Ch'en ⟁
+  collect_status tensor
+
+⟁ Xul ⟁
+  commit tensor.state

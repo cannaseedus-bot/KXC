@@ -1,0 +1,29 @@
+/* ========================================================
+   hlsl.kuhul — K'UHUL Standard Library
+   Depends on: gravity.kuhul
+   ======================================================== */
+
+include "gravity.kuhul"
+
+⟁ Pop ⟁
+  bind provider = "d3d11"
+  bind api = "HLSL"
+  bind probe provider
+
+⟁ Wo ⟁
+  bind shader.source
+  bind uniforms
+  bind buffers
+
+⟁ Yax ⟁
+  resolve capability.shader.compile
+  resolve capability.shader.dispatch
+
+⟁ Sek ⟁
+  dispatch shader.compile
+
+⟁ Ch'en ⟁
+  collect_status shader
+
+⟁ Xul ⟁
+  commit shader.result

@@ -1,0 +1,39 @@
+/* ========================================================
+   functions.kuhul — reusable backend-independent semantic
+   functions. Does not care whether they run on CPU, OpenGL,
+   HLSL, SIMD, GPU, or an AI provider — the provider decides.
+   Depends on: pi.kuhul
+   ======================================================== */
+
+include "pi.kuhul"
+
+⟁ Pop ⟁
+  bind length()
+  bind normalize()
+  bind clamp()
+  bind lerp()
+  bind dot()
+  bind cross()
+  bind sin()
+  bind cos()
+  bind sqrt()
+  bind abs()
+  bind min()
+  bind max()
+
+⟁ Wo ⟁
+  bind scalar_functions
+  bind vector_functions
+  bind geometric_functions
+
+⟁ Yax ⟁
+  resolve capability.function.dispatch
+
+⟁ Sek ⟁
+  dispatch functions.evaluate
+
+⟁ Ch'en ⟁
+  collect_status result
+
+⟁ Xul ⟁
+  commit functions.state

@@ -1,0 +1,28 @@
+/* ========================================================
+   time.kuhul — K'UHUL Standard Library
+   Depends on: core.kuhul
+   ======================================================== */
+
+include "core.kuhul"
+
+⟁ Pop ⟁
+  bind now
+  bind delta
+  bind tick
+  bind timestamp
+
+⟁ Wo ⟁
+  bind timebase
+  bind resolution
+
+⟁ Yax ⟁
+  resolve time.measure
+
+⟁ Sek ⟁
+  dispatch time.compute
+
+⟁ Ch'en ⟁
+  collect_status time
+
+⟁ Xul ⟁
+  commit time.state

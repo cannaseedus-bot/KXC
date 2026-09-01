@@ -1,0 +1,30 @@
+/* ========================================================
+   statistics.kuhul — K'UHUL Standard Library
+   Depends on: functions.kuhul
+   ======================================================== */
+
+include "functions.kuhul"
+
+⟁ Pop ⟁
+  bind mean()
+  bind median()
+  bind variance()
+  bind stddev()
+  bind correlation()
+
+⟁ Wo ⟁
+  bind sample
+  bind population
+  bind distribution
+
+⟁ Yax ⟁
+  resolve stats.aggregate
+
+⟁ Sek ⟁
+  dispatch stats.compute
+
+⟁ Ch'en ⟁
+  collect_status stats
+
+⟁ Xul ⟁
+  commit stats.state

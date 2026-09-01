@@ -1,0 +1,32 @@
+/* ========================================================
+   vectors.kuhul — K'UHUL Standard Library
+   Depends on: functions.kuhul
+   ======================================================== */
+
+include "functions.kuhul"
+
+⟁ Pop ⟁
+  bind vector2
+  bind vector3
+  bind vector4
+  bind magnitude()
+  bind normalize()
+  bind dot()
+  bind cross()
+
+⟁ Wo ⟁
+  bind basis
+  bind components
+
+⟁ Yax ⟁
+  resolve vector.add
+  resolve vector.scale
+
+⟁ Sek ⟁
+  dispatch vector.compute
+
+⟁ Ch'en ⟁
+  collect_status vector
+
+⟁ Xul ⟁
+  commit vector.state

@@ -1,0 +1,10 @@
+(* semantic_cube.kuhul — canonical semantic-cube vocabulary *)
+
+semantic_cube.faces = [Phi, Fold, Gram, Geodesic, Projection, Entropy]
+semantic_cube.tensor = [6, 1024, 1024, 4]
+semantic_cube.backend = d3d11_cs5
+semantic_cube.shader = "SemanticCubeShader"
+
+(* SafeTensors enters through the existing reader/xshard bridge. *)
+semantic_cube.input = safetensors -> xshard -> scxq2 -> d3d11
+semantic_cube.operations = [load, bind, evolve, project_sh, checkpoint]

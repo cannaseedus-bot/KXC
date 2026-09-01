@@ -1,0 +1,27 @@
+/* ========================================================
+   random.kuhul — K'UHUL Standard Library
+   Depends on: functions.kuhul
+   ======================================================== */
+
+include "functions.kuhul"
+
+⟁ Pop ⟁
+  bind seed
+  bind uniform()
+  bind normal()
+  bind shuffle()
+
+⟁ Wo ⟁
+  bind entropy_source
+
+⟁ Yax ⟁
+  resolve random.draw
+
+⟁ Sek ⟁
+  dispatch random.compute
+
+⟁ Ch'en ⟁
+  collect_status random
+
+⟁ Xul ⟁
+  commit random.state
