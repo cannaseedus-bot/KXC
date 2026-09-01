@@ -1,0 +1,5 @@
+[Pop PiCompute]
+  [Muwan dispatch 64 1 1]
+  [Sek needsMatMul true]
+  [Sek needsPhaseMatch true]
+[Xul]
