@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="urn:kuhul:klsl:shader-manifest:v1"
+           xmlns="urn:kuhul:klsl:shader-manifest:v1"
+           elementFormDefault="qualified"
+           attributeFormDefault="unqualified">
+
+  <xs:annotation>
+    <xs:documentation>
+      XML contract for KLSL shader manifest documents equivalent to @shader_language,
+      @target_backends, and @shaders blocks in .kuhul shader sources.
+    </xs:documentation>
+  </xs:annotation>
+
+  <xs:element name="shaderManifest" type="ShaderManifestType"/>
+
+  <xs:complexType name="ShaderManifestType">
+    <xs:sequence>
+      <xs:element name="targetBackend" type="BackendType" minOccurs="1" maxOccurs="unbounded"/>
+      <xs:element name="shader" type="ShaderType" minOccurs="1" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="kind" type="xs:string" fixed="kuhul.klsl.shader-manifest.v1"/>
+    <xs:attribute name="language" type="ShaderLanguageType" use="required"/>
+  </xs:complexType>
+
+  <xs:simpleType name="ShaderLanguageType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="wgsl"/>
+      <xs:enumeration value="hlsl"/>
+      <xs:enumeration value="xjsl"/>
+      <xs:enumeration value="klsl"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="BackendType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="wgpu"/>
+      <xs:enumeration value="webgpu"/>
+      <xs:enumeration value="d3d11"/>
+      <xs:enumeration value="d3d12"/>
+      <xs:enumeration value="cpu"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:complexType name="ShaderType">
+    <xs:sequence>
+      <xs:element name="input" type="BindingType" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="output" type="BindingType" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="uniform" type="UniformType" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="kernel" type="KernelType" minOccurs="1"/>
+    </xs:sequence>
+    <xs:attribute name="name" type="xs:NCName" use="required"/>
+    <xs:attribute name="type" type="ShaderStageType" use="required"/>
+    <xs:attribute name="workgroup" type="WorkgroupType"/>
+  </xs:complexType>
+
+  <xs:simpleType name="ShaderStageType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="compute"/>
+      <xs:enumeration value="vertex"/>
+      <xs:enumeration value="fragment"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="WorkgroupType">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="\d+,\d+,\d+"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:complexType name="BindingType">
+    <xs:attribute name="name" type="xs:NCName" use="required"/>
+    <xs:attribute name="type" type="ValueType" use="required"/>
+    <xs:attribute name="layout" type="BindingLayoutType" use="required"/>
+    <xs:attribute name="shape" type="ShapeList"/>
+  </xs:complexType>
+
+  <xs:simpleType name="BindingLayoutType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="read"/>
+      <xs:enumeration value="write"/>
+      <xs:enumeration value="read_write"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:complexType name="UniformType">
+    <xs:attribute name="name" type="xs:NCName" use="required"/>
+    <xs:attribute name="type" type="ValueType" use="required"/>
+  </xs:complexType>
+
+  <xs:simpleType name="ValueType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="f32"/>
+      <xs:enumeration value="i32"/>
+      <xs:enumeration value="u32"/>
+      <xs:enumeration value="vec2&lt;f32&gt;"/>
+      <xs:enumeration value="vec3&lt;f32&gt;"/>
+      <xs:enumeration value="vec4&lt;f32&gt;"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="ShapeList">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="([A-Za-z_][A-Za-z0-9_]*|\d+)(,([A-Za-z_][A-Za-z0-9_]*|\d+))*"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:complexType name="KernelType" mixed="true">
+    <xs:sequence>
+      <xs:any minOccurs="0" maxOccurs="unbounded" processContents="skip"/>
+    </xs:sequence>
+  </xs:complexType>
+</xs:schema>

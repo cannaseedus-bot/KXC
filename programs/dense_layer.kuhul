@@ -1,0 +1,4 @@
+[Pop DenseLayer]
+  [Muwan dispatch 64 16 1]
+  [Sek needsMatMul true]
+[Xul]

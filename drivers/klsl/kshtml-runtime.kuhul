@@ -1,0 +1,917 @@
+(*===================================================================*)
+(* KSHTML - K'UHUL XHTML COMPILER/PARSER RUNTIME                    *)
+(* Pure K'UHUL Implementation - Version 2.0                         *)
+(*===================================================================*)
+
+(*-------------------------------------------------------------------*)
+(* PART I: CORE PARSER INFRASTRUCTURE                                *)
+(*-------------------------------------------------------------------*)
+
+[Pop kshtml_core]
+  [Sek log "🌐 KSHTML Parser Runtime Initializing"]
+
+  // Token types for XHTML parsing
+  [Tensor token_types = GeometricTensor({
+      types: [
+          DOCTYPE: "DOCTYPE",
+          OPEN_TAG: "OPEN_TAG",
+          CLOSE_TAG: "CLOSE_TAG",
+          SELF_CLOSING_TAG: "SELF_CLOSING_TAG",
+          TEXT: "TEXT",
+          COMMENT: "COMMENT",
+          CDATA: "CDATA",
+          PI: "PI",  // Processing Instruction
+          ATTRIBUTE_NAME: "ATTRIBUTE_NAME",
+          ATTRIBUTE_VALUE: "ATTRIBUTE_VALUE",
+          WHITESPACE: "WHITESPACE",
+          EOF: "EOF"
+      ],
+
+      // Geometric token relationships
+      relationships: {
+          nesting: (⤒) hierarchical,
+          sequence: (⟿) linear,
+          attributes: (⊗) key_value
+      }
+  })]
+
+  // Parser state with geometric tracking
+  [Tensor parser_state = GeometricTensor({
+      position: 0,
+      line: 1,
+      column: 1,
+
+      stack: [],  // Element stack for nesting validation
+      namespaces: {},  // XML namespace registry
+
+      // Error tracking
+      errors: [],
+      warnings: [],
+
+      // Performance metrics
+      metrics: {
+          tokens_processed: 0,
+          parsing_time: 0ms,
+          memory_usage: 0B
+      },
+
+      // Geometric state tracking
+      geometry: {
+          path: (⟿) current: [],
+          depth: (⤒) measure: 0,
+          complexity: (⊗) compute: 0
+      }
+  })]
+
+  [Sek log "✅ Core parser infrastructure initialized"]
+[Xul]
+
+(*-------------------------------------------------------------------*)
+(* PART II: LEXICAL ANALYZER (TOKENIZER)                            *)
+(*-------------------------------------------------------------------*)
+
+[Pop kshtml_lexer]
+  [Sek log "🔤 Initializing KSHTML Lexical Analyzer"]
+
+  // Character classes with geometric classification
+  [Tensor char_classes = GeometricTensor({
+      letters: [A-Za-z],
+      digits: [0-9],
+      whitespace: [ \t\n\r],
+      punctuation: [<>/="'?!],
+
+      // Geometric character relationships
+      similarity: (∼) {
+          'A'..'Z': uppercase_group,
+          'a'..'z': lowercase_group,
+          '0'..'9': numeric_group
+      }
+  })]
+
+  // Lexer with geometric state machine
+  [Pop tokenize]
+    [Wo input_string]→[Ch'en input]
+
+    [Sek let tokens = []]
+    [Sek let position = 0]
+    [Sek let length = len(input)]
+
+    [Sek while position < length
+       do: [Sek let char = input[position]]
+
+            // Skip whitespace but track it
+            [Yax is_whitespace(char)]→[Sek if]→[then
+               [Sek let ws_start = position]
+               [Sek while position < length and is_whitespace(input[position])
+                  do: [Sek position = position + 1]
+                  Xul]
+               [Sek tokens.append({
+                   type: WHITESPACE,
+                   value: input[ws_start:position],
+                   position: ws_start
+               })]
+            ]
+
+            // Handle DOCTYPE declaration
+            [Yax (char == '<' and input[position:position+9] == "<!DOCTYPE")]→[Sek if]→[then
+               [Sek let doctype_start = position]
+               [Sek while position < length and input[position] != '>'
+                  do: [Sek position = position + 1]
+                  Xul]
+               [Sek position = position + 1]  // Skip '>'
+               [Sek tokens.append({
+                   type: DOCTYPE,
+                   value: input[doctype_start:position],
+                   position: doctype_start
+               })]
+            ]
+
+            // Handle comments
+            [Yax (char == '<' and input[position:position+4] == "<!--")]→[Sek if]→[then
+               [Sek let comment_start = position]
+               [Sek while position < length and input[position:position+3] != "-->"
+                  do: [Sek position = position + 1]
+                  Xul]
+               [Sek position = position + 3]  // Skip '-->'
+               [Sek tokens.append({
+                   type: COMMENT,
+                   value: input[comment_start:position],
+                   position: comment_start
+               })]
+            ]
+
+            // Handle CDATA sections
+            [Yax (char == '<' and input[position:position+9] == "<![CDATA[")]→[Sek if]→[then
+               [Sek let cdata_start = position]
+               [Sek while position < length and input[position:position+3] != "]]>"
+                  do: [Sek position = position + 1]
+                  Xul]
+               [Sek position = position + 3]  // Skip ']]>'
+               [Sek tokens.append({
+                   type: CDATA,
+                   value: input[cdata_start:position],
+                   position: cdata_start
+               })]
+            ]
+
+            // Handle processing instructions
+            [Yax (char == '<' and input[position+1] == '?')]→[Sek if]→[then
+               [Sek let pi_start = position]
+               [Sek while position < length and input[position:position+2] != "?>"
+                  do: [Sek position = position + 1]
+                  Xul]
+               [Sek position = position + 2]  // Skip '?>'
+               [Sek tokens.append({
+                   type: PI,
+                   value: input[pi_start:position],
+                   position: pi_start
+               })]
+            ]
+
+            // Handle tags
+            [Yax (char == '<')]→[Sek if]→[then
+               [Sek let tag_start = position]
+               [Sek position = position + 1]  // Skip '<'
+
+               // Check if closing tag
+               [Sek let is_closing = (input[position] == '/')]
+               [Yax is_closing]→[Sek if]→[then
+                  [Sek position = position + 1]
+               ]
+
+               // Parse tag name
+               [Sek let tag_name = ""]
+               [Sek while position < length and
+                      not is_whitespace(input[position]) and
+                      input[position] != '>' and
+                      input[position] != '/'
+                  do: [Sek tag_name = tag_name + input[position]]
+                       [Sek position = position + 1]
+                  Xul]
+
+               // Parse attributes
+               [Sek let attributes = []]
+               [Sek while position < length and input[position] != '>' and
+                      not (input[position] == '/' and input[position+1] == '>')
+                  do: [Sek // Skip whitespace
+                       [Sek while position < length and is_whitespace(input[position])
+                          do: [Sek position = position + 1]
+                          Xul]
+
+                       // Parse attribute name
+                       [Yax position < length and
+                            (is_letter(input[position]) or input[position] in ['_', ':'])]→[Sek if]→[then
+                          [Sek let attr_name = ""]
+                          [Sek while position < length and
+                                 not is_whitespace(input[position]) and
+                                 input[position] != '=' and
+                                 input[position] != '>' and
+                                 input[position] != '/'
+                             do: [Sek attr_name = attr_name + input[position]]
+                                  [Sek position = position + 1]
+                             Xul]
+
+                          // Skip whitespace before =
+                          [Sek while position < length and is_whitespace(input[position])
+                             do: [Sek position = position + 1]
+                             Xul]
+
+                          // Check for =
+                          [Yax position < length and input[position] == '=']→[Sek if]→[then
+                             [Sek position = position + 1]  // Skip '='
+
+                             // Skip whitespace after =
+                             [Sek while position < length and is_whitespace(input[position])
+                                do: [Sek position = position + 1]
+                                Xul]
+
+                             // Parse attribute value
+                             [Yax position < length and
+                                  (input[position] == '"' or input[position] == "'")]→[Sek if]→[then
+                                [Sek let quote = input[position]]
+                                [Sek position = position + 1]  // Skip opening quote
+
+                                [Sek let attr_value = ""]
+                                [Sek while position < length and input[position] != quote
+                                   do: [Sek attr_value = attr_value + input[position]]
+                                        [Sek position = position + 1]
+                                   Xul]
+
+                                [Sek position = position + 1]  // Skip closing quote
+
+                                [Sek attributes.append({
+                                    name: attr_name,
+                                    value: attr_value
+                                })]
+                             ]
+                          ]
+                       ]
+                  Xul]
+
+               // Check if self-closing
+               [Sek let is_self_closing = false]
+               [Yax position < length and input[position] == '/']→[Sek if]→[then
+                  [Sek is_self_closing = true]
+                  [Sek position = position + 1]
+               ]
+
+               // Skip '>'
+               [Yax position < length and input[position] == '>']→[Sek if]→[then
+                  [Sek position = position + 1]
+               ]
+
+               // Create token
+               [Yax is_closing]→[Sek if]→[then
+                  [Sek tokens.append({
+                      type: CLOSE_TAG,
+                      name: tag_name,
+                      position: tag_start
+                  })]
+               ]→[else
+                  [Yax is_self_closing]→[Sek if]→[then
+                     [Sek tokens.append({
+                         type: SELF_CLOSING_TAG,
+                         name: tag_name,
+                         attributes: attributes,
+                         position: tag_start
+                     })]
+                  ]→[else
+                     [Sek tokens.append({
+                         type: OPEN_TAG,
+                         name: tag_name,
+                         attributes: attributes,
+                         position: tag_start
+                     })]
+                  ]
+               ]
+            ]
+
+            // Handle text content
+            [Yax position < length]→[Sek if]→[then
+               [Sek let text_start = position]
+               [Sek while position < length and input[position] != '<'
+                  do: [Sek position = position + 1]
+                  Xul]
+               [Sek let text = input[text_start:position]]
+               [Yax text.strip() != ""]→[Sek if]→[then
+                  [Sek tokens.append({
+                      type: TEXT,
+                      value: text,
+                      position: text_start
+                  })]
+               ]
+            ]
+       Xul]
+
+    // Add EOF token
+    [Sek tokens.append({
+        type: EOF,
+        position: length
+    })]
+
+    [Sek return tokens]
+  [Xul]
+
+  // Helper functions
+  [Sek define is_whitespace(c) = c in [' ', '\t', '\n', '\r']]
+  [Sek define is_letter(c) = ('A' <= c <= 'Z') or ('a' <= c <= 'z')]
+  [Sek define is_digit(c) = '0' <= c <= '9']
+
+  [Sek log "✅ Lexical analyzer initialized"]
+[Xul]
+
+(*-------------------------------------------------------------------*)
+(* PART III: SYNTAX PARSER (AST GENERATION)                         *)
+(*-------------------------------------------------------------------*)
+
+[Pop kshtml_parser]
+  [Sek log "🌳 Initializing KSHTML Syntax Parser"]
+
+  // AST Node types with geometric structure
+  [Tensor ast_node_types = GeometricTensor({
+      types: [
+          DOCUMENT: "DOCUMENT",
+          ELEMENT: "ELEMENT",
+          TEXT_NODE: "TEXT_NODE",
+          COMMENT_NODE: "COMMENT_NODE",
+          CDATA_NODE: "CDATA_NODE",
+          PI_NODE: "PI_NODE",
+          DOCTYPE_NODE: "DOCTYPE_NODE",
+          ATTRIBUTE: "ATTRIBUTE",
+          NAMESPACE: "NAMESPACE"
+      ],
+
+      // Geometric node relationships
+      geometry: {
+          parent_child: (⤒) hierarchical,
+          sibling: (⟿) sequential,
+          attribute: (⊗) associative
+      }
+  })]
+
+  // Parser with geometric validation
+  [Pop parse]
+    [Wo tokens]→[Ch'en tokens]
+
+    [Sek let position = 0]
+    [Sek let ast = {
+        type: DOCUMENT,
+        children: [],
+        namespaces: {},
+        doctype: null
+    }]
+
+    [Sek while position < len(tokens) and tokens[position].type != EOF
+       do: [Sek let token = tokens[position]]
+
+            [Yax token.type == DOCTYPE]→[Sek if]→[then
+               [Sek ast.doctype = parse_doctype(token)]
+               [Sek position = position + 1]
+            ]
+
+            [Yax token.type == PI]→[Sek if]→[then
+               [Sek ast.children.append(parse_pi(token))]
+               [Sek position = position + 1]
+            ]
+
+            [Yax token.type == COMMENT]→[Sek if]→[then
+               [Sek ast.children.append(parse_comment(token))]
+               [Sek position = position + 1]
+            ]
+
+            [Yax token.type == OPEN_TAG]→[Sek if]→[then
+               [Sek let [element new_position] = parse_element(tokens, position)]
+               [Sek ast.children.append(element)]
+               [Sek position = new_position]
+            ]
+
+            [Yax token.type == TEXT]→[Sek if]→[then
+               [Sek ast.children.append({
+                   type: TEXT_NODE,
+                   value: token.value,
+                   position: token.position
+               })]
+               [Sek position = position + 1]
+            ]
+
+            [Yax token.type == WHITESPACE]→[Sek if]→[then
+               [Sek position = position + 1]
+            ]
+       Xul]
+
+    [Sek return ast]
+  [Xul]
+
+  [Pop parse_element]
+    [Wo tokens] [Wo start_pos]→[Ch'en [tokens pos]]
+
+    [Sek let open_token = tokens[pos]]
+    [Sek pos = pos + 1]
+
+    [Sek let element = {
+        type: ELEMENT,
+        name: open_token.name,
+        attributes: open_token.attributes,
+        children: [],
+        namespaces: extract_namespaces(open_token.attributes)
+    }]
+
+    [Sek while pos < len(tokens) and tokens[pos].type != EOF
+       do: [Sek let token = tokens[pos]]
+
+            [Yax token.type == CLOSE_TAG and token.name == element.name]→[Sek if]→[then
+               [Sek pos = pos + 1]
+               [Sek break]
+            ]
+
+            [Yax token.type == SELF_CLOSING_TAG]→[Sek if]→[then
+               [Sek element.children.append({
+                   type: ELEMENT,
+                   name: token.name,
+                   attributes: token.attributes,
+                   children: [],
+                   self_closing: true
+               })]
+               [Sek pos = pos + 1]
+            ]
+
+            [Yax token.type == OPEN_TAG]→[Sek if]→[then
+               [Sek let [child_element new_pos] = parse_element(tokens, pos)]
+               [Sek element.children.append(child_element)]
+               [Sek pos = new_pos]
+            ]
+
+            [Yax token.type == TEXT]→[Sek if]→[then
+               [Sek element.children.append({
+                   type: TEXT_NODE,
+                   value: token.value
+               })]
+               [Sek pos = pos + 1]
+            ]
+
+            [Yax token.type == COMMENT]→[Sek if]→[then
+               [Sek element.children.append(parse_comment(token))]
+               [Sek pos = pos + 1]
+            ]
+
+            [Yax token.type == CDATA]→[Sek if]→[then
+               [Sek element.children.append(parse_cdata(token))]
+               [Sek pos = pos + 1]
+            ]
+
+            [Yax token.type == WHITESPACE]→[Sek if]→[then
+               [Sek pos = pos + 1]
+            ]
+
+            [Sek else
+               [Sek parser_state.errors.append({
+                   message: "Unexpected token: " + token.type,
+                   position: token.position
+               })]
+               [Sek pos = pos + 1]
+            ]
+       Xul]
+
+    [Sek return [element pos]]
+  [Xul]
+
+  [Sek define parse_doctype(token) = { type: DOCTYPE_NODE, value: token.value, position: token.position }]
+  [Sek define parse_pi(token)      = { type: PI_NODE,      value: token.value, position: token.position }]
+  [Sek define parse_comment(token) = { type: COMMENT_NODE, value: token.value, position: token.position }]
+  [Sek define parse_cdata(token)   = { type: CDATA_NODE,   value: token.value, position: token.position }]
+
+  [Sek define extract_namespaces(attributes) = {
+      [Sek let namespaces = {}]
+      [Sek for attr in attributes
+         do: [Yax attr.name.startswith("xmlns:")]→[Sek if]→[then
+                 [Sek namespaces[attr.name[6:]] = attr.value]
+              ]
+              [Yax attr.name == "xmlns"]→[Sek if]→[then
+                 [Sek namespaces[""] = attr.value]
+              ]
+         Xul]
+      [Sek return namespaces]
+  }]
+
+  [Sek log "✅ Syntax parser initialized"]
+[Xul]
+
+(*-------------------------------------------------------------------*)
+(* PART IV: VALIDATION ENGINE (XHTML RULES)                         *)
+(*-------------------------------------------------------------------*)
+
+[Pop kshtml_validator]
+  [Sek log "✓ Initializing KSHTML Validation Engine"]
+
+  [Tensor validation_rules = GeometricTensor({
+      nesting: {
+          html: {children: [head, body], required: true},
+          head: {children: [title, meta, link, script, style], required: [title]},
+          body: {children: all_block_elements, required: false},
+          void_elements: [area, base, br, col, embed, hr, img, input, link, meta, param, source, track, wbr],
+          constraints: {
+              head_has_title:  (⊗) true,
+              body_has_content:(∼) optional,
+              proper_nesting:  (⤒) hierarchical
+          }
+      },
+      attributes: {
+          required: {
+              img:   ["src", "alt"],
+              a:     ["href"],
+              form:  ["action"],
+              input: ["type"]
+          },
+          allowed: {
+              global: ["id", "class", "style", "title", "lang", "xml:lang", "dir"],
+              event_handlers: ["onclick", "onload", "onmouseover"]
+          },
+          values: {
+              type: { input: ["text", "password", "checkbox", "radio", "submit", "button", "file"] },
+              lang: (∼) iso_language_codes,
+              dir:  ["ltr", "rtl", "auto"]
+          }
+      },
+      namespaces: {
+          required:  { html: "http://www.w3.org/1999/xhtml" },
+          well_known: {
+              xhtml:  "http://www.w3.org/1999/xhtml",
+              mathml: "http://www.w3.org/1998/Math/MathML",
+              svg:    "http://www.w3.org/2000/svg",
+              xlink:  "http://www.w3.org/1999/xlink",
+              xml:    "http://www.w3.org/XML/1998/namespace"
+          }
+      },
+      well_formed: {
+          root_element:          (≅) html,
+          proper_nesting:        (⤒) non_overlapping,
+          attribute_quotes:      (∼) required,
+          special_char_escaping: (⊗) required
+      }
+  })]
+
+  [Pop validate]
+    [Wo ast]→[Ch'en ast]
+    [Sek let errors = []]
+    [Sek let warnings = []]
+
+    [Yax len(ast.children) == 0]→[Sek if]→[then
+       [Sek errors.append({ severity: error, message: "Document has no elements", position: 0 })]
+    ]→[else
+       [Sek let root = ast.children[0]]
+       [Yax root.name != "html"]→[Sek if]→[then
+          [Sek errors.append({ severity: error, message: "Root element must be <html>", position: root.position })]
+       ]
+    ]
+
+    [Sek validate_element(ast.children[0], errors, warnings)]
+    [Sek validate_namespaces(ast, errors, warnings)]
+    [Sek return {errors: errors, warnings: warnings, valid: len(errors) == 0}]
+  [Xul]
+
+  [Pop validate_element]
+    [Wo element] [Wo errors] [Wo warnings]→[Ch'en]
+
+    [Yax element.name in validation_rules.nesting.void_elements]→[Sek if]→[then
+       [Yax not element.self_closing and len(element.children) > 0]→[Sek if]→[then
+          [Sek errors.append({ severity: error, message: "Void element <" + element.name + "> cannot have content", position: element.position })]
+       ]
+    ]
+
+    [Yax element.name in validation_rules.attributes.required]→[Sek if]→[then
+       [Sek let required = validation_rules.attributes.required[element.name]]
+       [Sek for attr_name in required
+          do: [Sek let found = false]
+               [Sek for attr in element.attributes
+                  do: [Yax attr.name == attr_name]→[Sek if]→[then [Sek found = true] [Sek break]]
+                  Xul]
+               [Yax not found]→[Sek if]→[then
+                  [Sek errors.append({ severity: error, message: "Element <" + element.name + "> missing required attribute: " + attr_name, position: element.position })]
+               ]
+          Xul]
+    ]
+
+    [Sek for child in element.children
+       do: [Yax child.type == ELEMENT]→[Sek if]→[then [Sek validate_element(child, errors, warnings)]]
+       Xul]
+  [Xul]
+
+  [Pop validate_namespaces]
+    [Wo ast] [Wo errors] [Wo warnings]→[Ch'en]
+    [Sek let html_element = find_element(ast, "html")]
+    [Yax html_element]→[Sek if]→[then
+       [Sek let has_xhtml_ns = false]
+       [Sek for attr in html_element.attributes
+          do: [Yax attr.name == "xmlns" and attr.value == "http://www.w3.org/1999/xhtml"]→[Sek if]→[then
+                 [Sek has_xhtml_ns = true] [Sek break]
+              ]
+          Xul]
+       [Yax not has_xhtml_ns]→[Sek if]→[then
+          [Sek warnings.append({ severity: warning, message: "Missing XHTML namespace declaration on <html>", position: html_element.position })]
+       ]
+    ]
+  [Xul]
+
+  [Sek log "✅ Validation engine initialized"]
+[Xul]
+
+(*-------------------------------------------------------------------*)
+(* PART V: XHTML COMPILER (AST → XHTML)                             *)
+(*-------------------------------------------------------------------*)
+
+[Pop kshtml_compiler]
+  [Sek log "⚙️ Initializing KSHTML Compiler"]
+
+  [Tensor compiler_config = GeometricTensor({
+      output: {
+          format:          "xhtml",
+          indent:          2,
+          newline:         "\n",
+          quote_char:      "\"",
+          self_closing:    " />",
+          encoding:        "UTF-8",
+          xml_declaration: true,
+          doctype:         true
+      },
+      formatting: {
+          indent_structure:    (⤒) hierarchical,
+          line_wrapping:       (⟿) sequential,
+          attribute_sorting:   (∼) alphabetical
+      }
+  })]
+
+  [Pop compile]
+    [Wo ast] [Wo config]→[Ch'en output]
+    [Sek let result = []]
+
+    [Yax config.xml_declaration]→[Sek if]→[then
+       [Sek result.append("<?xml version=\"1.0\" encoding=\"" + config.encoding + "\"?>")]
+    ]
+
+    [Yax config.doctype]→[Sek if]→[then
+       [Yax ast.doctype]→[Sek if]→[then
+          [Sek result.append(ast.doctype.value)]
+       ]→[else
+          [Sek result.append("<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">")]
+       ]
+    ]
+
+    [Sek for child in ast.children
+       do: [Sek result.append(compile_node(child, 0, config))]
+       Xul]
+
+    [Sek return join(result, config.newline)]
+  [Xul]
+
+  [Pop compile_node]
+    [Wo node] [Wo depth] [Wo config]→[Ch'en output]
+    [Yax node.type == ELEMENT]→[Sek if]→[then    [Sek return compile_element(node, depth, config)]]
+    [Yax node.type == TEXT_NODE]→[Sek if]→[then  [Sek return escape_text(node.value)]]
+    [Yax node.type == COMMENT_NODE]→[Sek if]→[then [Sek return "<!--" + node.value + "-->"]]
+    [Yax node.type == CDATA_NODE]→[Sek if]→[then [Sek return "<![CDATA[" + node.value + "]]>"]]
+    [Yax node.type == PI_NODE]→[Sek if]→[then    [Sek return node.value]]
+    [Sek return ""]
+  [Xul]
+
+  [Pop compile_element]
+    [Wo element] [Wo depth] [Wo config]→[Ch'en output]
+    [Sek let indent = " " * (depth * config.indent)]
+    [Sek let parts  = [indent + "<" + element.name]]
+
+    [Yax len(element.attributes) > 0]→[Sek if]→[then
+       [Yax config.formatting.attribute_sorting]→[Sek if]→[then
+          [Sek element.attributes.sort((a,b) => a.name < b.name)]
+       ]
+       [Sek for attr in element.attributes
+          do: [Sek parts.append(" " + attr.name + "=" + config.quote_char + escape_attribute(attr.value) + config.quote_char)]
+          Xul]
+    ]
+
+    [Yax element.self_closing]→[Sek if]→[then
+       [Sek parts.append(config.self_closing)]
+       [Sek return join(parts, "")]
+    ]
+
+    [Sek parts.append(">")]
+
+    [Yax len(element.children) > 0]→[Sek if]→[then
+       [Sek parts.append(config.newline)]
+       [Sek for child in element.children
+          do: [Sek parts.append(compile_node(child, depth + 1, config))]
+               [Sek parts.append(config.newline)]
+          Xul]
+       [Sek parts.append(indent)]
+    ]
+
+    [Sek parts.append("</" + element.name + ">")]
+    [Sek return join(parts, "")]
+  [Xul]
+
+  [Sek define escape_text(text) = {
+      text = replace(text, "&", "&amp;")
+      text = replace(text, "<", "&lt;")
+      text = replace(text, ">", "&gt;")
+      return text
+  }]
+
+  [Sek define escape_attribute(value) = {
+      value = replace(value, "&", "&amp;")
+      value = replace(value, "<", "&lt;")
+      value = replace(value, ">", "&gt;")
+      value = replace(value, "\"", "&quot;")
+      return value
+  }]
+
+  [Sek log "✅ Compiler initialized"]
+[Xul]
+
+(*-------------------------------------------------------------------*)
+(* PART VI: RUNTIME ENVIRONMENT                                     *)
+(*-------------------------------------------------------------------*)
+
+[Pop kshtml_runtime]
+  [Sek log "🚀 Initializing KSHTML Runtime Environment"]
+
+  [Tensor runtime_config = GeometricTensor({
+      mode:      "strict",
+      cache_ast: true,
+      validate:  true,
+      minify:    false,
+      performance: { parallel_parsing: true, lazy_evaluation: false, max_cache_size: 100 },
+      error_handling: { throw_on_error: true, log_warnings: true, recovery_mode: false }
+  })]
+
+  [Tensor ast_cache = GeometricTensor({
+      cache: {},
+      indexing: {
+          by_source:    (≅) hash_index,
+          by_structure: (∼) similarity_index,
+          by_timestamp: (⟿) time_index
+      }
+  })]
+
+  [Pop process_xhtml]
+    [Wo source] [Wo config]→[Ch'en result]
+    [Sek log "📄 Processing XHTML document"]
+
+    [Sek let source_hash = hash(source)]
+    [Yax config.cache_ast and ast_cache.cache[source_hash]]→[Sek if]→[then
+       [Sek log "📦 Using cached AST"]
+       [Sek let ast = ast_cache.cache[source_hash]]
+       [Sek return { ast: ast, output: kshtml_compiler.compile(ast, config), cached: true }]
+    ]
+
+    [Sek log "🔤 Tokenizing..."]
+    [Sek let tokens = kshtml_lexer.tokenize(source)]
+    [Sek log "✅ Tokens: " + len(tokens)]
+
+    [Sek log "🌳 Parsing..."]
+    [Sek let ast = kshtml_parser.parse(tokens)]
+    [Sek log "✅ AST generated"]
+
+    [Yax config.validate]→[Sek if]→[then
+       [Sek log "✓ Validating..."]
+       [Sek let validation = kshtml_validator.validate(ast)]
+       [Yax len(validation.errors) > 0]→[Sek if]→[then
+          [Sek for error in validation.errors do: [Sek log "   ❌ " + error.message] Xul]
+          [Yax config.error_handling.throw_on_error]→[Sek if]→[then
+             [Sek throw new Error("XHTML validation failed")]
+          ]
+       ]
+       [Yax len(validation.warnings) > 0 and config.error_handling.log_warnings]→[Sek if]→[then
+          [Sek for warning in validation.warnings do: [Sek log "   ⚠️ " + warning.message] Xul]
+       ]
+    ]
+
+    [Sek log "⚙️ Compiling..."]
+    [Yax config.minify]→[Sek if]→[then
+       [Sek config.output.indent  = 0]
+       [Sek config.output.newline = ""]
+    ]
+    [Sek let output = kshtml_compiler.compile(ast, config)]
+
+    [Yax config.cache_ast]→[Sek if]→[then
+       [Yax len(ast_cache.cache) >= config.performance.max_cache_size]→[Sek if]→[then
+          [Sek let keys = keys(ast_cache.cache)]
+          [Yax len(keys) > 0]→[Sek if]→[then [Sek delete ast_cache.cache[keys[0]]]]
+       ]
+       [Sek ast_cache.cache[source_hash] = ast]
+    ]
+
+    [Sek log "✅ Processing complete"]
+    [Sek return {
+        ast:        ast,
+        output:     output,
+        tokens:     tokens,
+        validation: validation if config.validate else null,
+        cached:     false
+    }]
+  [Xul]
+
+  [Pop print_ast]
+    [Wo ast] [Wo depth]→[Ch'en]
+    [Sek let indent = "  " * depth]
+    [Yax ast.type == DOCUMENT]→[Sek if]→[then
+       [Sek log indent + "📄 Document"]
+       [Yax ast.doctype]→[Sek if]→[then [Sek log indent + "  📜 DOCTYPE"]]
+       [Sek for child in ast.children do: [Sek print_ast(child, depth + 1)] Xul]
+    ]
+    [Yax ast.type == ELEMENT]→[Sek if]→[then
+       [Sek log indent + "🏷️ <" + ast.name + ">"]
+       [Sek for attr in ast.attributes  do: [Sek log indent + "  🔸 " + attr.name + "=" + attr.value] Xul]
+       [Sek for child in ast.children   do: [Sek print_ast(child, depth + 1)] Xul]
+    ]
+    [Yax ast.type == TEXT_NODE]→[Sek if]→[then    [Sek log indent + "📝 \"" + ast.value.strip() + "\""]]
+    [Yax ast.type == COMMENT_NODE]→[Sek if]→[then [Sek log indent + "💬 <!-- " + ast.value + " -->"]]
+    [Yax ast.type == CDATA_NODE]→[Sek if]→[then   [Sek log indent + "📦 <![CDATA[...]]>"]]
+  [Xul]
+
+  [Sek log "✅ Runtime environment initialized"]
+[Xul]
+
+(*-------------------------------------------------------------------*)
+(* PART VII: MAIN ENTRY POINT                                        *)
+(*-------------------------------------------------------------------*)
+
+[Pop kshtml_main]
+  [Sek log "=" * 60]
+  [Sek log "🌐 KSHTML — K'UHUL XHTML COMPILER/PARSER RUNTIME v2.0"]
+  [Sek log "=" * 60]
+
+  [Sek kshtml_core]
+  [Sek kshtml_lexer]
+  [Sek kshtml_parser]
+  [Sek kshtml_validator]
+  [Sek kshtml_compiler]
+  [Sek kshtml_runtime]
+
+  [Sek log "🚀 KSHTML Runtime Ready — K'UHUL reads XML reads K'UHUL"]
+
+  [Sek return {
+      parse:        kshtml_parser.parse,
+      tokenize:     kshtml_lexer.tokenize,
+      validate:     kshtml_validator.validate,
+      compile:      kshtml_compiler.compile,
+      process:      kshtml_runtime.process_xhtml,
+      print_ast:    kshtml_runtime.print_ast,
+      create_config:fn(config) = merge(runtime_config, config),
+      version:      "2.0",
+      about:        "K'UHUL XHTML Compiler/Parser — the loop is closed"
+  }]
+[Xul]
+
+(*-------------------------------------------------------------------*)
+(* PART VIII: USAGE EXAMPLES                                         *)
+(*-------------------------------------------------------------------*)
+
+[Pop kshtml_examples]
+  // Example: parse a brain-sidecar.xml via KSHTML
+  // K'UHUL parses the XML that drives K'UHUL — the loop
+  [Sek let sidecar_xhtml = read_file("brain-sidecar.xml")]
+  [Sek let runtime = kshtml_main()]
+
+  [Sek let result = runtime.process(sidecar_xhtml, {
+      mode:     "strict",
+      validate: true,
+      minify:   false
+  })]
+
+  [Sek log "✅ brain-sidecar.xml parsed by KSHTML"]
+  [Sek log "   AST nodes: " + count_ast_nodes(result.ast)]
+  [Sek log "   Valid: " + result.validation.valid]
+  [Sek runtime.print_ast(result.ast, 0)]
+[Xul]
+
+(*-------------------------------------------------------------------*)
+(* MAIN EXECUTION                                                    *)
+(*-------------------------------------------------------------------*)
+
+[Pop main]
+  [Sek log "=" * 60]
+  [Sek log "🌐 KSHTML — K'UHUL XHTML COMPILER/PARSER RUNTIME"]
+  [Sek log "XML = X-tra Machine Learning | reader.xml = active reader"]
+  [Sek log "=" * 60]
+
+  [Sek let args = get_command_line_args()]
+  [Yax len(args) > 1]→[Sek if]→[then
+     [Yax args[1] == "--file" and len(args) > 2]→[Sek if]→[then
+        [Sek let runtime = kshtml_main()]
+        [Sek let content = read_file(args[2])]
+        [Sek let result  = runtime.process(content, {mode: "strict", validate: true})]
+        [Sek log result.output]
+     ]
+     [Yax args[1] == "--sidecar"]→[Sek if]→[then
+        [Sek kshtml_examples()]
+     ]
+  ]→[else
+     [Sek kshtml_main()]
+     [Sek log "Usage: kshtml --file <file.xml> | --sidecar"]
+  ]
+[Xul]
+
+[main]
+
+(*===================================================================*)
+(* END — K'UHUL parses XML parses K'UHUL                             *)
+(* The loop: KSHTML → brain-sidecar.xml → XQuery → SCXQ2 → K'UHUL   *)
+(*===================================================================*)

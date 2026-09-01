@@ -1,0 +1,52 @@
+{
+  "tasks": [
+    {
+      "id": "topology",
+      "action": "read_topology",
+      "description": "Read semantic topology from the workspace",
+      "provider": "semantic",
+      "input": "brain2/graph.json",
+      "output": "scratch/topology_report.json",
+      "depends_on": []
+    },
+    {
+      "id": "review-drivers",
+      "action": "review",
+      "description": "Review the DAG driver header",
+      "provider": "micronaut-reviewer",
+      "file": "drivers/khanary_driver.h",
+      "depends_on": []
+    },
+    {
+      "id": "extract-todos",
+      "action": "todos",
+      "description": "Extract actionable TODOs from the coder engine",
+      "provider": "micronaut-reviewer",
+      "file": "dist/code-micronaut/src/micronaut_todo_creator.cpp",
+      "depends_on": ["review-drivers"]
+    },
+    {
+      "id": "refactor-dag",
+      "action": "refactor",
+      "description": "Suggest refactoring for the DAG runner",
+      "provider": "micronaut-reviewer",
+      "file": "tools/dag_runner.cjs",
+      "goal": "improve error handling",
+      "depends_on": ["extract-todos"]
+    },
+    {
+      "id": "generate-shim",
+      "action": "generate",
+      "description": "Generate code via code_micronaut native",
+      "provider": "code-micronaut",
+      "depends_on": ["refactor-dag"]
+    },
+    {
+      "id": "orchestrate",
+      "action": "orchestrate",
+      "description": "Supernaut orchestration pass over the DAG results",
+      "provider": "supernaut",
+      "depends_on": ["generate-shim"]
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "@axiom": "architecture.layers",
+  "@version": "1.0.0",
+  "layers": [
+    {
+      "id": "MATRIX",
+      "meaning": "Authoring / proposal space"
+    },
+    {
+      "id": "SCXQ2",
+      "meaning": "Semantic μ-op encoding"
+    },
+    {
+      "id": "SCXQ7",
+      "meaning": "Firmware + legality governor"
+    },
+    {
+      "id": "SCO/1",
+      "meaning": "Sovereign compute object"
+    },
+    {
+      "id": "CM-1",
+      "meaning": "Pre-semantic control gate"
+    },
+    {
+      "id": "IDB",
+      "meaning": "Indexed causal memory"
+    }
+  ],
+  "note": "SMCA names these layers and does not implement them."
+}

@@ -9,6 +9,8 @@
 #include "emit_wgsl.h"
 #include "emit_cpp.h"
 #include "emit_cpu.h"
+#include "emit_opencl.h"
+#include "emit_webgl2.h"
 #include "emit_manifest.h"
 
 #include <iostream>
@@ -100,16 +102,20 @@ int main(int argc, char* argv[]) {
     const std::string& kname = ir.desc.name;
     auto out = [&](const std::string& ext) { return outDir + "/" + kname + ext; };
 
-    std::string cppPath  = out(".cpp");
-    std::string hlslPath = out(".hlsl");
-    std::string wgslPath = out(".wgsl");
-    std::string cpuPath  = out(".cpu.cpp");
-    std::string smcaPath = out(".smca.json");
+    std::string cppPath    = out(".cpp");
+    std::string hlslPath   = out(".hlsl");
+    std::string wgslPath   = out(".wgsl");
+    std::string cpuPath    = out(".cpu.cpp");
+    std::string clPath     = out(".cl");
+    std::string fragPath   = out(".frag");
+    std::string smcaPath   = out(".smca.json");
 
-    if (!emit_cpp (ir, cppPath,  err)) { std::cerr << err << "\n"; return 1; }
-    if (!emit_hlsl(ir, hlslPath, err)) { std::cerr << err << "\n"; return 1; }
-    if (!emit_wgsl(ir, wgslPath, err)) { std::cerr << err << "\n"; return 1; }
-    if (!emit_cpu (ir, cpuPath,  err)) { std::cerr << err << "\n"; return 1; }
+    if (!emit_cpp    (ir, cppPath,  err)) { std::cerr << err << "\n"; return 1; }
+    if (!emit_hlsl   (ir, hlslPath, err)) { std::cerr << err << "\n"; return 1; }
+    if (!emit_wgsl   (ir, wgslPath, err)) { std::cerr << err << "\n"; return 1; }
+    if (!emit_cpu    (ir, cpuPath,  err)) { std::cerr << err << "\n"; return 1; }
+    if (!emit_opencl (ir, clPath,   err)) { std::cerr << err << "\n"; return 1; }
+    if (!emit_webgl2 (ir, fragPath, err)) { std::cerr << err << "\n"; return 1; }
     if (!emit_manifest(ir, smcaPath, err)) { std::cerr << err << "\n"; return 1; }
 
     // ── IDB: sidecar ──────────────────────────────────────────────────────────
@@ -118,6 +124,8 @@ int main(int argc, char* argv[]) {
         {fs::path(hlslPath).filename().string(), file_cid(hlslPath)},
         {fs::path(wgslPath).filename().string(), file_cid(wgslPath)},
         {fs::path(cpuPath).filename().string(),  file_cid(cpuPath)},
+        {fs::path(clPath).filename().string(),   file_cid(clPath)},
+        {fs::path(fragPath).filename().string(), file_cid(fragPath)},
         {fs::path(smcaPath).filename().string(), file_cid(smcaPath)},
     };
 
@@ -132,6 +140,8 @@ int main(int argc, char* argv[]) {
               << fs::path(hlslPath).filename().string() << " "
               << fs::path(wgslPath).filename().string() << " "
               << fs::path(cpuPath).filename().string()  << " "
+              << fs::path(clPath).filename().string()   << " "
+              << fs::path(fragPath).filename().string() << " "
               << fs::path(smcaPath).filename().string() << "\n";
     return 0;
 }

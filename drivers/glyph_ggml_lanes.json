@@ -1,0 +1,227 @@
+{
+  "@kind": "kuhul.glyph_ggml_lanes.v1",
+  "@source": {
+    "ops_summary": "C:\\Users\\canna\\.powernaut\\.llama.cpp\\docs\\ops.md",
+    "backend_tables": "C:\\Users\\canna\\.powernaut\\.llama.cpp\\docs\\ops",
+    "native_engine": "C:\\Users\\canna\\.powernaut\\tools\\Kuhul-c++\\native_glyph_engine.exe",
+    "webgpu_backend": "C:\\Users\\canna\\.powernaut\\.llama.cpp\\ggml\\src\\ggml-webgpu\\ggml-webgpu.cpp",
+    "webgpu_shader_lib": "C:\\Users\\canna\\.powernaut\\.llama.cpp\\ggml\\src\\ggml-webgpu\\ggml-webgpu-shader-lib.hpp",
+    "webgpu_wgsl_shaders": "C:\\Users\\canna\\.powernaut\\.llama.cpp\\ggml\\src\\ggml-webgpu\\wgsl-shaders"
+  },
+  "@role": "Map selected GGML compute operations into Kuhul glyph binary lanes without replacing XCFE control-flow semantics.",
+  "@rule": "XCFE decides legal node/phase/fold movement. The glyph engine executes bounded deterministic binary-lane micro-ops.",
+  "lane_classes": {
+    "scalar": {
+      "description": "Elementwise scalar/vector math lanes.",
+      "preferred_backend": "cpu",
+      "fallback": true
+    },
+    "tensor": {
+      "description": "Tensor shape, normalization, activation, and matmul lanes.",
+      "preferred_backend": "cpu",
+      "fallback": true
+    },
+    "attention": {
+      "description": "Attention-specific tensor lanes. These align with existing attention.registry.json glyphs.",
+      "preferred_backend": "cpu",
+      "fallback": true
+    },
+    "phase": {
+      "description": "Kuhul phase gate lanes. These carry execution phase, not tensor math by themselves.",
+      "preferred_backend": "cpu",
+      "fallback": true
+    }
+  },
+  "glyph_lanes": [
+    {
+      "glyph": "+",
+      "ggml_op": "ADD",
+      "kuhul_opcode": "WO_ADD",
+      "lane": "scalar",
+      "fold": "ARC",
+      "arity": 2,
+      "inputs": ["a", "b"],
+      "output": "sum",
+      "dtype": ["f32", "f16", "bf16"],
+      "ops_md_cpu": "supported",
+      "webgpu_shader": "wgsl-shaders/binary.wgsl",
+      "status": "descriptor"
+    },
+    {
+      "glyph": "-",
+      "ggml_op": "SUB",
+      "kuhul_opcode": "WO_SUB",
+      "lane": "scalar",
+      "fold": "ARC",
+      "arity": 2,
+      "inputs": ["a", "b"],
+      "output": "difference",
+      "dtype": ["f32", "f16", "bf16"],
+      "ops_md_cpu": "supported",
+      "webgpu_shader": "wgsl-shaders/binary.wgsl",
+      "status": "descriptor"
+    },
+    {
+      "glyph": "*",
+      "ggml_op": "MUL",
+      "kuhul_opcode": "WO_MUL",
+      "lane": "scalar",
+      "fold": "ARC",
+      "arity": 2,
+      "inputs": ["a", "b"],
+      "output": "product",
+      "dtype": ["f32", "f16", "bf16"],
+      "ops_md_cpu": "supported",
+      "webgpu_shader": "wgsl-shaders/binary.wgsl",
+      "status": "descriptor"
+    },
+    {
+      "glyph": "/",
+      "ggml_op": "DIV",
+      "kuhul_opcode": "WO_DIV",
+      "lane": "scalar",
+      "fold": "ARC",
+      "arity": 2,
+      "inputs": ["a", "b"],
+      "output": "quotient",
+      "dtype": ["f32", "f16", "bf16"],
+      "ops_md_cpu": "supported",
+      "webgpu_shader": "wgsl-shaders/binary.wgsl",
+      "status": "descriptor"
+    },
+    {
+      "glyph": "⨀",
+      "ggml_op": "MUL_MAT",
+      "kuhul_opcode": "WO_MATMUL",
+      "lane": "tensor",
+      "fold": "TENSOR",
+      "arity": 2,
+      "inputs": ["lhs", "rhs"],
+      "output": "matrix_product",
+      "dtype": ["f32", "f16", "bf16", "q4_0", "q8_0"],
+      "ops_md_cpu": "partial",
+      "webgpu_shader": "wgsl-shaders/mul_mat.wgsl",
+      "status": "descriptor"
+    },
+    {
+      "glyph": "⟐",
+      "ggml_op": "SOFT_MAX",
+      "kuhul_opcode": "WO_SOFTMAX",
+      "lane": "attention",
+      "fold": "TENSOR",
+      "arity": 1,
+      "inputs": ["scores"],
+      "output": "probabilities",
+      "dtype": ["f32", "f16", "bf16"],
+      "ops_md_cpu": "supported",
+      "webgpu_shader": "wgsl-shaders/soft_max.wgsl",
+      "status": "descriptor"
+    },
+    {
+      "glyph": "⌁",
+      "ggml_op": "RMS_NORM",
+      "kuhul_opcode": "WO_RMS_NORM",
+      "lane": "tensor",
+      "fold": "TENSOR",
+      "arity": 1,
+      "inputs": ["x"],
+      "output": "normalized",
+      "dtype": ["f32", "f16", "bf16"],
+      "ops_md_cpu": "supported",
+      "webgpu_shader": "wgsl-shaders/rms_norm_mul.wgsl",
+      "status": "descriptor"
+    },
+    {
+      "glyph": "⌬",
+      "ggml_op": "ROPE",
+      "kuhul_opcode": "WO_ROTARY",
+      "lane": "attention",
+      "fold": "TENSOR",
+      "arity": 2,
+      "inputs": ["q", "k"],
+      "output": "rotary_qk",
+      "dtype": ["f32", "f16", "bf16"],
+      "ops_md_cpu": "supported",
+      "webgpu_shader": "wgsl-shaders/rope.wgsl",
+      "status": "descriptor"
+    },
+    {
+      "glyph": "✦",
+      "ggml_op": "FLASH_ATTN_EXT",
+      "kuhul_opcode": "WO_FLASH_ATTN",
+      "lane": "attention",
+      "fold": "KERNEL",
+      "arity": 4,
+      "inputs": ["q", "k", "v", "mask"],
+      "output": "context",
+      "dtype": ["f32", "f16", "bf16", "q4_0", "q8_0"],
+      "ops_md_cpu": "supported",
+      "webgpu_shader": "wgsl-shaders/flash_attn.wgsl",
+      "status": "descriptor"
+    },
+    {
+      "glyph": "σ",
+      "ggml_op": "SILU",
+      "kuhul_opcode": "WO_SILU",
+      "lane": "tensor",
+      "fold": "TENSOR",
+      "arity": 1,
+      "inputs": ["x"],
+      "output": "activated",
+      "dtype": ["f32", "f16", "bf16"],
+      "ops_md_cpu": "supported",
+      "webgpu_shader": "wgsl-shaders/unary.wgsl",
+      "status": "descriptor"
+    },
+    {
+      "glyph": "Φ",
+      "ggml_op": "GELU",
+      "kuhul_opcode": "WO_GELU",
+      "lane": "tensor",
+      "fold": "TENSOR",
+      "arity": 1,
+      "inputs": ["x"],
+      "output": "activated",
+      "dtype": ["f32", "f16", "bf16"],
+      "ops_md_cpu": "supported",
+      "webgpu_shader": "wgsl-shaders/unary.wgsl",
+      "status": "descriptor"
+    },
+    {
+      "glyph": "⧉",
+      "ggml_op": "CONCAT",
+      "kuhul_opcode": "WO_CONCAT",
+      "lane": "tensor",
+      "fold": "TENSOR",
+      "arity": "n",
+      "inputs": ["tensors"],
+      "output": "concatenated",
+      "dtype": ["f32", "f16", "bf16"],
+      "ops_md_cpu": "supported",
+      "webgpu_shader": "wgsl-shaders/concat.wgsl",
+      "status": "descriptor"
+    },
+    {
+      "glyph": "⟁",
+      "ggml_op": null,
+      "kuhul_opcode": "PHASE_GATE",
+      "lane": "phase",
+      "fold": "PHASE",
+      "arity": 1,
+      "inputs": ["phase"],
+      "output": "phase_state",
+      "dtype": ["u32"],
+      "ops_md_cpu": "not_applicable",
+      "status": "descriptor"
+    }
+  ],
+  "implementation_order": [
+    "Load this manifest in native_glyph_engine inspect mode.",
+    "Assign stable numeric opcode ids for each kuhul_opcode.",
+    "Extend GlyphEntry features to carry lane, arity, dtype, and phase bits.",
+    "Implement CPU kernels first for ADD, MUL, SOFT_MAX, RMS_NORM, and ROPE descriptors.",
+    "Use the WebGPU backend source and wgsl-shaders paths as shader references, not vendored code, until the native engine has a proper backend ABI.",
+    "Add backend capability selection from docs/ops/*.csv after CPU behavior is deterministic.",
+    "Only then add WebGPU/D3D lanes."
+  ]
+}

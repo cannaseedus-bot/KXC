@@ -1,0 +1,6 @@
+{
+  "@kernel": "binary_split",
+  "@version": "1.0.0",
+  "@frozen": true,
+  "description": "Binary split legality kernel for CM-1 streams."
+}

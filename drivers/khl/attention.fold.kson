@@ -1,0 +1,677 @@
+{
+  "protocol": "kast/1",
+  "registry_hash": "a16dedf3b0e424f1695a57838d60ff8764fe7298842350cb8e42ec119ba80142",
+  "source_kind": "khl",
+  "source_id": "attention.fold.khl",
+  "entry_node_id": "n1",
+  "nodes": [
+    {
+      "id": "n0",
+      "kind": "bind",
+      "fold": "Pop",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "manifest.os.attention_folds",
+      "type": "manifest_ref",
+      "operands": [
+        "ATTN_CONFIG"
+      ],
+      "attributes": {
+        "manifest_path": "manifest.os.attention_folds"
+      }
+    },
+    {
+      "id": "n1",
+      "kind": "glyph",
+      "fold": "Sek",
+      "lane": "driver",
+      "glyph": "attention::attend",
+      "opcode": "GLYPH",
+      "symbol": "attention::attend",
+      "type": "driver_glyph",
+      "operands": [
+        "Q_VECTOR"
+      ],
+      "attributes": {
+        "driver": ""
+      }
+    },
+    {
+      "id": "n2",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "map:new \u2192 SCORES",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n3",
+      "kind": "loop",
+      "fold": "Sek",
+      "lane": "control",
+      "glyph": "loop",
+      "opcode": "LOOP",
+      "symbol": "ATTN_CONFIG ",
+      "type": "control_flow",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n4",
+      "kind": "call",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "attention::calculate_score",
+      "opcode": "CALL",
+      "symbol": "attention::calculate_score",
+      "type": "operator_call",
+      "operands": [
+        "Q_VECTOR",
+        "FOLD_SPEC.k"
+      ],
+      "attributes": {
+        "result": "SCORE"
+      }
+    },
+    {
+      "id": "n5",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "SCORES.set(FOLD_ID, SCORE) \u2192 SCORES",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n6",
+      "kind": "yield",
+      "fold": "Xul",
+      "lane": "output",
+      "glyph": "yield",
+      "opcode": "YIELD",
+      "symbol": "SCORES",
+      "type": "return_value",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n7",
+      "kind": "glyph",
+      "fold": "Sek",
+      "lane": "driver",
+      "glyph": "attention::execute_lane",
+      "opcode": "GLYPH",
+      "symbol": "attention::execute_lane",
+      "type": "driver_glyph",
+      "operands": [
+        "ID",
+        "Q"
+      ],
+      "attributes": {
+        "driver": ""
+      }
+    },
+    {
+      "id": "n8",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "ATTN_CONFIG[ID] \u2192 SPEC",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n9",
+      "kind": "call",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "attention::fetch_keys",
+      "opcode": "CALL",
+      "symbol": "attention::fetch_keys",
+      "type": "operator_call",
+      "operands": [
+        "SPEC.k"
+      ],
+      "attributes": {
+        "result": "K_DATA"
+      }
+    },
+    {
+      "id": "n10",
+      "kind": "call",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "attention::rank",
+      "opcode": "CALL",
+      "symbol": "attention::rank",
+      "type": "operator_call",
+      "operands": [
+        "Q",
+        "K_DATA"
+      ],
+      "attributes": {
+        "result": "RANKED"
+      }
+    },
+    {
+      "id": "n11",
+      "kind": "if",
+      "fold": "Sek",
+      "lane": "control",
+      "glyph": "if",
+      "opcode": "IF",
+      "symbol": "ID == \"security\"",
+      "type": "control_flow",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n12",
+      "kind": "call",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "attention::guard",
+      "opcode": "CALL",
+      "symbol": "attention::guard",
+      "type": "operator_call",
+      "operands": [
+        "RANKED"
+      ],
+      "attributes": {
+        "result": "FINAL"
+      }
+    },
+    {
+      "id": "n13",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "else ::",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n14",
+      "kind": "call",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "attention::process",
+      "opcode": "CALL",
+      "symbol": "attention::process",
+      "type": "operator_call",
+      "operands": [
+        "RANKED",
+        "SPEC.attention_ops"
+      ],
+      "attributes": {
+        "result": "FINAL"
+      }
+    },
+    {
+      "id": "n15",
+      "kind": "call",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "attention::extract_values",
+      "opcode": "CALL",
+      "symbol": "attention::extract_values",
+      "type": "operator_call",
+      "operands": [
+        "FINAL",
+        "SPEC.v"
+      ],
+      "attributes": {
+        "result": "V"
+      }
+    },
+    {
+      "id": "n16",
+      "kind": "yield",
+      "fold": "Xul",
+      "lane": "output",
+      "glyph": "yield",
+      "opcode": "YIELD",
+      "symbol": "V",
+      "type": "return_value",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n17",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "op attention.dispatch(request, response) \u2192",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n18",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "request.body.q \u2192 USER_Q",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n19",
+      "kind": "call",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "attention::attend",
+      "opcode": "CALL",
+      "symbol": "attention::attend",
+      "type": "operator_call",
+      "operands": [
+        "USER_Q"
+      ],
+      "attributes": {
+        "result": "ATTENTION_MAP"
+      }
+    },
+    {
+      "id": "n20",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "list:new \u2192 RESULTS",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n21",
+      "kind": "loop",
+      "fold": "Sek",
+      "lane": "control",
+      "glyph": "loop",
+      "opcode": "LOOP",
+      "symbol": "ATTENTION_MAP.top(3) ",
+      "type": "control_flow",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n22",
+      "kind": "call",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "attention::execute_lane",
+      "opcode": "CALL",
+      "symbol": "attention::execute_lane",
+      "type": "operator_call",
+      "operands": [
+        "LANE.id",
+        "USER_Q"
+      ],
+      "attributes": {
+        "result": "V"
+      }
+    },
+    {
+      "id": "n23",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "RESULTS.push({ \"lane\": LANE.id, \"score\": LANE.weight, \"v\": V }) \u2192 RESULTS",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n24",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "response.body = {",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n25",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "\"@type\": \"xjson.attention.result\",",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n26",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "\"q\": USER_Q,",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n27",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "\"attention_distribution\": ATTENTION_MAP,",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n28",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "\"evidence\": RESULTS",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n29",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "}",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n30",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "respond",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    }
+  ],
+  "edges": [
+    {
+      "id": "e0",
+      "from": "n1",
+      "to": "n2",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 0
+    },
+    {
+      "id": "e1",
+      "from": "n2",
+      "to": "n3",
+      "kind": "control",
+      "label": "loop",
+      "ordinal": 1
+    },
+    {
+      "id": "e2",
+      "from": "n3",
+      "to": "n4",
+      "kind": "control",
+      "label": "call",
+      "ordinal": 2
+    },
+    {
+      "id": "e3",
+      "from": "n4",
+      "to": "n5",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 3
+    },
+    {
+      "id": "e4",
+      "from": "n3",
+      "to": "n6",
+      "kind": "control",
+      "label": "yield",
+      "ordinal": 4
+    },
+    {
+      "id": "e5",
+      "from": "n7",
+      "to": "n8",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 5
+    },
+    {
+      "id": "e6",
+      "from": "n8",
+      "to": "n9",
+      "kind": "control",
+      "label": "call",
+      "ordinal": 6
+    },
+    {
+      "id": "e7",
+      "from": "n9",
+      "to": "n10",
+      "kind": "control",
+      "label": "call",
+      "ordinal": 7
+    },
+    {
+      "id": "e8",
+      "from": "n10",
+      "to": "n11",
+      "kind": "control",
+      "label": "if",
+      "ordinal": 8
+    },
+    {
+      "id": "e9",
+      "from": "n11",
+      "to": "n12",
+      "kind": "control",
+      "label": "call",
+      "ordinal": 9
+    },
+    {
+      "id": "e10",
+      "from": "n12",
+      "to": "n13",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 10
+    },
+    {
+      "id": "e11",
+      "from": "n13",
+      "to": "n14",
+      "kind": "control",
+      "label": "call",
+      "ordinal": 11
+    },
+    {
+      "id": "e12",
+      "from": "n11",
+      "to": "n15",
+      "kind": "control",
+      "label": "call",
+      "ordinal": 12
+    },
+    {
+      "id": "e13",
+      "from": "n15",
+      "to": "n16",
+      "kind": "control",
+      "label": "yield",
+      "ordinal": 13
+    },
+    {
+      "id": "e14",
+      "from": "n15",
+      "to": "n17",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 14
+    },
+    {
+      "id": "e15",
+      "from": "n17",
+      "to": "n18",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 15
+    },
+    {
+      "id": "e16",
+      "from": "n18",
+      "to": "n19",
+      "kind": "control",
+      "label": "call",
+      "ordinal": 16
+    },
+    {
+      "id": "e17",
+      "from": "n19",
+      "to": "n20",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 17
+    },
+    {
+      "id": "e18",
+      "from": "n20",
+      "to": "n21",
+      "kind": "control",
+      "label": "loop",
+      "ordinal": 18
+    },
+    {
+      "id": "e19",
+      "from": "n21",
+      "to": "n22",
+      "kind": "control",
+      "label": "call",
+      "ordinal": 19
+    },
+    {
+      "id": "e20",
+      "from": "n22",
+      "to": "n23",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 20
+    },
+    {
+      "id": "e21",
+      "from": "n21",
+      "to": "n24",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 21
+    },
+    {
+      "id": "e22",
+      "from": "n24",
+      "to": "n25",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 22
+    },
+    {
+      "id": "e23",
+      "from": "n25",
+      "to": "n26",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 23
+    },
+    {
+      "id": "e24",
+      "from": "n26",
+      "to": "n27",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 24
+    },
+    {
+      "id": "e25",
+      "from": "n27",
+      "to": "n28",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 25
+    },
+    {
+      "id": "e26",
+      "from": "n28",
+      "to": "n29",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 26
+    },
+    {
+      "id": "e27",
+      "from": "n29",
+      "to": "n30",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 27
+    }
+  ],
+  "semantic_hash": "90c53ced8ba4229a6a7aedd98050f14f0ee0fb804e484722ac36baac41ffedec",
+  "@driver": {
+    "@abi": 1,
+    "@requires": {
+      "kuhul": ">= 1.0",
+      "khl_abi": 1,
+      "scxq2": ">= 2.0"
+    },
+    "@capabilities": [
+      "tensor.map"
+    ],
+    "@phase_hooks": {
+      "Sek": "dispatch",
+      "Ch'en": "collect_status",
+      "Xul": "commit_tensor_state"
+    },
+    "@provider": "attention.fold",
+    "@resources": [],
+    "@hash": "90c53ced8ba4229a6a7aedd98050f14f0ee0fb804e484722ac36baac41ffedec"
+  }
+}

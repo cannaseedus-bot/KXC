@@ -1,0 +1,4 @@
+[Pop OpenCLGeodesic]
+  [Muwan dispatch 32 32 1]
+  [Sek needsMatMul true]
+[Xul]

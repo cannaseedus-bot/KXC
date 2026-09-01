@@ -1,0 +1,4 @@
+[Pop TensorContract]
+  [Muwan dispatch 64 1 1]
+  [Sek needsMatMul true]
+[Xul]

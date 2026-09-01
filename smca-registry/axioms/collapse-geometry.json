@@ -1,0 +1,31 @@
+{
+  "@axiom": "collapse.geometry",
+  "@version": "1.0.0",
+  "statement": "SMCA defines collapse geometry descriptors, not execution algorithms.",
+  "classes": [
+    {
+      "id": "linear.series",
+      "meaning": "Term-by-term convergence"
+    },
+    {
+      "id": "binary.split",
+      "meaning": "Tree collapse with recombination"
+    },
+    {
+      "id": "angle.sum",
+      "meaning": "Rotational symmetry collapse"
+    },
+    {
+      "id": "modular.form",
+      "meaning": "High-order symmetry collapse"
+    },
+    {
+      "id": "topological",
+      "meaning": "Shape / adjacency collapse"
+    },
+    {
+      "id": "discrete.path",
+      "meaning": "Combinatorial collapse"
+    }
+  ]
+}

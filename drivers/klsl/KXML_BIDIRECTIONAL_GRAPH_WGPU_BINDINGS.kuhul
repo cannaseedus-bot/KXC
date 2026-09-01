@@ -1,0 +1,378 @@
+// ============================================================
+// FILE: KXML_BIDIRECTIONAL_GRAPH_WGPU_BINDINGS.kuhul
+// KXML v7.2 + WGPU/WebGPU Bindings - Complete Bidirectional Graph
+// Extends: KXML_BIDIRECTIONAL_GRAPH_TOPOLOGY.kuhul
+//
+// K'UHUL shader file — compiled by src/kuhul/kuhulc.js
+// Target: src/kxml/ + src/gpu/webgpu-runtime.js
+// Backend: WebGPU / DirectX12 / Vulkan / Metal (auto-selected)
+//
+// Adds per-node WGPU bind groups, WGSL shader sources, GPU transfer
+// specs, phase-gated GPU synchronisation, and zero-copy shared buffers.
+// ============================================================
+
+(⟁SYSTEM⟁) kxml_wgpu_bidirectional_graph {
+
+  // ============================================================
+  // WGPU BINDING TYPES
+  // ============================================================
+
+  (⟁SCHEMA⟁) wgpu_bindings {
+
+    (⟁TYPE⟁) WGPUDevice {
+      @webgpu: {
+        device:         "GPUDevice",
+        queue:          "GPUQueue",
+        adapter:        "GPUAdapter",
+        canvas_context: "GPUCanvasContext"
+      }
+    }
+
+    (⟁TYPE⟁) WGPUBindGroupLayout {
+      @entries: [
+        {binding: 0, visibility: "VERTEX|FRAGMENT|COMPUTE", buffer:         {type: "uniform"}},
+        {binding: 1, visibility: "FRAGMENT|COMPUTE",        texture:        {sample_type: "float", view_dimension: "2d"}},
+        {binding: 2, visibility: "COMPUTE",                 storage_buffer: {type: "read-only-storage"}},
+        {binding: 3, visibility: "COMPUTE",                 storage_buffer: {type: "storage"}}
+      ]
+    }
+
+    (⟁TYPE⟁) WGPUComputePass {
+      @encoder:        "GPUCommandEncoder",
+      @pass:           "GPUComputePassEncoder",
+      @pipeline:       "GPUComputePipeline",
+      @bind_group:     "GPUBindGroup",
+      @workgroup_size: [8, 8, 1],
+      @dispatch:       {x: "count_x", y: "count_y", z: "count_z"}
+    }
+  }
+
+  // ============================================================
+  // NODE-LEVEL WGPU BINDINGS
+  // Each node carries its own bind groups + WGSL shader, just as each
+  // node carries its own MathML. Shaders are the GPU implementation of
+  // the MathML specification.
+  // ============================================================
+
+  (⟁EXAMPLE⟁) node_with_wgpu_bindings {
+    @xml: [|
+      <node id="geometric_attention"
+            phase="Sek"
+            domain="compute"
+            fold="COMPUTE_FOLD"
+            device="gpu"
+            wgpu_pipeline="attention_pipeline">
+
+        <wgpu_bindings>
+          <bind_group layout="attention_layout" index="0">
+            <binding slot="0">
+              <uniform_buffer name="params" size="256">
+                <field name="phase"       offset="0"  type="float32"/>
+                <field name="temperature" offset="4"  type="float32"/>
+                <field name="heads"       offset="8"  type="uint32"/>
+                <field name="head_dim"    offset="12" type="uint32"/>
+              </uniform_buffer>
+            </binding>
+            <binding slot="1"><storage_buffer name="Q" access="read_only"  size="dynamic"/></binding>
+            <binding slot="2"><storage_buffer name="K" access="read_only"  size="dynamic"/></binding>
+            <binding slot="3"><storage_buffer name="V" access="read_only"  size="dynamic"/></binding>
+            <binding slot="4"><storage_buffer name="O" access="write_only" size="dynamic"/></binding>
+          </bind_group>
+          <bind_group layout="phase_layout" index="1">
+            <binding slot="0"><texture name="phase_texture" dimension="2d" format="rgba32float"/></binding>
+            <binding slot="1"><sampler name="phase_sampler" filtering="linear"/></binding>
+          </bind_group>
+        </wgpu_bindings>
+
+        <wgsl_shader stage="compute">
+          <![CDATA[
+            struct Params { phase: f32, temperature: f32, heads: u32, head_dim: u32 }
+            @group(0) @binding(0) var<uniform>          params : Params;
+            @group(0) @binding(1) var<storage, read>    Q      : array<f32>;
+            @group(0) @binding(2) var<storage, read>    K      : array<f32>;
+            @group(0) @binding(3) var<storage, read>    V      : array<f32>;
+            @group(0) @binding(4) var<storage,read_write> O    : array<f32>;
+            @group(1) @binding(0) var phase_tex   : texture_2d<f32>;
+            @group(1) @binding(1) var phase_samp  : sampler;
+
+            @compute @workgroup_size(8, 8, 1)
+            fn attention_main(@builtin(global_invocation_id) id: vec3<u32>) {
+              let i    = id.x;
+              let j    = id.y;
+              let head = id.z;
+
+              // pi-geodesic phase from texture
+              let uv    = vec2<f32>(f32(i) / 128.0, f32(j) / 128.0);
+              let phase = textureSampleLevel(phase_tex, phase_samp, uv, 0.0).r;
+
+              let q_base = (head * 128u + i) * params.head_dim;
+              let k_base = (head * 128u + j) * params.head_dim;
+              var score: f32 = 0.0;
+              for (var d = 0u; d < params.head_dim; d++) {
+                score += Q[q_base + d] * K[k_base + d];
+              }
+              let pi = 3.141592653589793;
+              O[(head * 128u + i) * params.head_dim + j] =
+                score * sin(phase * pi * params.temperature);
+            }
+          ]]>
+        </wgsl_shader>
+
+        <ops>
+          <op type="@wgpu_create_pipeline" shader="attention_main" layout="attention_layout" />
+          <op type="@wgpu_bind"  group="0" buffers="params,Q,K,V,O" />
+          <op type="@wgpu_bind"  group="1" textures="phase_texture" samplers="phase_sampler" />
+          <op type="@wgpu_dispatch" workgroups="[seq_len/8, seq_len/8, heads]" />
+          <op type="@wgpu_read_buffer" src="O" dst="attention_output" />
+        </ops>
+
+        <mathml>
+          <apply>
+            <eq/>
+            <ci>attention_output</ci>
+            <apply>
+              <ci>softmax</ci>
+              <apply>
+                <divide/>
+                <apply>
+                  <ci>phase_modulated</ci>
+                  <apply><times/><ci>Q</ci><apply><transpose/><ci>K</ci></apply></apply>
+                  <ci>phi_geodesic</ci>
+                </apply>
+                <apply><root/><ci>d_k</ci></apply>
+              </apply>
+            </apply>
+          </apply>
+        </mathml>
+
+        <gradient>
+          <apply>
+            <eq/>
+            <ci>dQ</ci>
+            <apply>
+              <times/>
+              <ci>dO</ci>
+              <ci>softmax_grad</ci>
+              <ci>K</ci>
+            </apply>
+          </apply>
+        </gradient>
+
+      </node>
+    |]
+  }
+
+  // ============================================================
+  // BIDIRECTIONAL EDGE WITH WGPU STREAMS
+  // Forward = GPU compute shader output
+  // Backward = GPU gradient compute (reverse pass)
+  // Zero-copy: copy_buffer_to_buffer when both nodes share same device
+  // ============================================================
+
+  (⟁EXAMPLE⟁) bidirectional_edge_with_wgpu {
+    @xml: [|
+      <edge from="attention_node" to="ffn_node"
+            wgpu_stream="true"
+            stream_buffer="shared_gpu_buffer">
+
+        <forward channel="activation" wgpu="true">
+          <data type="tensor" shape="[batch, seq, hidden]" dtype="float32"
+                gpu_buffer="activation_buffer" gpu_buffer_size="dynamic"/>
+          <wgpu_transfer>
+            <src_memory type="gpu" buffer="attention_output"/>
+            <dst_memory type="gpu" buffer="ffn_input"/>
+            <transfer_method>copy_buffer_to_buffer</transfer_method>
+            <sync_point>queue_submit</sync_point>
+          </wgpu_transfer>
+        </forward>
+
+        <backward channel="gradient" wgpu="true">
+          <data type="tensor" shape="[batch, seq, hidden]" dtype="float32"
+                gpu_buffer="gradient_buffer" gpu_buffer_size="dynamic"/>
+          <scale factor="0.001" />
+          <wgpu_transfer>
+            <src_memory type="gpu" buffer="ffn_gradient"/>
+            <dst_memory type="gpu" buffer="attention_gradient"/>
+            <transfer_method>copy_buffer_to_buffer</transfer_method>
+            <sync_point>compute_pass_end</sync_point>
+          </wgpu_transfer>
+        </backward>
+
+        <phase_gate>
+          <forward_requires  from_phase="Sek"   to_phase="Ch'en">
+            <gpu_sync type="compute_pass" />
+          </forward_requires>
+          <backward_requires from_phase="Ch'en" to_phase="Sek">
+            <gpu_sync type="queue_wait" />
+          </backward_requires>
+        </phase_gate>
+
+        <shared_buffer name="intermediate_activations"
+                       size="batch * seq * hidden * 4"
+                       usage="STORAGE|COPY_SRC|COPY_DST"
+                       mapped_at_creation="false"/>
+      </edge>
+    |]
+  }
+
+  // ============================================================
+  // MoE ROUTER WGSL — π-geodesic phase routing to 8 experts
+  // WGPU implementation of the MathML router node in the topology
+  // ============================================================
+
+  (⟁EXAMPLE⟁) moe_router_wgsl {
+    @wgsl: [|
+      struct ExpertPhase { bytes: array<u32, 4> }
+      struct GlobalParams {
+        time: f32, phase_shift: f32, lr: f32, batch: u32,
+        seq: u32, hidden: u32, heads: u32, experts: u32
+      }
+
+      @group(0) @binding(0) var<storage, read>    expert_phases   : array<ExpertPhase, 8>;
+      @group(0) @binding(1) var<storage, read>    router_weights  : array<f32>;
+      @group(0) @binding(2) var<storage, read_write> routing_logits : array<f32>;
+      @group(0) @binding(3) var<storage, read_write> top_k_indices  : array<u32>;
+      @group(1) @binding(0) var<storage, read>    embeddings      : array<f32>;
+      @group(2) @binding(0) var<uniform>           global          : GlobalParams;
+
+      fn phase_dist(p1: u32, p2: u32) -> f32 {
+        var d: f32 = 0.0;
+        for (var i = 0u; i < 4u; i++) {
+          let b1 = f32((p1 >> (i * 8u)) & 0xFFu);
+          let b2 = f32((p2 >> (i * 8u)) & 0xFFu);
+          d += (b1 - b2) * (b1 - b2);
+        }
+        return sqrt(d);
+      }
+
+      @compute @workgroup_size(64, 1, 1)
+      fn router_main(@builtin(global_invocation_id) id: vec3<u32>) {
+        let tok = id.x;
+        if (tok >= global.seq * global.batch) { return; }
+
+        // Build token phase fingerprint from first 4 hidden dims
+        var tok_phase: u32 = 0u;
+        for (var d = 0u; d < 4u; d++) {
+          let v = u32(abs(embeddings[tok * global.hidden + d]) * 255.0) & 0xFFu;
+          tok_phase |= (v << (d * 8u));
+        }
+
+        // Score each expert by geodesic phase distance
+        var scores: array<f32, 8>;
+        var sum_exp: f32 = 0.0;
+        for (var e = 0u; e < 8u; e++) {
+          let dist = phase_dist(tok_phase, expert_phases[e].bytes[0]);
+          let w    = router_weights[tok * 8u + e];
+          scores[e] = w * exp(-dist * 0.01);
+          sum_exp  += exp(scores[e]);
+        }
+
+        // Softmax logits
+        let base = tok * 8u;
+        for (var e = 0u; e < 8u; e++) {
+          routing_logits[base + e] = exp(scores[e]) / sum_exp;
+        }
+
+        // Top-2 selection
+        var t1 = 0u; var t2 = 1u;
+        var m1 = scores[0]; var m2 = scores[1];
+        for (var e = 2u; e < 8u; e++) {
+          if (scores[e] > m1) { t2 = t1; m2 = m1; t1 = e; m1 = scores[e]; }
+          else if (scores[e] > m2) { t2 = e; m2 = scores[e]; }
+        }
+        top_k_indices[tok * 2u]     = t1;
+        top_k_indices[tok * 2u + 1u] = t2;
+      }
+    |]
+  }
+
+  // ============================================================
+  // WGPU RUNTIME EXECUTOR — mirrors webgpu-runtime.js
+  // ============================================================
+
+  (⟁POP⟁) wgpu_runtime_executor {
+    [Tensor graph          = parse_kxml_graph(args.graphXml)]
+    [Tensor wgpu_device    = initialize_wgpu_device(graph.wgpu_device_config)]
+    [Tensor command_encoder = wgpu_device.createCommandEncoder()]
+
+    // Allocate all GPU buffers declared in graph
+    [Tensor buffers    = create_wgpu_buffers(graph, wgpu_device)]
+    [Tensor bind_groups = create_wgpu_bind_groups(graph, buffers)]
+    [Tensor pipelines  = create_wgpu_pipelines(graph, wgpu_device)]
+
+    // Phase-ordered execution
+    [K'ayab' phase in graph.phase_sequence]
+      [Tensor currentPhase = phase.name]
+
+      [Tensor gpu_nodes = filter(graph.nodes, node ->
+        node.phase == currentPhase AND node.device == "gpu"
+      )]
+
+      [K'ayab' node in topological_sort(gpu_nodes, graph.edges)]
+        [Tensor pass     = command_encoder.beginComputePass()]
+        [Tensor pass.setPipeline(pipelines[node.wgpu_pipeline])]
+        [Tensor pass.setBindGroup(0, bind_groups[node.id])]
+        [Tensor wg = compute_workgroups(node, buffers)]
+        [Tensor pass.dispatchWorkgroups(wg.x, wg.y, wg.z)]
+        [Tensor pass.end()]
+      [Kumk'u]
+
+      // Phase-gate GPU sync
+      [Tensor if phase.gpu_sync]
+        [Tensor wgpu_device.queue.submit([command_encoder.finish()])]
+        [Tensor wgpu_device.queue.onSubmittedWorkDone()]
+      [Xul]
+    [Kumk'u]
+
+    // Final readback for CPU-side nodes
+    [Tensor results = readback_gpu_buffers(buffers, graph.output_buffers)]
+
+    [Xul results]
+  }
+
+  // ============================================================
+  // WGPU FEATURES SUMMARY
+  // ============================================================
+
+  (⟁TABLE⟁) wgpu_feature_map {
+    @components: [
+      {kxml_element:  "<wgpu_bindings>",   wgpu_type: "GPUBindGroup",         description: "Per-node buffer/texture binding"},
+      {kxml_element:  "<wgsl_shader>",     wgpu_type: "GPUShaderModule",      description: "WGSL compute/fragment/vertex shader"},
+      {kxml_element:  "<wgpu_transfer>",   wgpu_type: "GPUCommandEncoder",    description: "GPU-to-GPU / GPU-to-CPU transfer"},
+      {kxml_element:  "<gpu_sync>",        wgpu_type: "GPUQueue.onSubmitted", description: "Phase-gated GPU synchronisation"},
+      {kxml_element:  "<shared_buffer>",   wgpu_type: "GPUBuffer",            description: "Zero-copy buffer between nodes"},
+      {kxml_element:  "wgpu_stream=true",  wgpu_type: "GPUCommandBuffer",     description: "Bidirectional GPU tensor stream"},
+      {kxml_element:  "<wgpu_profiling>",  wgpu_type: "GPUQuerySet",          description: "Timestamp queries for perf"}
+    ]
+  }
+
+  // ============================================================
+  // INIT
+  // ============================================================
+
+  (⟁POP⟁) init_kxml_wgpu_system {
+    console.log("KXML BIDIRECTIONAL GRAPH v7.2 + WGPU BINDINGS")
+    console.log("Backend: WebGPU / DirectX12 / Vulkan / Metal (auto)")
+    console.log("")
+    console.log("Per-node WGPU additions:")
+    console.log("  <wgpu_bindings>  - bind groups (uniform/storage/texture)")
+    console.log("  <wgsl_shader>    - WGSL source (compute/fragment/vertex)")
+    console.log("  <wgpu_transfer>  - GPU transfer specs on each edge channel")
+    console.log("  <gpu_sync>       - phase-gated GPU synchronisation")
+    console.log("  <shared_buffer>  - zero-copy buffer between adjacent nodes")
+    console.log("")
+    console.log("MoE router: pi-geodesic phase distance -> top-2 expert selection")
+    console.log("Profiling:  timestamp queries on each compute pass")
+    console.log("")
+    console.log("K'UHUL files are like shaders: compiled by kuhulc.js,")
+    console.log("  deployed alongside the implementation they specify.")
+    console.log("  TOPOLOGY.kuhul  -> kxml-dispatcher.js + kxml-graph.js")
+    console.log("  WGPU_BINDINGS.kuhul -> kxml-ops.js + webgpu-runtime.js")
+
+    [Xul {status: "ready", backend: "wgpu", bindings: "complete",
+          kuhulc: "src/kuhul/kuhulc.js",
+          targets: ["src/kxml/", "src/gpu/webgpu-runtime.js"]}]
+  }
+
+  [init_kxml_wgpu_system]
+}

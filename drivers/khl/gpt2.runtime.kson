@@ -1,0 +1,136 @@
+{
+  "protocol": "kast/1",
+  "registry_hash": "b9b92a0da13e602da2640200ec6a71b65d7b2c01e8f027998937bee3eae91a9b",
+  "source_kind": "khl",
+  "source_id": "gpt2.runtime.khl",
+  "entry_node_id": "n0",
+  "nodes": [
+    {
+      "id": "n0",
+      "kind": "glyph",
+      "fold": "Sek",
+      "lane": "driver",
+      "glyph": "gpt2::forward",
+      "opcode": "GLYPH",
+      "symbol": "gpt2::forward",
+      "type": "driver_glyph",
+      "operands": [
+        "TOKEN_IDS"
+      ],
+      "attributes": {
+        "driver": ""
+      }
+    },
+    {
+      "id": "n1",
+      "kind": "call",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "gpt2::embedding_lookup",
+      "opcode": "CALL",
+      "symbol": "gpt2::embedding_lookup",
+      "type": "operator_call",
+      "operands": [
+        "TOKEN_IDS"
+      ],
+      "attributes": {
+        "result": "X"
+      }
+    },
+    {
+      "id": "n2",
+      "kind": "loop",
+      "fold": "Sek",
+      "lane": "control",
+      "glyph": "loop",
+      "opcode": "LOOP",
+      "symbol": "gpt2.blocks ",
+      "type": "control_flow",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n3",
+      "kind": "call",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "gpt2::transformer_block",
+      "opcode": "CALL",
+      "symbol": "gpt2::transformer_block",
+      "type": "operator_call",
+      "operands": [
+        "X",
+        "BLOCK"
+      ],
+      "attributes": {
+        "result": "X"
+      }
+    },
+    {
+      "id": "n4",
+      "kind": "yield",
+      "fold": "Xul",
+      "lane": "output",
+      "glyph": "yield",
+      "opcode": "YIELD",
+      "symbol": "X",
+      "type": "return_value",
+      "operands": [],
+      "attributes": {}
+    }
+  ],
+  "edges": [
+    {
+      "id": "e0",
+      "from": "n0",
+      "to": "n1",
+      "kind": "control",
+      "label": "call",
+      "ordinal": 0
+    },
+    {
+      "id": "e1",
+      "from": "n1",
+      "to": "n2",
+      "kind": "control",
+      "label": "loop",
+      "ordinal": 1
+    },
+    {
+      "id": "e2",
+      "from": "n2",
+      "to": "n3",
+      "kind": "control",
+      "label": "call",
+      "ordinal": 2
+    },
+    {
+      "id": "e3",
+      "from": "n2",
+      "to": "n4",
+      "kind": "control",
+      "label": "yield",
+      "ordinal": 3
+    }
+  ],
+  "semantic_hash": "253bc66fd0056ce920bdaeb8d2ec34e5e1b1462e38a6c26100e0f474b1802af4",
+  "@driver": {
+    "@abi": 1,
+    "@requires": {
+      "kuhul": ">= 1.0",
+      "khl_abi": 1,
+      "scxq2": ">= 2.0"
+    },
+    "@capabilities": [
+      "tensor.map"
+    ],
+    "@phase_hooks": {
+      "Sek": "dispatch",
+      "Ch'en": "collect_status",
+      "Xul": "commit_tensor_state"
+    },
+    "@provider": "gpt2.runtime",
+    "@resources": [],
+    "@hash": "253bc66fd0056ce920bdaeb8d2ec34e5e1b1462e38a6c26100e0f474b1802af4"
+  }
+}

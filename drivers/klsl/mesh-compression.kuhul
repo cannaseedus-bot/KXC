@@ -1,0 +1,27 @@
+(* Mesh compression using KUHUL glyph operations *)
+[Pop]
+  (* Input mesh vertices: N vertices × 3 coordinates *)
+  [Wo vertices  tensor<float32, [4096, 3]>]
+  (* Compression kernel *)
+  [Wo kernel    tensor<float32, [3, 1]>]
+  (* Compressed output *)
+  [Wo compressed tensor<float32, [4096, 1]>]
+
+  [K'ayab']
+    (* Load mesh data *)
+    [Yax vertices]
+    [Yax kernel]
+
+    (* Convolve vertices with compression kernel → compressed coordinates *)
+    [Sek ⊛ vertices kernel]
+    [Ch'en compressed vertices]
+
+    (* Negate to compute error signal *)
+    [Sek ⊝ compressed]
+    [Ch'en error compressed]
+  [Kumk'u]
+
+  (* Write final compressed mesh *)
+  [Yax compressed]
+  [Ch'en output compressed]
+[Xul]

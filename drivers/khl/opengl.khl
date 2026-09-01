@@ -1,0 +1,33 @@
+/* ========================================================
+   opengl.khl — OpenGL 4.3 compute driver (universal GPU)
+   Role: GL_ARB_compute_shader + SSBO tensor dispatch
+   Law: Sek -> dispatch, Ch'en -> collect status, Xul -> commit
+   ======================================================== */
+
+@bind manifest.gpu.glsl.icd        → GL_ICD
+@bind manifest.gpu.glsl.max_work   → GL_MAX_WORK
+
+/* opengl::probe() → GL_PROBE — Pop: perceive the provider */
+glyph opengl::probe →
+  gl::icd_available(GL_ICD)    → ICD_OK
+  gl::compute_available()      → COMPUTE_OK
+  gl::ssbo_available()         → SSBO_OK
+  yield ICD_OK && COMPUTE_OK && SSBO_OK
+
+/* opengl::dispatch(TENSOR_IN) → TENSOR_OUT — Sek: execute */
+glyph opengl::dispatch(TENSOR_IN) →
+  gl::upload(TENSOR_IN)        → GPU_BUF
+  gl::bind_shader("compute")   → PROG
+  gl::dispatch(GPU_BUF, PROG)  → OUT_BUF
+  yield OUT_BUF
+
+/* opengl::collect_status() → STATUS — Ch'en: verify */
+glyph opengl::collect_status →
+  gl::readback(OUT_BUF)        → TENSOR_OUT
+  gl::sync()                   → SYNC_OK
+  yield TENSOR_OUT
+
+/* opengl::commit(TENSOR_OUT) → OK — Xul: persist tensor state */
+glyph opengl::commit(TENSOR_OUT) →
+  tensor::store(TENSOR_OUT)    → OK
+  yield OK

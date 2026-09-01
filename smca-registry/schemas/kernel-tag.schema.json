@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "smca/schema/kernel-tag/v1",
+  "title": "SMCA Kernel Tag",
+  "type": "object",
+  "required": ["@kernel", "@collapse_class"],
+  "properties": {
+    "@kernel": {"type": "string"},
+    "@collapse_class": {"type": "string"},
+    "@requires": {"type": "array", "items": {"type": "string"}},
+    "@forbids": {"type": "array", "items": {"type": "string"}}
+  },
+  "additionalProperties": false
+}

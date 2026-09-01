@@ -1,0 +1,27 @@
+{
+  "stackId": "asx-xcfe-stack/v1",
+  "stackManifest": "C:/public_html/MX2LM/codex/AS-XCFE/native/xvm-d3d12/asx_manifest.json",
+  "stackCid": "fnv1a64:3e85439d1314a299",
+  "sourceKind": "kuhul",
+  "sourcePath": "C:/public_html/MX2LM/codex/AS-XCFE/compiler/kxc/examples/moe_phase_llm.kuhul",
+  "sourceCid": "fnv1a64:ce55bb1ed309d043",
+  "sourceSchema": "",
+  "originSourceKind": "",
+  "originSourcePath": "",
+  "originSourceCid": "",
+  "entries": [
+    {
+      "kernel": "MoEPhaseLLM",
+      "lawful": true,
+      "registryMatched": true,
+      "artifacts": [
+        {"name": "MoEPhaseLLM.cpp", "cid": "fnv1a64:1e05979b52618984"},
+        {"name": "MoEPhaseLLM.hlsl", "cid": "fnv1a64:51502ddfaac8b3e8"},
+        {"name": "MoEPhaseLLM.wgsl", "cid": "fnv1a64:82d216bf748922fd"},
+        {"name": "MoEPhaseLLM.cpu.cpp", "cid": "fnv1a64:2d2c3fe6e8eebbca"},
+        {"name": "MoEPhaseLLM.ir.json", "cid": "fnv1a64:f2fef19ee1d5320a"},
+        {"name": "MoEPhaseLLM.smca.json", "cid": "fnv1a64:67ed4bb590a1f840"}
+      ]
+    }
+  ]
+}

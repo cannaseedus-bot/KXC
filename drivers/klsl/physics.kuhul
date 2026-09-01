@@ -1,0 +1,43 @@
+(*
+  Rigid-body physics simulation in KUHUL.
+
+  Each particle has:
+    position  p  ∈ ℝ³
+    velocity  v  ∈ ℝ³
+    force     f  ∈ ℝ³  (gravity + external)
+
+  Integration step:   v_new = v + f·Δt,  p_new = p + v_new·Δt
+*)
+[Pop]
+  [Wo position  tensor<float32, [512, 3]>]
+  [Wo velocity  tensor<float32, [512, 3]>]
+  [Wo force     tensor<float32, [512, 3]>]
+  [Wo dt        tensor<float32, [1]>]
+
+  [K'ayab']
+    (* v_new = v + f * dt *)
+    [Yax force]
+    [Yax dt]
+    [Sek ⊗ force dt]
+    [Ch'en fdt force]
+
+    [Yax velocity]
+    [Yax fdt]
+    [Sek ⊕ velocity fdt]
+    [Ch'en velocity velocity]
+
+    (* p_new = p + v_new * dt *)
+    [Yax velocity]
+    [Yax dt]
+    [Sek ⊗ velocity dt]
+    [Ch'en vdt velocity]
+
+    [Yax position]
+    [Yax vdt]
+    [Sek ⊕ position vdt]
+    [Ch'en position position]
+  [Kumk'u]
+
+  [Yax position]
+  [Ch'en output position]
+[Xul]

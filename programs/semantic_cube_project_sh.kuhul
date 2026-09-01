@@ -1,0 +1,5 @@
+[Pop SemanticCubeProjectSH]
+  [Muwan dispatch 64 1 1]
+  [Sek needsSoftmax true]
+  [Sek needsMatMul true]
+[Xul]

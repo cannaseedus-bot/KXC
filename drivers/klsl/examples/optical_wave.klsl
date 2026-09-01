@@ -1,0 +1,78 @@
+// optical_wave.klsl
+// Spherical-harmonic wave propagation — maps directly to sh-wave-lattice.
+//
+// Each thread processes one node in the SH lattice.
+// 9 SH coefficients per node (l=0..2, band-limited).
+// Wave equation: phase-rotate each band by dt * freq[l].
+//
+// Compile:  klslc optical_wave.klsl
+
+⟁ shader optical_wave
+
+  ⟁Wo⟁ stage "compute"
+  ⟁Wo⟁ threads [256, 1, 1]
+
+  ⟁Wo⟁ StructuredBuffer<float>    sh_in    : register(t0)
+  ⟁Wo⟁ RWStructuredBuffer<float>  sh_out   : register(u0)
+  ⟁Wo⟁ ConstantBuffer<WaveConst>  cb       : register(b0)
+
+  // WaveConst layout:
+  //   uint  node_count;
+  //   uint  sh_bands;     // 3 (l=0,1,2) → 9 coefficients
+  //   float dt;           // time step
+  //   float _pad;
+
+  [Pop wave_step]
+    ⟁Wo⟁ uint nid = SV_DispatchThreadID.x
+    ⟁Sek⟁ if (nid >= cb.node_count) return
+
+    ⟁Wo⟁ uint base = nid * 9
+
+    // Load 9 SH coefficients
+    ⟁Wo⟁ float c0  = sh_in[base + 0]
+    ⟁Wo⟁ float c1  = sh_in[base + 1]
+    ⟁Wo⟁ float c2  = sh_in[base + 2]
+    ⟁Wo⟁ float c3  = sh_in[base + 3]
+    ⟁Wo⟁ float c4  = sh_in[base + 4]
+    ⟁Wo⟁ float c5  = sh_in[base + 5]
+    ⟁Wo⟁ float c6  = sh_in[base + 6]
+    ⟁Wo⟁ float c7  = sh_in[base + 7]
+    ⟁Wo⟁ float c8  = sh_in[base + 8]
+
+    // Band 0 (l=0): freq = 1.0
+    ⟁Wo⟁ float phase0 = cb.dt * 1.0f
+    ⟁Wo⟁ float r0 = c0 * cos(phase0)
+
+    // Band 1 (l=1): freq = 2.0,  coefficients c1..c3
+    ⟁Wo⟁ float phase1 = cb.dt * 2.0f
+    ⟁Wo⟁ float cs1 = cos(phase1)
+    ⟁Wo⟁ float r1 = c1 * cs1
+    ⟁Wo⟁ float r2 = c2 * cs1
+    ⟁Wo⟁ float r3 = c3 * cs1
+
+    // Band 2 (l=2): freq = 3.0,  coefficients c4..c8
+    ⟁Wo⟁ float phase2 = cb.dt * 3.0f
+    ⟁Wo⟁ float cs2 = cos(phase2)
+    ⟁Wo⟁ float r4 = c4 * cs2
+    ⟁Wo⟁ float r5 = c5 * cs2
+    ⟁Wo⟁ float r6 = c6 * cs2
+    ⟁Wo⟁ float r7 = c7 * cs2
+    ⟁Wo⟁ float r8 = c8 * cs2
+
+    // Energy-conserving normalize: scale to unit L2 norm
+    ⟁Wo⟁ float norm2 = r0*r0 + r1*r1 + r2*r2 + r3*r3 + r4*r4 + r5*r5 + r6*r6 + r7*r7 + r8*r8
+    ⟁Wo⟁ float inv_norm = (norm2 > 1e-8f) ? rsqrt(norm2) : 1.0f
+
+    // Store
+    ⟁Sek⟁ sh_out[base + 0] = r0 * inv_norm
+    ⟁Sek⟁ sh_out[base + 1] = r1 * inv_norm
+    ⟁Sek⟁ sh_out[base + 2] = r2 * inv_norm
+    ⟁Sek⟁ sh_out[base + 3] = r3 * inv_norm
+    ⟁Sek⟁ sh_out[base + 4] = r4 * inv_norm
+    ⟁Sek⟁ sh_out[base + 5] = r5 * inv_norm
+    ⟁Sek⟁ sh_out[base + 6] = r6 * inv_norm
+    ⟁Sek⟁ sh_out[base + 7] = r7 * inv_norm
+    ⟁Sek⟁ sh_out[base + 8] = r8 * inv_norm
+  [Xul]
+
+⟁Xul⟁

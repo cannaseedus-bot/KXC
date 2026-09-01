@@ -1,0 +1,21 @@
+# build intermediates
+*.obj
+*.ilk
+*.pdb
+*.log
+*.ninja_deps
+*.ninja_log
+CMakeCache.txt
+cmake_install.cmake
+CMakeFiles/
+.ninja_deps
+.ninja_log
+build.ninja
+CMakeCXXCompilerId.*
+CompilerIdCXX/
+
+# generated memory markers
+memory.md
+
+# exclude git objects from embedded repos
+**/.git/

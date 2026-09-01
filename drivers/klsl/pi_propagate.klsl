@@ -1,0 +1,55 @@
+// pi_propagate.klsl — π-KUHUL graph diffusion pass
+// 
+// One step of field diffusion over the mesh:
+//   field_out(i) = a · field_in(i) + (1-a) · avg_neighbour(field_in)
+//
+// Compile:  python -m kuhul.kuhul_runner compile pi_propagate.klsl -o pi_propagate.wgsl
+// Dispatch: [numthreads(64, 1, 1)]
+
+⟁ shader pi_propagate
+
+  ⟁Wo⟁ stage "compute"
+  ⟁Wo⟁ threads [64, 1, 1]
+
+  // Edge adjacency buffer (packed as flattened array: [a, b, dist, _pad] per 4 floats)
+  ⟁Wo⟁ StructuredBuffer<float> edges     : register(t1)
+  // Node adjacency: [offset, count] per 2 uints
+  ⟁Wo⟁ StructuredBuffer<float> adjacency : register(t2)
+  // Input field: [value, geo_min, _pad0, _pad1] per node
+  ⟁Wo⟁ StructuredBuffer<float> field_in  : register(t4)
+  // Output field
+  ⟁Wo⟁ RWStructuredBuffer<float> field_out : register(u1)
+  // Params: nodeCount(u32), edgeCount(u32), retain(f32), _pad(f32)
+  ⟁Wo⟁ ConstantBuffer<float4> params : register(b0)
+
+  [Pop propagate]
+    ⟁Wo⟁ uint i = SV_DispatchThreadID.x
+    ⟁Sek⟁ if (i >= params[0]) return
+
+    // Read field_in for this node (4 floats: value, geo_min, pad0, pad1)
+    ⟁Wo⟁ float own = field_in[i * 4 + 0]
+    ⟁Wo⟁ float geo = field_in[i * 4 + 1]
+
+    // Read adjacency: [offset, count]
+    ⟁Wo⟁ uint adj_offset = uint(adjacency[i * 2 + 0])
+    ⟁Wo⟁ uint adj_count  = min(uint(adjacency[i * 2 + 1]), 8u)
+
+    ⟁Wo⟁ float accum = 0.0
+    ⟁K'ayab'⟁ uint e in 0 .. adj_count
+      ⟁Wo⟁ uint idx = adj_offset + e
+      ⟁Sek⟁ if (idx >= uint(params[1])) break
+      // Edge packed as 4 floats: a=edges[e*4+0], b=edges[e*4+1], dist=edges[e*4+2]
+      ⟁Wo⟁ uint nb = uint(edges[idx * 4 + 1])
+      ⟁Sek⟁ accum += field_in[nb * 4 + 0]
+    ⟁Kumk'u⟁
+
+    ⟁Wo⟁ float neighbour_mean = (adj_count > 0u) ? (accum / float(adj_count)) : own
+    ⟁Wo⟁ float retain_val = params[2]
+
+    ⟁Sek⟁ field_out[i * 4 + 0] = retain_val * own + (1.0 - retain_val) * neighbour_mean
+    ⟁Sek⟁ field_out[i * 4 + 1] = geo
+    ⟁Sek⟁ field_out[i * 4 + 2] = 0.0
+    ⟁Sek⟁ field_out[i * 4 + 3] = 0.0
+  [Xul]
+
+⟁Xul⟁

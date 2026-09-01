@@ -1,0 +1,24 @@
+{
+  "@registry": "kernel-classes",
+  "@version": "1.0.0",
+  "entries": [
+    {
+      "@kernel": "binary_split",
+      "@collapse_class": "binary.split",
+      "@requires": ["balanced_tree", "deterministic_join"],
+      "@forbids": ["side_effects", "order_dependence"]
+    },
+    {
+      "@kernel": "neural_layer_kuhul",
+      "@collapse_class": "compute.linear",
+      "@requires": ["deterministic_join", "bounded_reduction"],
+      "@forbids": ["side_effects", "order_dependence"]
+    },
+    {
+      "@kernel": "tensor_attention_fused",
+      "@collapse_class": "attention.fused",
+      "@requires": ["deterministic_join", "bounded_reduction"],
+      "@forbids": ["side_effects", "order_dependence"]
+    }
+  ]
+}

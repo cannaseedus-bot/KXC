@@ -1,0 +1,66 @@
+// K'UHUL++ Physics Simulation — v2.0
+// Demonstrates a torsion-field-based physics simulation using the ∿ glyph.
+// The ∿ (Torsion Field) glyph applies a twist that increases with position,
+// simulating elastic / visco-elastic deformation of a 3D body.
+
+// ---- Simulation parameters ----
+
+Tensor dt            = 0.016;          // time step ≈ 60Hz
+Tensor torsionFactor = 0.05;           // radians of twist per unit Y
+Tensor damping       = 0.98;           // velocity damping (energy dissipation)
+Tensor gravity       = [0.0, -9.81, 0.0];
+
+// ---- Initial geometry: a flexible rod along the Y axis ----
+
+Tensor rodVertices = [
+    0.0, 0.0, 0.0,
+    0.0, 0.5, 0.0,
+    0.0, 1.0, 0.0,
+    0.0, 1.5, 0.0,
+    0.0, 2.0, 0.0
+];
+
+Tensor velocities = [
+    0.0, 0.0, 0.0,
+    0.0, 0.0, 0.0,
+    0.0, 0.0, 0.0,
+    0.0, 0.0, 0.0,
+    0.0, 0.0, 0.0
+];
+
+// ---- Single simulation step ----
+
+Pipeline simStep {
+    // Apply gravity (⊕ bias addition along all vertices)
+    Tensor gravityForce = velocities ⊕ gravity;
+
+    // Apply damping
+    Tensor dampedVel = gravityForce ⊗ damping;
+
+    // Update positions
+    Tensor newPos = rodVertices ⊕ dampedVel;
+
+    // Apply torsion field deformation (∿)
+    Tensor deformed = newPos ∿ torsionFactor;
+
+    // Wave modulation for oscillation (≋)
+    Tensor oscillated = deformed ≋ dt;
+}
+
+// ---- Multi-step simulation loop ----
+
+Cluster simulation {
+    Tensor state       = rodVertices;
+    Tensor vel         = velocities;
+    Tensor maxSteps    = 60;
+
+    // Phase-stepped execution across one full 2π cycle
+    // Each step advances the manifold phase by 2π / maxSteps
+    foreach glyph ∿ in step state {
+        Tensor state = state ⊕ vel;
+        Tensor vel   = vel ⊕ gravity;
+        Tensor state = state ∿ torsionFactor;
+    }
+}
+
+GPU.Dispatch(simulation, [4, 1, 1]);

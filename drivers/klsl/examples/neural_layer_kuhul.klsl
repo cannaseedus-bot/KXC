@@ -1,0 +1,62 @@
+// neural_layer_kuhul.klsl
+// K'UHUL linear layer: out[r,j] = sum_k(X[r,k] * W[k,j]) + b[j]
+//
+// Phase contract (Pop → Wo → Yax → Sek → Ch'en → Xul):
+//   Wo        — declares all tensor buffers; W and b are independent peers at own register slots
+//   Yax       — annotates operand load  (comment in HLSL, Yax phase signal in runtime)
+//   Sek       — dispatches compute: ⊗ accumulation per k, ⊕ bias-add
+//   Ch'en     — annotates result store  (comment in HLSL, Ch'en phase signal in runtime)
+//   K'ayab'   — for-loop over in_dim  (KLSL loop construct, not a runtime phase)
+//   Kumk'u    — end loop
+//
+// Tensor shapes (safe contract — no invented semantics):
+//   X_buf : [n_rows * in_dim]   layout [r, k],  r = B*T row, k = input channel
+//   W_buf : [out_dim * in_dim]  layout [j, k],  j = output neuron (col-major per neuron)
+//   b_buf : [out_dim]           own buffer t2 — bias is its own weight matrix, not a column of W
+//   out_buf: [n_rows * out_dim] layout [r, j]
+//
+// cbuffer LayerConst:
+//   uint in_dim;   // K = 1024
+//   uint out_dim;  // N = 512
+//   uint n_rows;   // B * T (batch * sequence length)
+//   uint _pad;
+//
+// Compile:  klslc neural_layer_kuhul.klsl neural_layer_kuhul.hlsl
+// Dispatch: (ceil(out_dim/16), ceil(n_rows/16), 1) thread groups
+
+⟁ shader neural_layer_kuhul
+
+  ⟁Wo⟁ stage "compute"
+  ⟁Wo⟁ threads [16, 16, 1]
+
+  // Wo: declare all weight tensors — W and b are peer buffers with independent register slots
+  ⟁Wo⟁ StructuredBuffer<float>    X_buf   : register(t0)
+  ⟁Wo⟁ StructuredBuffer<float>    W_buf   : register(t1)
+  ⟁Wo⟁ StructuredBuffer<float>    b_buf   : register(t2)
+  ⟁Wo⟁ RWStructuredBuffer<float>  out_buf : register(u0)
+  ⟁Wo⟁ ConstantBuffer<LayerConst> cb      : register(b0)
+
+  [Pop neural_forward]
+    ⟁Wo⟁ uint col = SV_DispatchThreadID.x
+    ⟁Wo⟁ uint row = SV_DispatchThreadID.y
+    ⟁Sek⟁ if (col >= cb.out_dim || row >= cb.n_rows) return
+
+    // Sek ⊗: X ⊗ W — dot product over in_dim
+    ⟁Yax⟁ X_buf W_buf
+    ⟁Wo⟁ float acc = 0.0f
+    ⟁K'ayab'⟁ uint k in 0 .. cb.in_dim
+      ⟁Wo⟁ float x_k = X_buf[row * cb.in_dim + k]
+      ⟁Wo⟁ float w_k = W_buf[col * cb.in_dim + k]
+      ⟁Sek⟁ acc += x_k * w_k
+    ⟁Kumk'u⟁
+    ⟁Ch'en⟁ XW
+
+    // Sek ⊕: b_buf is its own independent weight buffer (t2), not a column of W
+    ⟁Yax⟁ b_buf
+    ⟁Wo⟁ float b_j = b_buf[col]
+    ⟁Sek⟁ acc += b_j
+    ⟁Ch'en⟁ output
+    ⟁Sek⟁ out_buf[row * cb.out_dim + col] = acc
+  [Xul]
+
+⟁Xul⟁

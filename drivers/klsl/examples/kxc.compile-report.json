@@ -1,0 +1,26 @@
+{
+  "stackId": "asx-xcfe-stack/v1",
+  "stackManifest": "C:/public_html/MX2LM/codex/AS-XCFE/native/xvm-d3d12/asx_manifest.json",
+  "stackCid": "fnv1a64:1c36e0cc928a7591",
+  "sourceKind": "kuhul",
+  "sourcePath": "./binary_split_test.kuhul",
+  "sourceCid": "fnv1a64:b69b8720a46e5a02",
+  "sourceSchema": "",
+  "originSourceKind": "",
+  "originSourcePath": "",
+  "originSourceCid": "",
+  "entries": [
+    {
+      "kernel": "binary_split",
+      "lawful": true,
+      "registryMatched": false,
+      "artifacts": [
+        {"name": "binary_split.cpp", "cid": "fnv1a64:3be0f34d71ba001e"},
+        {"name": "binary_split.hlsl", "cid": "fnv1a64:6126bbd62826f227"},
+        {"name": "binary_split.wgsl", "cid": "fnv1a64:aea25cc9cc5aabee"},
+        {"name": "binary_split.cpu.cpp", "cid": "fnv1a64:3d30eceaf21011ff"},
+        {"name": "binary_split.smca.json", "cid": "fnv1a64:33b67a5ff698ab83"}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+[Pop MoERouter]
+  [Muwan dispatch 32 1 1]
+  [Sek needsMoERoute true]
+  [Sek needsMoECombine true]
+[Xul]

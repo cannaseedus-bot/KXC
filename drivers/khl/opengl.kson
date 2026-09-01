@@ -1,0 +1,414 @@
+{
+  "protocol": "kast/1",
+  "registry_hash": "eecf703c851fb9c33ef12ee2ea128c172e4af36ea7f71ebc37470687bcf37f74",
+  "source_kind": "khl",
+  "source_id": "opengl.khl",
+  "entry_node_id": "n2",
+  "nodes": [
+    {
+      "id": "n0",
+      "kind": "bind",
+      "fold": "Pop",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "manifest.gpu.glsl.icd",
+      "type": "manifest_ref",
+      "operands": [
+        "GL_ICD"
+      ],
+      "attributes": {
+        "manifest_path": "manifest.gpu.glsl.icd"
+      }
+    },
+    {
+      "id": "n1",
+      "kind": "bind",
+      "fold": "Pop",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "manifest.gpu.glsl.max_work",
+      "type": "manifest_ref",
+      "operands": [
+        "GL_MAX_WORK"
+      ],
+      "attributes": {
+        "manifest_path": "manifest.gpu.glsl.max_work"
+      }
+    },
+    {
+      "id": "n2",
+      "kind": "glyph",
+      "fold": "Pop",
+      "lane": "driver",
+      "glyph": "opengl::probe",
+      "opcode": "GLYPH",
+      "symbol": "opengl::probe",
+      "type": "driver_glyph",
+      "operands": [],
+      "attributes": {
+        "driver": ""
+      }
+    },
+    {
+      "id": "n3",
+      "kind": "call",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "gl::icd_available",
+      "opcode": "CALL",
+      "symbol": "gl::icd_available",
+      "type": "operator_call",
+      "operands": [
+        "GL_ICD"
+      ],
+      "attributes": {
+        "result": "ICD_OK"
+      }
+    },
+    {
+      "id": "n4",
+      "kind": "call",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "gl::compute_available",
+      "opcode": "CALL",
+      "symbol": "gl::compute_available",
+      "type": "operator_call",
+      "operands": [],
+      "attributes": {
+        "result": "COMPUTE_OK"
+      }
+    },
+    {
+      "id": "n5",
+      "kind": "call",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "gl::ssbo_available",
+      "opcode": "CALL",
+      "symbol": "gl::ssbo_available",
+      "type": "operator_call",
+      "operands": [],
+      "attributes": {
+        "result": "SSBO_OK"
+      }
+    },
+    {
+      "id": "n6",
+      "kind": "yield",
+      "fold": "Xul",
+      "lane": "output",
+      "glyph": "yield",
+      "opcode": "YIELD",
+      "symbol": "ICD_OK && COMPUTE_OK && SSBO_OK",
+      "type": "return_value",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n7",
+      "kind": "glyph",
+      "fold": "Sek",
+      "lane": "driver",
+      "glyph": "opengl::dispatch",
+      "opcode": "GLYPH",
+      "symbol": "opengl::dispatch",
+      "type": "driver_glyph",
+      "operands": [
+        "TENSOR_IN"
+      ],
+      "attributes": {
+        "driver": ""
+      }
+    },
+    {
+      "id": "n8",
+      "kind": "call",
+      "fold": "Pop",
+      "lane": "compute",
+      "glyph": "gl::upload",
+      "opcode": "CALL",
+      "symbol": "gl::upload",
+      "type": "operator_call",
+      "operands": [
+        "TENSOR_IN"
+      ],
+      "attributes": {
+        "result": "GPU_BUF"
+      }
+    },
+    {
+      "id": "n9",
+      "kind": "call",
+      "fold": "Pop",
+      "lane": "compute",
+      "glyph": "gl::bind_shader",
+      "opcode": "CALL",
+      "symbol": "gl::bind_shader",
+      "type": "operator_call",
+      "operands": [
+        "\"compute\""
+      ],
+      "attributes": {
+        "result": "PROG"
+      }
+    },
+    {
+      "id": "n10",
+      "kind": "call",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "gl::dispatch",
+      "opcode": "CALL",
+      "symbol": "gl::dispatch",
+      "type": "operator_call",
+      "operands": [
+        "GPU_BUF",
+        "PROG"
+      ],
+      "attributes": {
+        "result": "OUT_BUF"
+      }
+    },
+    {
+      "id": "n11",
+      "kind": "yield",
+      "fold": "Xul",
+      "lane": "output",
+      "glyph": "yield",
+      "opcode": "YIELD",
+      "symbol": "OUT_BUF",
+      "type": "return_value",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n12",
+      "kind": "glyph",
+      "fold": "Ch'en",
+      "lane": "driver",
+      "glyph": "opengl::collect_status",
+      "opcode": "GLYPH",
+      "symbol": "opengl::collect_status",
+      "type": "driver_glyph",
+      "operands": [],
+      "attributes": {
+        "driver": ""
+      }
+    },
+    {
+      "id": "n13",
+      "kind": "call",
+      "fold": "Pop",
+      "lane": "compute",
+      "glyph": "gl::readback",
+      "opcode": "CALL",
+      "symbol": "gl::readback",
+      "type": "operator_call",
+      "operands": [
+        "OUT_BUF"
+      ],
+      "attributes": {
+        "result": "TENSOR_OUT"
+      }
+    },
+    {
+      "id": "n14",
+      "kind": "call",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "gl::sync",
+      "opcode": "CALL",
+      "symbol": "gl::sync",
+      "type": "operator_call",
+      "operands": [],
+      "attributes": {
+        "result": "SYNC_OK"
+      }
+    },
+    {
+      "id": "n15",
+      "kind": "yield",
+      "fold": "Xul",
+      "lane": "output",
+      "glyph": "yield",
+      "opcode": "YIELD",
+      "symbol": "TENSOR_OUT",
+      "type": "return_value",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n16",
+      "kind": "glyph",
+      "fold": "Xul",
+      "lane": "driver",
+      "glyph": "opengl::commit",
+      "opcode": "GLYPH",
+      "symbol": "opengl::commit",
+      "type": "driver_glyph",
+      "operands": [
+        "TENSOR_OUT"
+      ],
+      "attributes": {
+        "driver": ""
+      }
+    },
+    {
+      "id": "n17",
+      "kind": "call",
+      "fold": "Xul",
+      "lane": "compute",
+      "glyph": "tensor::store",
+      "opcode": "CALL",
+      "symbol": "tensor::store",
+      "type": "operator_call",
+      "operands": [
+        "TENSOR_OUT"
+      ],
+      "attributes": {
+        "result": "OK"
+      }
+    },
+    {
+      "id": "n18",
+      "kind": "yield",
+      "fold": "Xul",
+      "lane": "output",
+      "glyph": "yield",
+      "opcode": "YIELD",
+      "symbol": "OK",
+      "type": "return_value",
+      "operands": [],
+      "attributes": {}
+    }
+  ],
+  "edges": [
+    {
+      "id": "e0",
+      "from": "n2",
+      "to": "n3",
+      "kind": "control",
+      "label": "call",
+      "ordinal": 0
+    },
+    {
+      "id": "e1",
+      "from": "n3",
+      "to": "n4",
+      "kind": "control",
+      "label": "call",
+      "ordinal": 1
+    },
+    {
+      "id": "e2",
+      "from": "n4",
+      "to": "n5",
+      "kind": "control",
+      "label": "call",
+      "ordinal": 2
+    },
+    {
+      "id": "e3",
+      "from": "n5",
+      "to": "n6",
+      "kind": "control",
+      "label": "yield",
+      "ordinal": 3
+    },
+    {
+      "id": "e4",
+      "from": "n7",
+      "to": "n8",
+      "kind": "control",
+      "label": "call",
+      "ordinal": 4
+    },
+    {
+      "id": "e5",
+      "from": "n8",
+      "to": "n9",
+      "kind": "control",
+      "label": "call",
+      "ordinal": 5
+    },
+    {
+      "id": "e6",
+      "from": "n9",
+      "to": "n10",
+      "kind": "control",
+      "label": "call",
+      "ordinal": 6
+    },
+    {
+      "id": "e7",
+      "from": "n10",
+      "to": "n11",
+      "kind": "control",
+      "label": "yield",
+      "ordinal": 7
+    },
+    {
+      "id": "e8",
+      "from": "n12",
+      "to": "n13",
+      "kind": "control",
+      "label": "call",
+      "ordinal": 8
+    },
+    {
+      "id": "e9",
+      "from": "n13",
+      "to": "n14",
+      "kind": "control",
+      "label": "call",
+      "ordinal": 9
+    },
+    {
+      "id": "e10",
+      "from": "n14",
+      "to": "n15",
+      "kind": "control",
+      "label": "yield",
+      "ordinal": 10
+    },
+    {
+      "id": "e11",
+      "from": "n16",
+      "to": "n17",
+      "kind": "control",
+      "label": "call",
+      "ordinal": 11
+    },
+    {
+      "id": "e12",
+      "from": "n17",
+      "to": "n18",
+      "kind": "control",
+      "label": "yield",
+      "ordinal": 12
+    }
+  ],
+  "semantic_hash": "92849f0897f3ebee1e6d19d0a579f16fbb4adca0de00d302ec1c67bcaab96aa8",
+  "@driver": {
+    "@abi": 1,
+    "@requires": {
+      "kuhul": ">= 1.0",
+      "khl_abi": 1,
+      "scxq2": ">= 2.0"
+    },
+    "@capabilities": [
+      "tensor.map"
+    ],
+    "@phase_hooks": {
+      "Sek": "dispatch",
+      "Ch'en": "collect_status",
+      "Xul": "commit_tensor_state"
+    },
+    "@provider": "opengl",
+    "@resources": [],
+    "@hash": "92849f0897f3ebee1e6d19d0a579f16fbb4adca0de00d302ec1c67bcaab96aa8"
+  }
+}

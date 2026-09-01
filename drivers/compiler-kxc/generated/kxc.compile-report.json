@@ -1,0 +1,27 @@
+{
+  "stackId": "asx-xcfe-stack/v1",
+  "stackManifest": "C:/public_html/MX2LM/codex/AS-XCFE/native/xvm-d3d12/asx_manifest.json",
+  "stackCid": "fnv1a64:3e85439d1314a299",
+  "sourceKind": "kuhul",
+  "sourcePath": "C:/public_html/MX2LM/codex/AS-XCFE/compiler/kxc/examples/fused_attention.kuhul",
+  "sourceCid": "fnv1a64:c883b82a09eedc6e",
+  "sourceSchema": "",
+  "originSourceKind": "",
+  "originSourcePath": "",
+  "originSourceCid": "",
+  "entries": [
+    {
+      "kernel": "FusedAttention",
+      "lawful": true,
+      "registryMatched": true,
+      "artifacts": [
+        {"name": "FusedAttention.cpp", "cid": "fnv1a64:0dc39250f38eab6c"},
+        {"name": "FusedAttention.hlsl", "cid": "fnv1a64:15f81e58c695091b"},
+        {"name": "FusedAttention.wgsl", "cid": "fnv1a64:555aaf30fb769dde"},
+        {"name": "FusedAttention.cpu.cpp", "cid": "fnv1a64:f51ab8c762d21228"},
+        {"name": "FusedAttention.ir.json", "cid": "fnv1a64:3dcff4ff9710f792"},
+        {"name": "FusedAttention.smca.json", "cid": "fnv1a64:b0999c5a2af1593e"}
+      ]
+    }
+  ]
+}

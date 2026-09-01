@@ -1,0 +1,11 @@
+{
+  "@registry": "SMCA",
+  "@version": "1.0.0",
+  "@authority": "SMCA/1",
+  "@frozen": true,
+  "entries": {
+    "collapse_geometry": "collapse-geometry/index.json",
+    "kernels": "kernels/",
+    "cm1_profiles": "cm1/profiles.json"
+  }
+}

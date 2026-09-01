@@ -1,0 +1,4 @@
+/* inference.khl - Global Inference Law */
+glyph inference::compute(TENSOR_INPUT) →
+  attention::dispatch(TENSOR_INPUT) → ATTN_MAP
+  yield ATTN_MAP

@@ -1,0 +1,28 @@
+// cssc_gemm.kuhul — matmul as a CSS-C kernel, authored in KLSL and lowered to WGSL+HLSL.
+// This is the arbitrary-kernel form of the `op: matmul` primitive: sm5 runs this lowered
+// cs_5_0 GEMM; webgl2 runs its built-in float-texture GEMM. One .cssc rule, both tiers.
+//
+//   C[row,col] = sum_k A[row,k] * B[k,col]
+
+@shader_language: wgsl
+@target_backends: ["wgpu", "d3d11"]
+
+@shaders: {
+  "matmul": {
+    "@type": "compute",
+    "@workgroup": [16, 16, 1],
+    "@inputs": {
+      "A": { "@type": "f32", "@layout": "read", "@shape": ["M", "K"] },
+      "B": { "@type": "f32", "@layout": "read", "@shape": ["K", "N"] }
+    },
+    "@outputs": {
+      "C": { "@type": "f32", "@layout": "read_write", "@shape": ["M", "N"] }
+    },
+    "@uniforms": {
+      "M": "u32",
+      "N": "u32",
+      "K": "u32"
+    },
+    "@kernel": "let col = global_id.x;\nlet row = global_id.y;\nif (row >= params.M) { return; }\nif (col >= params.N) { return; }\nvar acc: f32 = 0.0;\nfor (var k: u32 = 0u; k < params.K; k = k + 1u) { acc = acc + A[row * params.K + k] * B[k * params.N + col]; }\nC[row * params.N + col] = acc;"
+  }
+}

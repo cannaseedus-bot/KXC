@@ -1,0 +1,16 @@
+{
+  "kind": "kuhul.klsl.lowering-manifest.v1",
+  "source_dir": "../shaders/klsl",
+  "wgsl_dir": "../www/native/cssc_gate_run/lowered",
+  "hlsl_dir": "../www/native/cssc_gate_run/lowered",
+  "shaders": [
+    {
+      "source": "../shaders/klsl/cssc_softmax.kuhul",
+      "target": "../www/native/cssc_gate_run/lowered/cssc_softmax-softmax.wgsl",
+      "hlsl": "../www/native/cssc_gate_run/lowered/cssc_softmax-softmax.hlsl",
+      "status": "ok",
+      "mode": "manifest",
+      "shader": "softmax"
+    }
+  ]
+}

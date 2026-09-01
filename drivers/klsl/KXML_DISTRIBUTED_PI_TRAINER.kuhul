@@ -1,0 +1,226 @@
+// ============================================================
+// FILE: KXML_DISTRIBUTED_PI_TRAINER.kuhul
+// Pure K'UHUL — distributed pi-trainer on KXML graph topology
+//
+// Architecture:
+//   1000 pi processes, each sees only its own tile
+//   Scheduler aggregates via ring all-reduce
+//   SharedArrayBuffer for zero-copy gradient exchange
+//   Phase-gated: Pop (tile) → Wo (intent) → Sek (compute)
+//                → Ch'en (emit) → Xul (collapse)
+//
+// The "green screen" law:
+//   π processes NEVER mutate global state
+//   Each π emits only local field values
+//   Scheduler is the ONLY thing that sees the whole field
+//
+// GPU reduction truth:
+//   MathML  = defines WHAT (the equation)
+//   KUHUL   = defines HOW (the opcodes)
+//   Graph   = defines WHERE (the dataflow)
+//   Map     = defines WHY (the projection)
+//   GPU     = just does Sigma(a * b) and moves memory
+// ============================================================
+
+(⟁SYSTEM⟁) kxml_distributed_pi_trainer {
+
+  // ── Core binding truth ─────────────────────────────────────────────────────
+  // Every <node> is a BINDING, not a function.
+  // Nodes declare what they bind (inputs → outputs via transform).
+  // The runtime executes. The graph IS the program.
+
+  (⟁ARCHITECTURE⟁) node_binding_model {
+    @old_model: "Functions call other functions. Shaders render to pixels.",
+    @new_model: "Nodes bind inputs to outputs via named channels.",
+    @result:    "The graph is the program. The bindings are the execution.",
+
+    @traditional_concept_map: {
+      "function call":  "edge with forward channel",
+      "return value":   "output buffer bound to input buffer",
+      "stack frame":    "bind group + pipeline state",
+      "side effects":   "none (pure dataflow)",
+      "recursion":      "graph cycles (validated at compile time)"
+    }
+  }
+
+  // ── GPU reduction to 3 primitives ──────────────────────────────────────────
+
+  (⟁TABLE⟁) gpu_primitives {
+    @primitives: [
+      {op: "GEMM",        formula: "C = alpha * A x B + beta * C"},
+      {op: "Elementwise", formula: "C = f(A)  where f in {exp, log, sqrt, relu, max}"},
+      {op: "Reduce",      formula: "scalar = {sum, max, min} over dims"}
+    ],
+    @memory: "Copy from A to B (with optional layout transformation)",
+    @everything_else: "Attention, convolution, norm, dropout = graph composition of these 3"
+  }
+
+  // ── Distributed training law ───────────────────────────────────────────────
+
+  (⟁RULE⟁) pi_distribution_law {
+    @principle: "pi processes NEVER mutate global state. The scheduler handles aggregation.",
+    @mapping: {
+      "1000 tiles (shards)":    "1000 pi processes",
+      "each worker sees tile":  "each pi emits only local field",
+      "gradient all-reduce":   "field collapse across all pis",
+      "unified model weights":  "global tensor field",
+      "the blind spot":         "pi purity (no cross-process visibility)"
+    },
+    @scheduler_rule: "The scheduler (orchestrator) is the ONLY thing that sees the whole field."
+  }
+
+  // ── Phase-gated distributed trainer ────────────────────────────────────────
+
+  (⟁POP⟁) pi_distributed_trainer {
+    [Tensor manifold = euclidean(1000)]
+    [Tensor N_WORKERS = 1000]
+
+    // Phase 1 — Data Tiling (the "green screen" separation)
+    // Each pi gets its own file handle — no lock contention
+    (⟁POP⟁) orchestrator {
+      [Tensor input   = "dataset.jsonl"]
+      [Tensor tiles   = 1000]
+      [Tensor strategy = "balanced_lines"]
+      [Tensor tile_map = split(input, tiles, strategy)]
+
+      // Each tile is an independent file — KUHUL law: no two pi share open handle
+      [K'ayab' i in 0..999]
+        [Tensor tile_file = write_tile(tile_map[i], "tile_" ⊕ i ⊕ ".jsonl")]
+      [Kumk'u]
+
+      [Xul tile_map]
+    }
+
+    // Phase 2 — Worker spawning (each pi sees only its tile)
+    (⟁POP⟁) worker_pi {
+      [Tensor tile_id   = args.tile_id]
+      [Tensor tile_file = "tile_" ⊕ tile_id ⊕ ".jsonl"]
+
+      // Load — pure read, no global state
+      [Tensor data = read_jsonl(tile_file)]
+
+      // Forward pass
+      [Tensor logits    = model_forward(data)]
+      [Tensor loss      = cross_entropy(logits, data.targets)]
+
+      // Backward pass — local gradients only
+      [Tensor local_grad = backward(loss)]
+
+      // Pure pi emission — no global write
+      [Tensor pi_field[tile_id] = local_grad]
+
+      [Xul {tile_id: tile_id, loss: loss, grad: local_grad}]
+    }
+
+    // Phase 3 — Ring All-Reduce (scheduler aggregates)
+    // The commutative aggregation: order does not matter
+    // Global gradient = (1/N) * Sigma(g_i)
+    (⟁POP⟁) ring_all_reduce {
+      [Tensor ring = geodesic_ring(N_WORKERS)]  // topology: nearest neighbors
+      [Tensor aggregated = zero_tensor()]
+
+      [K'ayab' peer in ring.neighbors(args.tile_id)]
+        [Tensor sent     = send(pi_field[args.tile_id], peer)]
+        [Tensor received = receive(peer)]
+        [Tensor aggregated = aggregated + received]
+      [Kumk'u]
+
+      [Tensor global_gradient = aggregated / N_WORKERS]
+      [Xul global_gradient]
+    }
+
+    // Phase 4 — Weight update (single unified model)
+    (⟁POP⟁) optimizer {
+      [Tensor lr = 0.001]
+      [Tensor model_weights = model_weights - lr * global_gradient]
+
+      // Broadcast updated weights to all workers
+      [K'ayab' worker in 0..999]
+        [Tensor sent = send(model_weights, worker)]
+      [Kumk'u]
+
+      [Xul model_weights]
+    }
+
+    // Phase 5 — Collapse to output
+    (⟁POP⟁) collapse {
+      [Tensor outputs    = sum(pi_field) / N_WORKERS]
+      [Tensor projection = tensorboard_export(outputs)]
+      [Xul projection]
+    }
+  }
+
+  // ── Minimal binding syntax (the stripped-down form) ────────────────────────
+  // No shader code. No kernel. Just bindings.
+  // The runtime synthesizes the compute.
+
+  (⟁EXAMPLE⟁) minimal_binding {
+    @xml: [|
+      <!-- This IS the program. No hidden logic. -->
+      <node id="multiply" phase="Sek">
+        <bind from="A" to="C" transform="matmul(B)" />
+        <bind from="B" to="C" transform="transpose" />
+      </node>
+
+      <edge from="multiply.C" to="attention.Q" />
+
+      <node id="attention" phase="Sek">
+        <bind from="Q,K,V" to="O" transform="flash_attn(causal=true)" />
+      </node>
+    |]
+  }
+
+  // ── NodeBindingRuntime (JavaScript) ────────────────────────────────────────
+
+  (⟁EXAMPLE⟁) node_binding_runtime {
+    @js: [|
+      class NodeBindingRuntime {
+        executeNode(node) {
+          const inputs  = this.resolveInputs(node.bindings.from);
+          const outputs = this.applyTransform(node.bindings.transform, inputs);
+          this.bindOutputs(node.bindings.to, outputs);
+        }
+      }
+    |]
+  }
+
+  // ── Topology parameter handles single-machine vs distributed ───────────────
+
+  (⟁EXAMPLE⟁) topology_variants {
+    @single_machine_4gpu: [|
+      pi config = {
+        topology:    "pcie_switch",
+        workers:     1000,
+        strategy:    "round_robin",
+        backend:     "directx12"
+      };
+    |],
+
+    @distributed_10_machines: [|
+      pi config = {
+        topology:    "ethernet_ring",
+        workers:     1000,
+        strategy:    "geodesic_nearest",
+        backend:     "nccl"
+      };
+    |],
+
+    @note: "Same K'UHUL code. Different topology parameter. Same ring all-reduce."
+  }
+
+  // ── Init ───────────────────────────────────────────────────────────────────
+
+  (⟁POP⟁) init {
+    console.log("KXML Distributed pi-Trainer")
+    console.log("  Workers    : 1000 pi processes")
+    console.log("  Aggregation: ring all-reduce via SharedArrayBuffer")
+    console.log("  Law        : pi processes never mutate global state")
+    console.log("  GPU        : Sigma(a*b) + memory moves only")
+    console.log("  Compiler   : native/kxml/kxml_compiler.rs")
+    console.log("  DX backend : native/kxml/kxml_directxmath_runtime.h")
+    console.log("  DX bridge  : native/kxml/kxml_directxmath_bridge.h")
+    [Xul {status: "ready", workers: 1000, backend: "wgpu|directx|vulkan|metal"}]
+  }
+
+  [init]
+}

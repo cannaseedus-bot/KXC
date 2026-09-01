@@ -1,0 +1,6 @@
+{
+  "@kernel": "tensor_attention_fused",
+  "@version": "1.0.0",
+  "@frozen": false,
+  "description": "Fused attention kernel: Q·K·V reduction with optional decompress, softmax, matmul, and kvInt4 quantization. Collapses QKV into output without materializing the full attention matrix."
+}

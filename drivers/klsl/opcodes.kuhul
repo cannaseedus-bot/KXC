@@ -1,0 +1,43 @@
+// opcodes.kuhul - Terminal Brain
+// Focus: Shell syntax validation and error log anomaly detection
+
+@shader_language: wgsl
+@target_backends: ["wgpu", "d3d11"]
+
+@shaders: {
+  "error_classifier": {
+    "@type": "compute",
+    "@workgroup": [64, 1, 1],
+    "@inputs": {
+      "log_tokens": { "@type": "u32", "@layout": "read", "@shape": ["N"] },
+      "error_patterns": { "@type": "u32", "@layout": "read", "@shape": ["P", "S"] }
+    },
+    "@outputs": {
+      "match_scores": { "@type": "f32", "@layout": "read_write", "@shape": ["P"] }
+    },
+    "@uniforms": {
+      "N": "u32",
+      "P": "u32",
+      "S": "u32"
+    },
+    "@kernel": "
+      let pattern_idx = global_id.x;
+      if (pattern_idx >= params.P) { return; }
+      
+      var max_consecutive_match: u32 = 0u;
+      // Simple sliding window match for error signatures
+      for (var i: u32 = 0u; i <= params.N - params.S; i = i + 1u) {
+        var current_match: u32 = 0u;
+        for (var j: u32 = 0u; j < params.S; j = j + 1u) {
+          if (log_tokens[i + j] == error_patterns[pattern_idx * params.S + j]) {
+            current_match = current_match + 1u;
+          }
+        }
+        if (current_match > max_consecutive_match) {
+          max_consecutive_match = current_match;
+        }
+      }
+      match_scores[pattern_idx] = f32(max_consecutive_match) / f32(params.S);
+    "
+  }
+}

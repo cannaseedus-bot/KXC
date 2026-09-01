@@ -1,0 +1,13 @@
+{
+  "@lane": "DICT",
+  "@id": "cm1.dict.v1",
+  "bytes": {
+    "SOH": 1,
+    "STX": 2,
+    "ETX": 3,
+    "EOT": 4,
+    "SO": 14,
+    "SI": 15,
+    "RS": 30
+  }
+}

@@ -1,0 +1,51 @@
+/* ========================================================
+   phase.khl — Canonical K'UHUL Phase Authority
+   Role: THE phase law. One authority — json_runtime and
+   kuhul_engine are CONSUMERS of this driver, not parallel
+   implementations. Sync drifts; authority does not.
+   Cycle: Pop -> Wo -> Yax -> Sek -> Ch'en -> Xul -> Pop
+   ======================================================== */
+
+@bind manifest.kuhul.phase.cycle → PHASE_CYCLE
+
+/* phase::current() → PHASE — Pop: perceive the state */
+glyph phase::current →
+  state::read_phase() → P
+  yield P
+
+/* phase::legal(FROM, TO) → BOOL — Wo: the transition law */
+glyph phase::legal(FROM, TO) →
+  phase::index(FROM) → I
+  phase::index(TO)   → J
+  if (J == I + 1) || (FROM == "Xul" && TO == "Pop") ::
+    yield true
+  done
+  yield false
+
+/* phase::transition(FROM, TO) → PHASE — Yax: plan the move */
+glyph phase::transition(FROM, TO) →
+  phase::legal(FROM, TO) → OK
+  if OK ::
+    state::advance(TO) → NEXT
+    yield NEXT
+  done
+  state::reject(FROM, TO) → ERR
+  yield ERR
+
+/* phase::fold(NAME) → FOLD — Sek: execute a named fold in the current phase */
+glyph phase::fold(NAME) →
+  state::current_phase() → CP
+  fold::resolve(CP, NAME) → F
+  fold::dispatch(F) → R
+  yield R
+
+/* phase::manifold() → MANIFOLD — Ch'en: project the phase manifold */
+glyph phase::manifold →
+  state::phase_history() → H
+  manifold::build(H) → M
+  yield M
+
+/* phase::commit() → OK — Xul: consolidate phase state */
+glyph phase::commit →
+  state::store_phase() → OK
+  yield OK

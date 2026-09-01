@@ -1,0 +1,33 @@
+(*
+  Point cloud processing example.
+  Demonstrates tensor product for 3D transformations and
+  direct sum for merging point clouds.
+*)
+[Pop]
+  (* Two point clouds, each with N points × 3 coordinates *)
+  [Wo cloudA     tensor<float32, [2048, 3]>]
+  [Wo cloudB     tensor<float32, [2048, 3]>]
+
+  (* 3D rotation matrix *)
+  [Wo rotMatrix  tensor<float32, [3, 3]>]
+
+  (* Merge the two clouds *)
+  [Sek ⊞ cloudA cloudB]
+  [Ch'en merged cloudA]
+
+  [K'ayab']
+    (* Apply rotation to merged cloud *)
+    [Yax merged]
+    [Yax rotMatrix]
+    [Sek ⊗ merged rotMatrix]
+    [Ch'en rotated merged]
+
+    (* Compute centroid offset via addition *)
+    [Yax rotated]
+    [Sek ⊕ rotated rotated]
+    [Ch'en centred rotated]
+  [Kumk'u]
+
+  [Yax centred]
+  [Ch'en output centred]
+[Xul]

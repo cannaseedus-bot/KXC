@@ -1,0 +1,186 @@
+// ============================================================
+// FILE: GLYPH_COMPILER_SPEC.kuhul
+// K'UHUL Glyph Compiler Specification
+//
+// Core thesis:
+//   K'UHUL glyphs are NOT language tokens.
+//   They are semantic opcodes that compile into execution subgraphs.
+//
+//   Glyph = OpcodeSugar + SemanticContract + ExpertRoute + ControlFlowAnchor
+//
+// The model predicts GLYPHS (execution intent), not TOKENS (words).
+//
+//   Traditional:  P(token_{n+1} | context)
+//   K'UHUL:       P(glyph_{n+1} | fold_state)
+//                 = P(F_{t+1} | F_t, G, P)    [PGGTF form]
+//
+// SafeTensors remain the physics. Glyphs are the semantics.
+//   SafeTensors -> Tensor Registry -> Glyph Layer -> Fold Layer
+//   -> Object Layer -> Object Server
+// ============================================================
+
+(⟁SYSTEM⟁) glyph_compiler_spec {
+
+  // ── Core definition ─────────────────────────────────────────────────────────
+
+  (⟁ARCHITECTURE⟁) glyph_definition {
+    @principle: "A glyph is compressed execution intent, not a natural language token",
+    @formal: "Glyph = OpcodeSugar + SemanticContract + ExpertRoute + ControlFlowAnchor",
+    @analogy:  "Shader keyword (mul, normalize, saturate) that expands to a subgraph"
+  }
+
+  // ── The five execution domains ───────────────────────────────────────────────
+
+  (⟁TABLE⟁) glyph_expert_map {
+    @glyphs: [
+      {
+        glyph:    "Pop",
+        expert:   "Discovery",
+        kxml:     "phase=Pop domain=meta",
+        expands:  ["load_context", "bind_memory", "resolve_deps"],
+        dx_op:    null
+      },
+      {
+        glyph:    "Wo",
+        expert:   "Binding",
+        kxml:     "phase=Wo domain=routing",
+        expands:  ["bind_inputs", "validate_shapes", "resolve_routes"],
+        dx_op:    null
+      },
+      {
+        glyph:    "Sek",
+        expert:   "Compute",
+        kxml:     "phase=Sek domain=compute device=gpu",
+        expands:  ["validate", "schedule", "dispatch", "sync", "commit"],
+        dx_op:    "XMMatrixMultiply + XMVectorOps  (DirectXMath SIMD backend)"
+      },
+      {
+        glyph:    "Ch'en",
+        expert:   "Commit",
+        kxml:     "phase=Ch'en domain=storage",
+        expands:  ["pack_results", "write_memory", "emit_gradients"],
+        dx_op:    "XMStoreHalf4 (DirectXPackedVector -- 2x compression)"
+      },
+      {
+        glyph:    "Xul",
+        expert:   "Validation",
+        kxml:     "phase=Xul domain=ui",
+        expands:  ["verify_hash", "check_bounds", "close_fold"],
+        dx_op:    null
+      }
+    ]
+  }
+
+  // ── Glyph expansion example: Sek @fib4 ──────────────────────────────────────
+
+  (⟁EXAMPLE⟁) sek_fib4_expansion {
+    @input: "Sek @fib4 100",
+
+    @kxml_node: [|
+      <node id="fib_batch" phase="Sek" domain="compute" device="gpu">
+        <ops>
+          <op type="@wgpu_dispatch" kernel="fibonacci_simd.hlsl"
+              workgroups="64,1,1" n_start="100" />
+        </ops>
+        <mathml>
+          <apply><eq/><ci>fib_n</ci>
+            <apply><ci>round</ci>
+              <apply><divide/>
+                <apply><ci>pow</ci><cn>1.618034</cn><ci>n</ci></apply>
+                <cn>2.236068</cn>
+              </apply>
+            </apply>
+          </apply>
+        </mathml>
+        <soft_landing>
+          <bounded_gradient lipschitz="1.0" />
+        </soft_landing>
+      </node>
+    |],
+
+    @directxmath: [|
+      // DirectXMath backend for ⟁Sek⟁ @fib4
+      XMVECTOR indices = XMLoadUInt4(&n_start);       // SIMD gather
+      XMVECTOR results = FibonacciSIMD(indices);       // 4x parallel
+      XMHALF4  packed;
+      XMStoreHalf4(&packed, results);                  // 2x compression
+    |],
+
+    @hlsl: [|
+      [numthreads(64, 1, 1)]
+      void CS_Fib(uint3 id : SV_DispatchThreadID) {
+          float4 n   = float4(id.x*4, id.x*4+1, id.x*4+2, id.x*4+3);
+          float4 fib = round(pow(1.618034f, n) / 2.236068f);
+          uint2  pk;
+          pk.x = f32tof16(fib.x) | (f32tof16(fib.y) << 16);
+          pk.y = f32tof16(fib.z) | (f32tof16(fib.w) << 16);
+          output[id.x*2]   = pk.x;
+          output[id.x*2+1] = pk.y;
+      }
+    |]
+  }
+
+  // ── Fold-as-bigram: the key shift ────────────────────────────────────────────
+
+  (⟁TABLE⟁) bigram_to_fold {
+    @traditional: {
+      representation: "P(world | hello) = 0.83",
+      type:           "probability (stateless, no identity)",
+      inference:      "P(token_{n+1} | context)"
+    },
+    @fold_object: {
+      representation: {
+        "@id":     "fold_001",
+        "@source": "hello",
+        "@target": "world",
+        "@weight": 0.83,
+        "@uses":   1042
+      },
+      type:      "persistent object with identity, memory, graph",
+      inference: "P(F_{t+1} | F_t, G, P) = next FOLD prediction"
+    },
+    @progression: ["Character", "Token", "Bigram", "Fold", "Fold Graph", "Object", "Object Server"]
+  }
+
+  // ── Complete runtime stack ───────────────────────────────────────────────────
+
+  (⟁ARCHITECTURE⟁) full_stack {
+    @layers: [
+      {layer: 0, name: "SafeTensors",       role: "Physical storage — the physics"},
+      {layer: 1, name: "Tensor Registry",   role: "Fold semantics attached to tensor names"},
+      {layer: 2, name: "Glyph Layer",       role: "Semantic opcodes routing tensor ops"},
+      {layer: 3, name: "Fold Layer",        role: "Structural units replacing n-grams"},
+      {layer: 4, name: "Object Layer",      role: "Tensor refs + folds + memory + execution graph"},
+      {layer: 5, name: "Object Server",     role: "Serve objects, not weights"}
+    ],
+    @equation: "Object = (Glyphs, Folds, Graph, Memory, State, TensorRefs)",
+    @invariant: "TensorRefs always point back to SafeTensors -- never replace the physics"
+  }
+
+  // ── Formal glyph expansion function ─────────────────────────────────────────
+
+  (⟁RULE⟁) glyph_expansion_law {
+    @definition: "sigma(g, args) = Subgraph(nodes=ExpandExpert(Phi(g), args), edges=PhaseGatedConnections(g), gradients=BackwardChannels(g))",
+    @dx_invariant: "forall compute_op in Subgraph: exists dx_intrinsic in DirectXMath such that dx_intrinsic implements compute_op with SIMD",
+    @safetensor_invariant: "forall tensor_op in Subgraph: tensor_op.weights in SafeTensors"
+  }
+
+  // ── Init ────────────────────────────────────────────────────────────────────
+
+  (⟁POP⟁) init {
+    console.log("K'UHUL Glyph Compiler Spec")
+    console.log("  Glyphs are semantic opcodes, not language tokens")
+    console.log("  Model predicts: P(F_{t+1}|F_t,G,P) -- next fold, not next token")
+    console.log("  SafeTensors: the physics (unchanged)")
+    console.log("  Glyphs/Folds/Objects: the semantics and orchestration above them")
+    console.log("")
+    console.log("  Implementation:")
+    console.log("    src/pggtf/   -- PGGTF tensor field (P, G, F, Pi)")
+    console.log("    src/mx2lm/   -- MX2LM tensor manifest + fold objects")
+    console.log("    native/kxml/ -- DirectXMath SIMD backend for Sek compute")
+    console.log("    kuhul/kxml/  -- KXML bidirectional graph (execution topology)")
+    [Xul {status: "specified", version: "3.5.0"}]
+  }
+
+  [init]
+}

@@ -1,0 +1,67 @@
+{
+  "tasks": [
+    {
+      "id": "micronaut_xquery",
+      "action": "micronaut_select",
+      "description": "Route prompt to grounded micronaut system context via kuhul-server",
+      "provider": "kuhul-server",
+      "depends_on": []
+    },
+    {
+      "id": "teacher_sample",
+      "action": "hive_teacher_complete",
+      "description": "Get teacher completion: supernaut:5774 → hive specialist → kuhul_engine:17480 (local) → cloud Ollama",
+      "provider": "mn-supernaut",
+      "depends_on": ["micronaut_xquery"]
+    },
+    {
+      "id": "distil_step",
+      "action": "lora_step",
+      "description": "LoRA gradient step on (prompt, teacher_completion) pair",
+      "provider": "python-distil",
+      "depends_on": ["teacher_sample"]
+    },
+    {
+      "id": "factory_store",
+      "action": "store_qa",
+      "description": "Write Q&A pair to semantic micronaut for confidence building",
+      "provider": "micronaut-factory",
+      "depends_on": ["distil_step"]
+    }
+  ],
+  "providers": [
+    { "id": "kuhul-server",      "endpoint": "http://127.0.0.1:8764",  "available": true },
+    { "id": "ollama",            "endpoint": "http://127.0.0.1:11434", "available": true },
+    { "id": "python-distil",     "endpoint": "http://127.0.0.1:1236",  "available": true },
+    { "id": "micronaut-factory", "endpoint": "http://127.0.0.1:8764",  "available": true },
+    { "id": "mm-supernaut",      "endpoint": "http://127.0.0.1:25100", "available": true, "domain": "D0", "role": "orchestrator" },
+    { "id": "mm-coder",          "endpoint": "http://127.0.0.1:25500", "available": true, "domain": "D1", "role": "code generation" },
+    { "id": "mm-math",           "endpoint": "http://127.0.0.1:25501", "available": true, "domain": "D3", "role": "math/numerical" },
+    { "id": "mm-toolcall",       "endpoint": "http://127.0.0.1:25502", "available": true, "domain": "D5", "role": "reasoning/tool calls" },
+    { "id": "mm-kuhul",          "endpoint": "http://127.0.0.1:25503", "available": true, "domain": "D0", "role": "K'UHUL semantic/folds" },
+    { "id": "mm-research",       "endpoint": "http://127.0.0.1:25504", "available": true, "domain": "D2", "role": "research" },
+    { "id": "mm-agent",          "endpoint": "http://127.0.0.1:25505", "available": true, "domain": "D6", "role": "agent orchestration" },
+    { "id": "mm-skill",          "endpoint": "http://127.0.0.1:25506", "available": true, "domain": "D1", "role": "skill management" },
+    { "id": "mm-design",         "endpoint": "http://127.0.0.1:25507", "available": true, "domain": "D8", "role": "system and UX design" },
+    { "id": "mn-coordinator",   "endpoint": "http://127.0.0.1:25100", "available": true, "domain": "D0", "role": "CO-1 service coordinator (GET /registry POST /route)" },
+    { "id": "mn-factory",       "endpoint": "http://127.0.0.1:25101", "available": true, "domain": "D6", "role": "FG-1 micronaut factory (POST /create POST /register)" },
+    { "id": "mn-executor",      "endpoint": "http://127.0.0.1:25103", "available": true, "domain": "D5", "role": "EX-1 task executor (POST /execute GET /jobs)" },
+    { "id": "mn-worker",        "endpoint": "http://127.0.0.1:5010",  "available": true, "domain": "D3", "role": "DOTNET-WORKER-1 math/SIMD/tensor (POST /run)" },
+    { "id": "mn-supernaut",    "endpoint": "http://127.0.0.1:5774",  "available": true, "domain": "D0", "role": "Phase 7.5 orchestrator — 21 specialists, consensus voting (POST /orchestrate/execute)" },
+    { "id": "mn-s7api",        "endpoint": "http://127.0.0.1:5775",  "available": true, "domain": "D3", "role": "S7 inference API — micronaut-weights-v2.s7, INT8 (POST /generate POST /forward)" },
+    { "id": "mn-asxr",         "endpoint": "http://127.0.0.1:5776",  "available": true, "domain": "D0", "role": "ASXR Phase 7.7 Native Substrate — Living Semantic Genomes, manifold operators (GET /health)" },
+    { "id": "kuhul-engine",    "endpoint": "http://127.0.0.1:17480", "available": true, "domain": "D0", "role": "Local inference fallback — gpt-oss-20b-MXFP4.gguf via /v1/chat/completions (tried before cloud)" },
+    { "id": "model-cache",     "endpoint": "http://127.0.0.1:8764/model/cache", "available": true, "domain": "D0", "role": "C:\\ SSD model cache index — DDS shards, GGUFs, S7 weights. GET=status POST /copy=stage file" }
+  ],
+  "loop": {
+    "steps": 500,
+    "student":      "models/from_zero/from_zero_v0.6_merged.safetensors",
+    "out_lora":     "models/from_zero/from_zero_v0.6_lora.safetensors",
+    "rank":         8,
+    "lr":           0.0001,
+    "ollama_url":   "http://127.0.0.1:11434",
+    "ollama_model": "gpt-oss:120b-cloud",
+    "teacher_tokens": 128,
+    "atomic_dom":   "models/from_zero/atomic.manifest.json"
+  }
+}

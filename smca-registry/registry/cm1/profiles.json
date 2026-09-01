@@ -1,0 +1,10 @@
+{
+  "@cm1": "profiles",
+  "@version": "1.0.0",
+  "profiles": [
+    {
+      "id": "cm1.core.v1",
+      "grammar": "SOH STX (SO RS SI)* ETX EOT"
+    }
+  ]
+}

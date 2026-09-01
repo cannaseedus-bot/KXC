@@ -1,0 +1,39 @@
+{
+  "name": "FusedAttention",
+  "threads": [64, 1, 1],
+  "needsDecompress": true,
+  "needsSoftmax": true,
+  "needsMatMul": true,
+  "kvInt4": true,
+  "isMoEKernel": false,
+  "needsMoERoute": false,
+  "needsMoEExpertFFN": false,
+  "needsMoECombine": false,
+  "needsPhaseMatch": false,
+  "smca": {
+    "kernelClass": "tensor_attention_fused",
+    "collapseClass": "attention.fused",
+    "lawful": true,
+    "registryMatched": true,
+    "layers": ["MATRIX", "SCXQ2", "SCXQ7", "SCO/1", "IDB"],
+    "requires": ["deterministic_join", "bounded_reduction"],
+    "forbids": ["side_effects", "order_dependence"],
+    "notes": ["Kernel class resolved via kxc registry overlay.", "MATRIX: source K'uhul parsed into AST.", "SCXQ2: semantic ops lowered into backend-neutral IR.", "SCXQ7: legality and caps-aware optimization applied.", "SCO/1: backend emitters produce executable artifacts.", "IDB: sidecar metadata emitted for external verification."]
+  },
+  "resources": [
+    {"name": "Q", "kind": "structured_float", "shape": ["seq_len", "head_dim"]},
+    {"name": "KCache", "kind": "packed_int4", "shape": ["seq_len", "head_dim"]},
+    {"name": "VCache", "kind": "packed_int4", "shape": ["seq_len", "head_dim"]},
+    {"name": "KScale", "kind": "structured_float", "shape": ["seq_len"]},
+    {"name": "VScale", "kind": "structured_float", "shape": ["seq_len"]},
+    {"name": "Out", "kind": "structured_float", "shape": ["seq_len", "head_dim"]}
+  ],
+  "tensors": [
+    {"name": "Q", "storage": "float", "shape": ["seq_len", "head_dim"]},
+    {"name": "KCache", "storage": "int4", "shape": ["seq_len", "head_dim"]},
+    {"name": "VCache", "storage": "int4", "shape": ["seq_len", "head_dim"]},
+    {"name": "KScale", "storage": "float", "shape": ["seq_len"]},
+    {"name": "VScale", "storage": "float", "shape": ["seq_len"]},
+    {"name": "Out", "storage": "float", "shape": ["seq_len", "head_dim"]}
+  ]
+}

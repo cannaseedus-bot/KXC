@@ -1,0 +1,4 @@
+{
+  "@schema": "scxq2.lane.v1",
+  "lanes": ["DICT", "FIELD", "LANE", "EDGE"]
+}

@@ -1,0 +1,452 @@
+// ============================================================
+// FILE: KXML_BIDIRECTIONAL_GRAPH_TOPOLOGY.kuhul
+// PURE K'UHUL - Complete KXML Graph Specification Implementation
+// Version: 7.2 | Status: Adopted | Date: May 2026
+//
+// Implements src/kxml/ runtime in K'UHUL language.
+// Parser: src/kuhul/kuhulc.js
+// Runtime target: src/kxml/kxml-dispatcher.js + kxml-graph.js
+// ============================================================
+
+(⟁SYSTEM⟁) kxml_bidirectional_topology {
+
+  // ============================================================
+  // CORE PRINCIPLE: Parallel structure lives in graph topology,
+  // NOT runtime thread count. Each <node> IS a unit of computation.
+  // ============================================================
+
+  (⟁ARCHITECTURE⟁) kxml_core {
+    @principle: "Parallel structure in graph topology, not runtime threads",
+
+    @node_definition: {
+      @is_unit_of_computation: true,
+      @carries_mathml: true,
+      @has_phase_gate: true,
+      @has_domain: true,
+      @has_fold: true
+    },
+
+    @edge_encoding: {
+      @forward: "data flow (activation)",
+      @backward: "gradient flow (error signals)",
+      @bidirectional: true
+    },
+
+    @phase_gating: {
+      @enforces: "Nodes cannot be dispatched out-of-order or into invalid state",
+      @prevents: "Out-of-order dispatch",
+      @ensures: "Soft landings through phase completion"
+    }
+  }
+
+  // ============================================================
+  // QUESTION 1: XML Schema for <node>
+  // ANSWER: Each <node> carries its own MathML subtree describing its operation
+  // MathML lives at node level, not graph level
+  // ============================================================
+
+  (⟁SCHEMA⟁) kxml_node_schema {
+
+    (⟁TYPE⟁) KXMLNode {
+      @attributes: {
+        @id: "string",
+        @phase: "Pop|Wo|Sek|Ch'en|Xul",
+        @domain: "compute|storage|meta|ui|routing",
+        @fold: "COMPUTE_FOLD|STORAGE_FOLD|META_FOLD|UI_FOLD|ROUTING_FOLD",
+        @device: "cpu|gpu|auto",
+        @requires_phase: "Pop|Wo|Sek|Ch'en|Xul"
+      },
+
+      @children: {
+        @ops: "XCFE @ops[] format as XML elements",
+        @mathml: "MathML subtree describing node operation",
+        @gradient: "Gradient specification (optional, derived if omitted)",
+        @depends_on: "Array of node dependencies"
+      }
+    }
+
+    (⟁RULE⟁) node_phase_transition {
+      @condition: "Node cannot execute until runtime phase matches node.phase",
+      @dependencies: "All required predecessor nodes must have completed their phase"
+    }
+
+    (⟁EXAMPLE⟁) kxml_node_example {
+      @xml: [|
+        <node id="node_001"
+              phase="Pop"
+              domain="compute"
+              fold="COMPUTE_FOLD"
+              device="cpu">
+          <ops>
+            <op type="@load" src="input_a" dst="x" />
+            <op type="@mul" src1="x" src2="weight_1" dst="y" />
+            <op type="@add" src1="y" src2="bias_1" dst="z" />
+            <op type="@activation" kind="relu" src="z" dst="activated" />
+            <op type="@store" src="activated" dst="output" />
+          </ops>
+          <mathml xmlns="http://www.w3.org/1998/Math/MathML">
+            <math>
+              <apply>
+                <eq/>
+                <ci>output</ci>
+                <apply>
+                  <ci>ReLU</ci>
+                  <apply>
+                    <plus/>
+                    <apply><times/><ci>W</ci><ci>input</ci></apply>
+                    <ci>b</ci>
+                  </apply>
+                </apply>
+              </apply>
+            </math>
+          </mathml>
+          <gradient>
+            <apply>
+              <eq/>
+              <ci>dW</ci>
+              <apply>
+                <times/>
+                <ci>doutput</ci>
+                <apply><ci>mask</ci><ci>z</ci></apply>
+              </apply>
+            </apply>
+          </gradient>
+        </node>
+      |]
+    }
+  }
+
+  // ============================================================
+  // QUESTION 2: Soft Landings Mechanism
+  // ANSWER: Phase sequence enforcement + Bounded gradient magnitude
+  // ============================================================
+
+  (⟁SYSTEM⟁) soft_landings {
+
+    (⟁RULE⟁) phase_transition_enforcement {
+      @principle: "No node can receive output from a predecessor until that predecessor has completed its phase transition",
+      @mechanism: "PHASE_TRANSITION gating with barriers",
+      @prevents: "Out-of-order dispatch"
+    }
+
+    (⟁EXAMPLE⟁) phase_transition_example {
+      @xml: [|
+        <phase_transition from="Sek" to="Ch'en" condition="output_ready">
+          <gate type="barrier" />
+          <edge from="node_001" to="node_002" requires_phase="Ch'en" />
+        </phase_transition>
+      |]
+    }
+
+    (⟁SCHEMA⟁) bounded_gradient_schema {
+      @mathml_annotations: {
+        "@lipschitz": "L=1.0",
+        "@gradient_bound": "||∇f|| ≤ 1.0"
+      }
+    }
+
+    (⟁TABLE⟁) bounded_activations {
+      @activations: [
+        {name: "tanh(x)",     lipschitz: 1.0,  gradient_bound: 1.0},
+        {name: "sigmoid(x)",  lipschitz: 0.25, gradient_bound: 0.25},
+        {name: "ReLU(x)",     lipschitz: 1.0,  gradient_bound: 1.0, note: "not differentiable at 0"},
+        {name: "softplus(x)", lipschitz: 1.0,  gradient_bound: 1.0},
+        {name: "sin(x)",      lipschitz: 1.0,  gradient_bound: 1.0}
+      ]
+    }
+
+    (⟁EXAMPLE⟁) soft_landing_declaration {
+      @xml: [|
+        <soft_landing>
+          <phase_sequence>
+            <step phase="Pop"   duration="us" />
+            <step phase="Wo"    duration="us" />
+            <step phase="Sek"   duration="us" />
+            <step phase="Ch'en" duration="us" />
+            <step phase="Xul"   duration="us" />
+          </phase_sequence>
+          <bounded_gradient max_norm="1.0" lipschitz="0.95" />
+        </soft_landing>
+      |]
+    }
+  }
+
+  // ============================================================
+  // QUESTION 3: Backward Pass in the Graph
+  // ANSWER: XML graph is BIDIRECTIONAL - each edge carries forward activation
+  // AND backward gradient as separate channels.
+  // Graph is STATIC STRUCTURE compiled once, not expanded at runtime.
+  // ============================================================
+
+  (⟁SCHEMA⟁) bidirectional_edge_schema {
+
+    (⟁TYPE⟁) BidirectionalEdge {
+      @attributes: {
+        @from: "node_id",
+        @to: "node_id",
+        @direction: "bidirectional|forward_only|backward_only"
+      },
+      @forward_channel: {
+        @channel: "activation",
+        @data_type: "tensor",
+        @semantics: "activation_flow"
+      },
+      @backward_channel: {
+        @channel: "gradient",
+        @data_type: "tensor",
+        @semantics: "error_signal",
+        @scale_factor: "learning_rate / chain_rule"
+      },
+      @phase_gate: {
+        @forward_requires_from: "phase",
+        @forward_requires_to: "phase",
+        @backward_requires_from: "phase",
+        @backward_requires_to: "phase"
+      }
+    }
+
+    (⟁EXAMPLE⟁) bidirectional_edge_example {
+      @xml: [|
+        <edge from="node_001" to="node_002">
+          <forward channel="activation">
+            <data type="tensor" shape="[64,64]" dtype="float32" />
+            <semantics>activation_flow</semantics>
+          </forward>
+          <backward channel="gradient">
+            <data type="tensor" shape="[64,64]" dtype="float32" />
+            <semantics>error_signal</semantics>
+            <scale factor="0.001" />
+          </backward>
+          <phase_gate>
+            <forward_requires  from_phase="Sek"   to_phase="Ch'en" />
+            <backward_requires from_phase="Ch'en" to_phase="Sek"   />
+          </phase_gate>
+        </edge>
+      |]
+    }
+  }
+
+  // ============================================================
+  // WHY STATIC BIDIRECTIONAL COMPILATION?
+  // ============================================================
+
+  (⟁TABLE⟁) bidirectional_comparison {
+    @approaches: [
+      {
+        name: "Static bidirectional (KXML)",
+        compile_time: "Once",
+        runtime_flexibility: "Fixed topology",
+        memory: "Deterministic",
+        correctness: "Provable",
+        advantages: [
+          "Provable correctness — backward graph explicitly defined not derived",
+          "Deterministic memory — no runtime expansion, no allocation surprises",
+          "Faster execution — no JIT compilation overhead for gradient computation",
+          "Phase alignment — forward and backward phases explicitly gated",
+          "Debugging — gradient path visible in static graph"
+        ]
+      },
+      {
+        name: "Mirror subgraph expansion",
+        compile_time: "Every backward pass",
+        memory: "2x",
+        correctness: "Hard to verify"
+      },
+      {
+        name: "Automatic derivation (JIT)",
+        compile_time: "Forward only",
+        memory: "1x",
+        correctness: "Requires JIT"
+      }
+    ]
+  }
+
+  // ============================================================
+  // PHASE STATE MACHINE
+  // ============================================================
+
+  (⟁MACHINE⟁) phase_state_machine {
+    @states: [
+      {name: "Pop",   index: 0, description: "Initialization"},
+      {name: "Wo",    index: 1, description: "Intent Declaration"},
+      {name: "Sek",   index: 2, description: "Execution"},
+      {name: "Ch'en", index: 3, description: "Render/Output"},
+      {name: "Xul",   index: 4, description: "Termination"}
+    ],
+    @transitions: [
+      {from: "Pop",   to: "Wo",    condition: "all_inputs_bound"},
+      {from: "Wo",    to: "Sek",   condition: "intent_declared"},
+      {from: "Sek",   to: "Ch'en", condition: "execution_complete"},
+      {from: "Ch'en", to: "Xul",   condition: "output_emitted"},
+      {from: "Xul",   to: "Pop",   condition: "reset"}
+    ]
+  }
+
+  // ============================================================
+  // PHASE-GATED DISPATCHER — mirrors kxml-dispatcher.js canDispatch()
+  // ============================================================
+
+  (⟁POP⟁) phase_gated_dispatcher {
+    [Tensor currentPhase  = args.phase]
+    [Tensor completedNodes = args.completed]
+    [Tensor node           = args.node]
+
+    // Rule 1: node.phase must be <= currentPhase (in phase order)
+    [Tensor phaseOrder        = ["Pop", "Wo", "Sek", "Ch'en", "Xul"]]
+    [Tensor nodePhaseIndex    = index_of(phaseOrder, node.phase)]
+    [Tensor currentPhaseIndex = index_of(phaseOrder, currentPhase)]
+    [Tensor canDispatch       = nodePhaseIndex <= currentPhaseIndex]
+
+    // Rule 2: all depends_on satisfied at required phase
+    [K'ayab' dep in node.dependencies]
+      [Tensor depCompleted     = completedNodes[dep.nodeId]]
+      [Tensor depPhaseIndex    = index_of(phaseOrder, depCompleted.phase)]
+      [Tensor reqPhaseIndex    = index_of(phaseOrder, dep.requiresPhase)]
+      [Tensor canDispatch      = canDispatch AND depCompleted AND depPhaseIndex >= reqPhaseIndex]
+    [Kumk'u]
+
+    // Rule 3: device="gpu" requires tiny.x hall pass
+    [Tensor tinyXValid  = system.tinyXStatus]
+    [Tensor canDispatch = canDispatch AND (node.device != "gpu" OR tinyXValid)]
+
+    // Rule 4: fold must be active
+    [Tensor foldActive  = foldStates[node.fold].isActive]
+    [Tensor canDispatch = canDispatch AND foldActive]
+
+    [Xul canDispatch]
+  }
+
+  // ============================================================
+  // KXML GRAPH PARSER — mirrors kxml-parser.js parseKXML()
+  // ============================================================
+
+  (⟁POP⟁) parse_kxml_graph {
+    [Tensor xmlContent = args.xml]
+
+    [Tensor metadata  = parse_xml_tag(xmlContent, "graph_metadata")]
+    [Tensor graphName = extract_text(metadata, "name")]
+    [Tensor version   = extract_text(metadata, "version")]
+
+    // Parse nodes
+    [Tensor nodes       = parse_xml_elements(xmlContent, "node")]
+    [Tensor parsedNodes = []]
+    [K'ayab' node in nodes]
+      [Tensor nodeId     = node.getAttribute("id")]
+      [Tensor nodePhase  = node.getAttribute("phase")]
+      [Tensor nodeDomain = node.getAttribute("domain")]
+      [Tensor nodeFold   = node.getAttribute("fold")]
+      [Tensor nodeDevice = node.getAttribute("device")]
+      [Tensor mathml     = parse_xml_element(node, "mathml")]
+      [Tensor gradient   = parse_xml_element(node, "gradient")]
+      [Tensor ops        = parse_xml_elements(node, "op")]
+      [Tensor parsedNodes = parsedNodes ⊕ {
+        id: nodeId, phase: nodePhase, domain: nodeDomain,
+        fold: nodeFold, device: nodeDevice,
+        mathml: mathml, gradient: gradient, ops: ops
+      }]
+    [Kumk'u]
+
+    // Parse edges
+    [Tensor edges       = parse_xml_elements(xmlContent, "edge")]
+    [Tensor parsedEdges = []]
+    [K'ayab' edge in edges]
+      [Tensor fromNode  = edge.getAttribute("from")]
+      [Tensor toNode    = edge.getAttribute("to")]
+      [Tensor forward   = parse_xml_element(edge, "forward")]
+      [Tensor backward  = parse_xml_element(edge, "backward")]
+      [Tensor phaseGate = parse_xml_element(edge, "phase_gate")]
+      [Tensor parsedEdges = parsedEdges ⊕ {
+        from: fromNode, to: toNode,
+        forward: forward, backward: backward, phase_gate: phaseGate
+      }]
+    [Kumk'u]
+
+    [Tensor phaseSeq = parse_xml_element(xmlContent, "phase_sequence")]
+    [Tensor phases   = parse_phase_steps(phaseSeq)]
+
+    [Xul {
+      name: graphName, version: version,
+      nodes: parsedNodes, edges: parsedEdges,
+      phase_sequence: phases, type: "bidirectional"
+    }]
+  }
+
+  // ============================================================
+  // EXECUTE KXML GRAPH — mirrors PhaseGatedDispatcher.run()
+  // ============================================================
+
+  (⟁POP⟁) execute_kxml_graph {
+    [Tensor graph          = parse_kxml_graph(args.graphXml)]
+    [Tensor currentPhase   = "Pop"]
+    [Tensor completedNodes = {}]
+    [Tensor nodeOutputs    = {}]
+
+    [K'ayab' phase in graph.phase_sequence]
+      [Tensor currentPhase = phase.name]
+
+      // Collect nodes dispatchable in this phase
+      [Tensor executableNodes = filter(graph.nodes, node ->
+        node.phase == currentPhase AND
+        phase_gated_dispatcher({
+          phase: currentPhase, completed: completedNodes, node: node
+        })
+      )]
+
+      // Topological execution (Kahn order)
+      [K'ayab' node in topological_sort(executableNodes, graph.edges)]
+        [Tensor inputs = collect_inputs(node, graph.edges, nodeOutputs)]
+        [Tensor output = execute_node_ops(node, inputs)]
+        [Tensor nodeOutputs[node.id] = output]
+
+        // Propagate backward gradients via edge channels
+        [K'ayab' edge in backward_edges_to(node.id, graph.edges)]
+          [Tensor grad  = nodeOutputs[edge.from]]
+          [Tensor scale = edge.backward.scale]
+          [Tensor store_gradient(edge.backward.data, grad * scale)]
+        [Kumk'u]
+
+        [Tensor completedNodes[node.id] = {phase: currentPhase, output: output}]
+      [Kumk'u]
+    [Kumk'u]
+
+    // Merkle root over completed node hashes (SCXQ2 lane integrity)
+    [Tensor nodeHashes  = map(completedNodes, entry -> hash(entry))]
+    [Tensor merkleRoot  = merkle_reduce(nodeHashes)]
+
+    [Xul {outputs: nodeOutputs, completed: completedNodes, merkle: merkleRoot}]
+  }
+
+  // ============================================================
+  // SYSTEM INITIALIZATION
+  // ============================================================
+
+  (⟁POP⟁) init_kxml_system {
+    console.log("KXML BIDIRECTIONAL GRAPH TOPOLOGY v7.2 | Adopted May 2026")
+    console.log("")
+    console.log("CORE PRINCIPLE:")
+    console.log("  Parallel structure lives in the graph topology, not runtime threads.")
+    console.log("  Each <node> IS a unit of computation.")
+    console.log("")
+    console.log("EDGE ENCODING:")
+    console.log("  Forward : data flow (activation)")
+    console.log("  Backward: gradient flow (error signals)")
+    console.log("")
+    console.log("PHASE-GATED FOLD TRANSITIONS:")
+    console.log("  Pop -> Wo -> Sek -> Ch'en -> Xul")
+    console.log("  Nodes cannot be dispatched out-of-order.")
+    console.log("  JS fiber count is irrelevant -- DAG dispatcher handles scheduling.")
+    console.log("")
+    console.log("Q1 XML Schema: MathML at node level; XCFE @ops[] as child elements.")
+    console.log("Q2 Soft Landing: Phase sequence + Lipschitz-bounded MathML activations.")
+    console.log("Q3 Backward Pass: Static bidirectional (compiled once, no runtime expansion).")
+    console.log("")
+    console.log("Implementation: src/kxml/ (kxml-parser.js, kxml-dispatcher.js,")
+    console.log("  kxml-graph.js, kxml-ops.js, kxml-shard-registry.js)")
+
+    [Xul {status: "ready", specification: "KXML v7.2",
+          impl: "src/kxml/", committed: "0491f4c 8bbd373"}]
+  }
+
+  // Execute initialization on load
+  [init_kxml_system]
+}

@@ -1,0 +1,42 @@
+// neural_layer.klsl
+// Dense (fully-connected) neural network layer as a KLSL compute shader.
+//
+// Compile:  klslc neural_layer.klsl
+// Output:   neural_layer.hlsl  (dispatch with [16,16,1] thread groups)
+//
+// cbuffer layout (DenseConst):
+//   uint in_dim;    // K
+//   uint out_rows;  // M  (batch)
+//   uint out_cols;  // N  (output neurons)
+//   uint _pad;
+
+⟁ shader dense_layer
+
+  ⟁Wo⟁ stage "compute"
+  ⟁Wo⟁ threads [16, 16, 1]
+
+  ⟁Wo⟁ StructuredBuffer<float>    input_buf  : register(t0)
+  ⟁Wo⟁ StructuredBuffer<float>    weight_buf : register(t1)
+  ⟁Wo⟁ StructuredBuffer<float>    bias_buf   : register(t2)
+  ⟁Wo⟁ RWStructuredBuffer<float>  out_buf    : register(u0)
+  ⟁Wo⟁ ConstantBuffer<DenseConst> cb         : register(b0)
+
+  [Pop dense_forward]
+    ⟁Wo⟁ uint row = SV_DispatchThreadID.y
+    ⟁Wo⟁ uint col = SV_DispatchThreadID.x
+    ⟁Sek⟁ if (row >= cb.out_rows || col >= cb.out_cols) return
+
+    ⟁Wo⟁ float acc = 0.0f
+    ⟁K'ayab'⟁ uint k in 0 .. cb.in_dim
+      ⟁Wo⟁ float a = input_buf[row * cb.in_dim + k]
+      ⟁Wo⟁ float w = weight_buf[col * cb.in_dim + k]
+      ⟁Sek⟁ acc += a * w
+    ⟁Kumk'u⟁
+
+    // Add bias + ReLU activation
+    ⟁Sek⟁ acc += bias_buf[col]
+    ⟁Sek⟁ if (acc < 0.0f) acc = 0.0f
+    ⟁Sek⟁ out_buf[row * cb.out_cols + col] = acc
+  [Xul]
+
+⟁Xul⟁

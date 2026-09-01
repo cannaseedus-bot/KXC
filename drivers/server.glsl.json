@@ -1,0 +1,225 @@
+{
+  "version": "1.0",
+  "manifest": "GLSL Object Server — OpenGL 4.3 compute backend for Intel HD 4600",
+  "phase": "3.25",
+  "device": {
+    "backend": "gl43_compute",
+    "icd": "ig75icd64.dll",
+    "features": {
+      "compute": true,
+      "ssbo": true,
+      "readback": true,
+      "shader_cache": true,
+      "gl_context": "wgl"
+    },
+    "preferred_adapter": "Intel HD 4600",
+    "fallback_adapter": "Intel(R) HD Graphics 4600"
+  },
+  "buffer_pool": {
+    "small": {
+      "size": 1048576,
+      "count": 16,
+      "usage": "ssbo"
+    },
+    "medium": {
+      "size": 16777216,
+      "count": 8,
+      "usage": "ssbo"
+    },
+    "large": {
+      "size": 67108864,
+      "count": 4,
+      "usage": "ssbo"
+    }
+  },
+  "server": {
+    "host": "127.0.0.1",
+    "port": 9060,
+    "readback_limit_bytes": 67108864
+  },
+  "ops": [
+    {
+      "opcode": 33554688,
+      "name": "WO_SWIGLU",
+      "direction": "fwd",
+      "handler": "glsl_lanes:swiglu",
+      "description": "SwiGLU: out[i] = a[i] * sigmoid(a[i]) * b[i]",
+      "shader_source": "glu.glsl",
+      "preprocess": {
+        "op": "swiglu",
+        "wg_size": 64
+      },
+      "bindings": [
+        {"slot": 0, "type": "ssbo", "role": "input"},
+        {"slot": 1, "type": "ssbo", "role": "input"},
+        {"slot": 2, "type": "ssbo", "role": "output"},
+        {"slot": 3, "type": "ubo",  "role": "params"}
+      ],
+      "workgroup_size": 64
+    },
+    {
+      "opcode": 33554689,
+      "name": "WO_GEGLU",
+      "direction": "fwd",
+      "handler": "glsl_lanes:geglu",
+      "description": "GeGLU: GELU_tanh(a[i]) * b[i]",
+      "shader_source": "glu.glsl",
+      "preprocess": {
+        "op": "geglu",
+        "wg_size": 64
+      },
+      "bindings": [
+        {"slot": 0, "type": "ssbo", "role": "input"},
+        {"slot": 1, "type": "ssbo", "role": "input"},
+        {"slot": 2, "type": "ssbo", "role": "output"},
+        {"slot": 3, "type": "ubo",  "role": "params"}
+      ],
+      "workgroup_size": 64
+    },
+    {
+      "opcode": 33554690,
+      "name": "WO_GEGLU_ERF",
+      "direction": "fwd",
+      "handler": "glsl_lanes:geglu_erf",
+      "description": "GeGLU via erf: GELU_erf(a[i]) * b[i]",
+      "shader_source": "glu.glsl",
+      "preprocess": {
+        "op": "geglu_erf",
+        "wg_size": 64
+      },
+      "bindings": [
+        {"slot": 0, "type": "ssbo", "role": "input"},
+        {"slot": 1, "type": "ssbo", "role": "input"},
+        {"slot": 2, "type": "ssbo", "role": "output"},
+        {"slot": 3, "type": "ubo",  "role": "params"}
+      ],
+      "workgroup_size": 64
+    },
+    {
+      "opcode": 33554704,
+      "name": "WO_RMS_NORM",
+      "direction": "fwd",
+      "handler": "glsl_lanes:rms_norm",
+      "description": "RMS normalize each row",
+      "shader_source": "row_norm.glsl",
+      "preprocess": {
+        "op": "rms_norm",
+        "wg_size": 64
+      },
+      "bindings": [
+        {"slot": 0, "type": "ssbo", "role": "input"},
+        {"slot": 1, "type": "ssbo", "role": "output"},
+        {"slot": 2, "type": "ubo",  "role": "params"}
+      ],
+      "workgroup_size": 64
+    },
+    {
+      "opcode": 33554720,
+      "name": "WO_SOFTMAX",
+      "direction": "fwd",
+      "handler": "glsl_lanes:softmax",
+      "description": "Softmax over last dimension",
+      "shader_source": "soft_max.glsl",
+      "preprocess": {
+        "op": "softmax",
+        "wg_size": 64
+      },
+      "bindings": [
+        {"slot": 0, "type": "ssbo", "role": "input"},
+        {"slot": 1, "type": "ssbo", "role": "output"},
+        {"slot": 2, "type": "ubo",  "role": "params"}
+      ],
+      "workgroup_size": 64
+    },
+    {
+      "opcode": 33554752,
+      "name": "WO_SILU_BACK",
+      "direction": "bwd",
+      "handler": "glsl_lanes_back:silu_back",
+      "description": "SiLU gradient: dy * sigmoid(x) * (1 + x*(1-sigmoid(x)))",
+      "shader_source": "grad.glsl",
+      "bindings": [
+        {"slot": 0, "type": "ssbo", "role": "grad_input"},
+        {"slot": 1, "type": "ssbo", "role": "activation"},
+        {"slot": 2, "type": "ssbo", "role": "grad_output"},
+        {"slot": 3, "type": "ubo",  "role": "params"}
+      ],
+      "workgroup_size": 256
+    },
+    {
+      "opcode": 33554768,
+      "name": "WO_SOFTMAX_BACK",
+      "direction": "bwd",
+      "handler": "glsl_lanes_back:softmax_back",
+      "description": "Softmax Jacobian-vector product per row",
+      "shader_source": "grad.glsl",
+      "bindings": [
+        {"slot": 0, "type": "ssbo", "role": "grad_input"},
+        {"slot": 1, "type": "ssbo", "role": "output"},
+        {"slot": 2, "type": "ssbo", "role": "grad_output"},
+        {"slot": 3, "type": "ubo",  "role": "params"}
+      ],
+      "workgroup_size": 64
+    },
+    {
+      "opcode": 33554784,
+      "name": "WO_RMS_NORM_BACK",
+      "direction": "bwd",
+      "handler": "glsl_lanes_back:rms_norm_back",
+      "description": "RMS norm gradient per row",
+      "shader_source": "grad.glsl",
+      "bindings": [
+        {"slot": 0, "type": "ssbo", "role": "grad_input"},
+        {"slot": 1, "type": "ssbo", "role": "input"},
+        {"slot": 2, "type": "ssbo", "role": "grad_output"},
+        {"slot": 3, "type": "ubo",  "role": "params"}
+      ],
+      "workgroup_size": 64
+    },
+    {
+      "opcode": 33554944,
+      "name": "WO_ADAM_STEP",
+      "direction": "opt",
+      "handler": "glsl_lanes_back:adam_step",
+      "description": "AdamW: p,m,v <- adam(p,g,m,v,t,lr,beta1,beta2,eps,wd)",
+      "shader_source": "adam.glsl",
+      "bindings": [
+        {"slot": 0, "type": "ssbo", "role": "param"},
+        {"slot": 1, "type": "ssbo", "role": "grad"},
+        {"slot": 2, "type": "ssbo", "role": "momentum"},
+        {"slot": 3, "type": "ssbo", "role": "velocity"},
+        {"slot": 4, "type": "ubo",  "role": "params"}
+      ],
+      "workgroup_size": 64
+    },
+    {
+      "opcode": 33555104,
+      "name": "WO_DENSE",
+      "direction": "fwd",
+      "handler": "glsl_lanes:dense_forward",
+      "description": "Dense/ReLU layer forward",
+      "shader_source": "neural_layer.glsl",
+      "bindings": [
+        {"slot": 0, "type": "ssbo", "role": "input"},
+        {"slot": 1, "type": "ssbo", "role": "weight"},
+        {"slot": 2, "type": "ssbo", "role": "bias"},
+        {"slot": 3, "type": "ssbo", "role": "output"},
+        {"slot": 4, "type": "ubo",  "role": "params"}
+      ],
+      "workgroup_size": [16, 16, 1]
+    }
+  ],
+  "chains": {
+    "dense_relu": [33555104],
+    "rms_norm": [33554704],
+    "softmax": [33554720],
+    "swiglu": [33554688]
+  },
+  "notes": [
+    "Phase 3.25 — Native D3D11 + GLSL universal backend.",
+    "Intel HD 4600 routes through igd10iumd64.dll (D3D11) and ig75icd64.dll (OpenGL 4.3).",
+    "GLSL 4.3 compute shaders use the same execution units as D3D11 CS via igc64.dll.",
+    "Use glsl.bat to launch; it creates a hidden WGL context with no window.",
+    "For mixed D3D11/GLSL dispatch see kuhul/d3d11_glsl_unified.py."
+  ]
+}

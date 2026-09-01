@@ -1,0 +1,41 @@
+{
+  "$schema": "studio-tasklist-v1",
+  "description": "KUHUL APPS studio TaskList — dispatched by khanary_driver.dll TaskEngine to MCP micronaut hive",
+  "providers": [
+    {"id": "micronaut-coder",    "library": "bot.py", "available": true},
+    {"id": "micronaut-factory",  "library": "bot.py", "available": true},
+    {"id": "micronaut-base",     "library": "bot.py", "available": true},
+    {"id": "json-runtime",       "library": null,     "available": true},
+    {"id": "kuhul-engine",       "library": null,     "available": true}
+  ],
+  "tasks": [
+    {
+      "id": "scaffold-project",
+      "action": "app.create",
+      "description": "Create project directory + server.manifest.json + index.html scaffold",
+      "provider": "micronaut-factory",
+      "depends_on": []
+    },
+    {
+      "id": "generate-app-html",
+      "action": "build.website",
+      "description": "Generate the main application HTML/CSS/JS from the user prompt",
+      "provider": "micronaut-coder",
+      "depends_on": ["scaffold-project"]
+    },
+    {
+      "id": "allocate-port",
+      "action": "app.inspect",
+      "description": "Register sidecar port (8800-8899) in json_runtime",
+      "provider": "json-runtime",
+      "depends_on": ["scaffold-project"]
+    },
+    {
+      "id": "deploy-app",
+      "action": "app.create",
+      "description": "Mount sidecar, serve the generated app on allocated port",
+      "provider": "json-runtime",
+      "depends_on": ["generate-app-html", "allocate-port"]
+    }
+  ]
+}

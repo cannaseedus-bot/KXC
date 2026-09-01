@@ -1,0 +1,2151 @@
+{
+  "protocol": "kast/1",
+  "registry_hash": "d1f38d3a783a0f22a62c092edeea1cec4ba57592c9605fc1f90f0d38948755af",
+  "source_kind": "khl",
+  "source_id": "fold.khl",
+  "entry_node_id": "n5",
+  "nodes": [
+    {
+      "id": "n0",
+      "kind": "bind",
+      "fold": "Pop",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "manifest.os.folds",
+      "type": "manifest_ref",
+      "operands": [
+        "FOLD_DB"
+      ],
+      "attributes": {
+        "manifest_path": "manifest.os.folds"
+      }
+    },
+    {
+      "id": "n1",
+      "kind": "bind",
+      "fold": "Pop",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "manifest.os.folds.core",
+      "type": "manifest_ref",
+      "operands": [
+        "FOLD_CORE"
+      ],
+      "attributes": {
+        "manifest_path": "manifest.os.folds.core"
+      }
+    },
+    {
+      "id": "n2",
+      "kind": "bind",
+      "fold": "Pop",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "manifest.os.folds.extended",
+      "type": "manifest_ref",
+      "operands": [
+        "FOLD_EXT"
+      ],
+      "attributes": {
+        "manifest_path": "manifest.os.folds.extended"
+      }
+    },
+    {
+      "id": "n3",
+      "kind": "bind",
+      "fold": "Pop",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "manifest.os.folds.prime_shards",
+      "type": "manifest_ref",
+      "operands": [
+        "FOLD_PRIME"
+      ],
+      "attributes": {
+        "manifest_path": "manifest.os.folds.prime_shards"
+      }
+    },
+    {
+      "id": "n4",
+      "kind": "bind",
+      "fold": "Pop",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "manifest.os.folds.system_folds",
+      "type": "manifest_ref",
+      "operands": [
+        "FOLD_SYSTEM"
+      ],
+      "attributes": {
+        "manifest_path": "manifest.os.folds.system_folds"
+      }
+    },
+    {
+      "id": "n5",
+      "kind": "glyph",
+      "fold": "Sek",
+      "lane": "driver",
+      "glyph": "fold::collect_all",
+      "opcode": "GLYPH",
+      "symbol": "fold::collect_all",
+      "type": "driver_glyph",
+      "operands": [],
+      "attributes": {
+        "driver": ""
+      }
+    },
+    {
+      "id": "n6",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "stack:new          \u2192 S",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n7",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "S.push(FOLD_CORE)  \u2192 S",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n8",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "S.push(FOLD_EXT)   \u2192 S",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n9",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "S.push(FOLD_PRIME) \u2192 S",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n10",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "S.push(FOLD_SYSTEM)\u2192 S",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n11",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "S.flatten()        \u2192 ALL",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n12",
+      "kind": "yield",
+      "fold": "Xul",
+      "lane": "output",
+      "glyph": "yield",
+      "opcode": "YIELD",
+      "symbol": "ALL",
+      "type": "return_value",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n13",
+      "kind": "glyph",
+      "fold": "Sek",
+      "lane": "driver",
+      "glyph": "fold::index_by_id",
+      "opcode": "GLYPH",
+      "symbol": "fold::index_by_id",
+      "type": "driver_glyph",
+      "operands": [
+        "ALL"
+      ],
+      "attributes": {
+        "driver": ""
+      }
+    },
+    {
+      "id": "n14",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "map:new     \u2192 IDX",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n15",
+      "kind": "loop",
+      "fold": "Sek",
+      "lane": "control",
+      "glyph": "loop",
+      "opcode": "LOOP",
+      "symbol": "ALL ",
+      "type": "control_flow",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n16",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "F.id      \u2192 ID",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n17",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "IDX.set(ID, F) \u2192 IDX",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n18",
+      "kind": "yield",
+      "fold": "Xul",
+      "lane": "output",
+      "glyph": "yield",
+      "opcode": "YIELD",
+      "symbol": "IDX",
+      "type": "return_value",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n19",
+      "kind": "glyph",
+      "fold": "Sek",
+      "lane": "driver",
+      "glyph": "fold::filter_group",
+      "opcode": "GLYPH",
+      "symbol": "fold::filter_group",
+      "type": "driver_glyph",
+      "operands": [
+        "ALL",
+        "GROUP"
+      ],
+      "attributes": {
+        "driver": ""
+      }
+    },
+    {
+      "id": "n20",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "list:new \u2192 OUT",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n21",
+      "kind": "loop",
+      "fold": "Sek",
+      "lane": "control",
+      "glyph": "loop",
+      "opcode": "LOOP",
+      "symbol": "ALL ",
+      "type": "control_flow",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n22",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "F.group ?= GROUP ::",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n23",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "OUT.push(F) \u2192 OUT",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n24",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "::",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n25",
+      "kind": "yield",
+      "fold": "Xul",
+      "lane": "output",
+      "glyph": "yield",
+      "opcode": "YIELD",
+      "symbol": "OUT",
+      "type": "return_value",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n26",
+      "kind": "glyph",
+      "fold": "Sek",
+      "lane": "driver",
+      "glyph": "fold::sort_by_boot",
+      "opcode": "GLYPH",
+      "symbol": "fold::sort_by_boot",
+      "type": "driver_glyph",
+      "operands": [
+        "ALL"
+      ],
+      "attributes": {
+        "driver": ""
+      }
+    },
+    {
+      "id": "n27",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "ALL.sort(by: \"boot_order\", null_first: false, asc: true) \u2192 SORTED",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n28",
+      "kind": "yield",
+      "fold": "Xul",
+      "lane": "output",
+      "glyph": "yield",
+      "opcode": "YIELD",
+      "symbol": "SORTED",
+      "type": "return_value",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n29",
+      "kind": "glyph",
+      "fold": "Sek",
+      "lane": "driver",
+      "glyph": "fold::acl_for",
+      "opcode": "GLYPH",
+      "symbol": "fold::acl_for",
+      "type": "driver_glyph",
+      "operands": [
+        "FOLD_ID"
+      ],
+      "attributes": {
+        "driver": ""
+      }
+    },
+    {
+      "id": "n30",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "map:new \u2192 ACL",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n31",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "ACL.set(\"read\",  [\"system\",\"kernel\",\"prime\"])",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n32",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "ACL.set(\"write\", [\"system\",\"kernel\"])",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n33",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "ACL.set(\"exec\",  [\"system\",\"kernel\",\"prime\",\"ai\"])",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n34",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "ACL.set(\"introspect\", [\"system\",\"prime\",\"micronaut_hive\"])",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n35",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "manifest.os.folds.acl ?\u2192 ACL_ROOT ::",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n36",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "ACL_ROOT[FOLD_ID] ?\u2192 OVERRIDE ::",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n37",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "OVERRIDE \u2192 ACL",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n38",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "::",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n39",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "::",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n40",
+      "kind": "yield",
+      "fold": "Xul",
+      "lane": "output",
+      "glyph": "yield",
+      "opcode": "YIELD",
+      "symbol": "ACL",
+      "type": "return_value",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n41",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "op folds.list_all(request, response) \u2192",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n42",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "fold::collect_all   \u2192 ALL",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n43",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "response.status = 200",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n44",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "response.body = {",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n45",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "\"@type\": \"xjson.fold.list\",",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n46",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "\"count\": ALL.len(),",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n47",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "\"items\": ALL",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n48",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "}",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n49",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "respond",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n50",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "op folds.list_by_group(request, response) \u2192",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n51",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "request.params.group_id \u2192 GID",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n52",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "fold::collect_all       \u2192 ALL",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n53",
+      "kind": "call",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "fold::filter_group",
+      "opcode": "CALL",
+      "symbol": "fold::filter_group",
+      "type": "operator_call",
+      "operands": [
+        "ALL",
+        "GID"
+      ],
+      "attributes": {
+        "result": "OUT"
+      }
+    },
+    {
+      "id": "n54",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "response.status = 200",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n55",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "response.body = {",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n56",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "\"@type\": \"xjson.fold.list\",",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n57",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "\"group\": GID,",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n58",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "\"count\": OUT.len(),",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n59",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "\"items\": OUT",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n60",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "}",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n61",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "respond",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n62",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "op folds.get(request, response) \u2192",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n63",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "request.params.fold_id \u2192 ID",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n64",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "fold::collect_all      \u2192 ALL",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n65",
+      "kind": "call",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "fold::index_by_id",
+      "opcode": "CALL",
+      "symbol": "fold::index_by_id",
+      "type": "operator_call",
+      "operands": [
+        "ALL"
+      ],
+      "attributes": {
+        "result": "IDX"
+      }
+    },
+    {
+      "id": "n66",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "IDX.has(ID) ?::",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n67",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "IDX[ID] \u2192 F",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n68",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "response.status = 200",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n69",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "response.body = {",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n70",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "\"@type\": \"xjson.fold\",",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n71",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "\"fold\": F,",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n72",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "\"acl\":  fold::acl_for(ID)",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n73",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "}",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n74",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": ":: else ::",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n75",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "response.status = 404",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n76",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "response.body = {",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n77",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "\"@type\": \"xjson.error\",",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n78",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "\"code\": \"FOLD_NOT_FOUND\",",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n79",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "\"fold_id\": ID",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n80",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "}",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n81",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "::",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n82",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "respond",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n83",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "op folds.boot_order(request, response) \u2192",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n84",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "fold::collect_all        \u2192 ALL",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n85",
+      "kind": "call",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "fold::sort_by_boot",
+      "opcode": "CALL",
+      "symbol": "fold::sort_by_boot",
+      "type": "operator_call",
+      "operands": [
+        "ALL"
+      ],
+      "attributes": {
+        "result": "ORDER"
+      }
+    },
+    {
+      "id": "n86",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "response.status = 200",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n87",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "response.body = {",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n88",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "\"@type\": \"xjson.fold.boot_order\",",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n89",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "\"items\": ORDER",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n90",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "}",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n91",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "respond",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n92",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "op folds.permissions_for(request, response) \u2192",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n93",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "request.params.fold_id \u2192 ID",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n94",
+      "kind": "call",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "fold::acl_for",
+      "opcode": "CALL",
+      "symbol": "fold::acl_for",
+      "type": "operator_call",
+      "operands": [
+        "ID"
+      ],
+      "attributes": {
+        "result": "ACL"
+      }
+    },
+    {
+      "id": "n95",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "response.status = 200",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n96",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "response.body = {",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n97",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "\"@type\": \"xjson.fold.permissions\",",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n98",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "\"fold_id\": ID,",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n99",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "\"acl\": ACL",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n100",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "}",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n101",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "respond",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n102",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "hook kuhul.boot.phase(\"fold_registry\") \u2192",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n103",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "fold::collect_all \u2192 ALL",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n104",
+      "kind": "call",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "fold::sort_by_boot",
+      "opcode": "CALL",
+      "symbol": "fold::sort_by_boot",
+      "type": "operator_call",
+      "operands": [
+        "ALL"
+      ],
+      "attributes": {
+        "result": "ORDER"
+      }
+    },
+    {
+      "id": "n105",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "ORDER \u2192 manifest.os.fold_boot_order",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n106",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "ok",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    }
+  ],
+  "edges": [
+    {
+      "id": "e0",
+      "from": "n5",
+      "to": "n6",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 0
+    },
+    {
+      "id": "e1",
+      "from": "n6",
+      "to": "n7",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 1
+    },
+    {
+      "id": "e2",
+      "from": "n7",
+      "to": "n8",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 2
+    },
+    {
+      "id": "e3",
+      "from": "n8",
+      "to": "n9",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 3
+    },
+    {
+      "id": "e4",
+      "from": "n9",
+      "to": "n10",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 4
+    },
+    {
+      "id": "e5",
+      "from": "n10",
+      "to": "n11",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 5
+    },
+    {
+      "id": "e6",
+      "from": "n11",
+      "to": "n12",
+      "kind": "control",
+      "label": "yield",
+      "ordinal": 6
+    },
+    {
+      "id": "e7",
+      "from": "n13",
+      "to": "n14",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 7
+    },
+    {
+      "id": "e8",
+      "from": "n14",
+      "to": "n15",
+      "kind": "control",
+      "label": "loop",
+      "ordinal": 8
+    },
+    {
+      "id": "e9",
+      "from": "n15",
+      "to": "n16",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 9
+    },
+    {
+      "id": "e10",
+      "from": "n16",
+      "to": "n17",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 10
+    },
+    {
+      "id": "e11",
+      "from": "n15",
+      "to": "n18",
+      "kind": "control",
+      "label": "yield",
+      "ordinal": 11
+    },
+    {
+      "id": "e12",
+      "from": "n19",
+      "to": "n20",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 12
+    },
+    {
+      "id": "e13",
+      "from": "n20",
+      "to": "n21",
+      "kind": "control",
+      "label": "loop",
+      "ordinal": 13
+    },
+    {
+      "id": "e14",
+      "from": "n21",
+      "to": "n22",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 14
+    },
+    {
+      "id": "e15",
+      "from": "n22",
+      "to": "n23",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 15
+    },
+    {
+      "id": "e16",
+      "from": "n23",
+      "to": "n24",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 16
+    },
+    {
+      "id": "e17",
+      "from": "n21",
+      "to": "n25",
+      "kind": "control",
+      "label": "yield",
+      "ordinal": 17
+    },
+    {
+      "id": "e18",
+      "from": "n26",
+      "to": "n27",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 18
+    },
+    {
+      "id": "e19",
+      "from": "n27",
+      "to": "n28",
+      "kind": "control",
+      "label": "yield",
+      "ordinal": 19
+    },
+    {
+      "id": "e20",
+      "from": "n29",
+      "to": "n30",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 20
+    },
+    {
+      "id": "e21",
+      "from": "n30",
+      "to": "n31",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 21
+    },
+    {
+      "id": "e22",
+      "from": "n31",
+      "to": "n32",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 22
+    },
+    {
+      "id": "e23",
+      "from": "n32",
+      "to": "n33",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 23
+    },
+    {
+      "id": "e24",
+      "from": "n33",
+      "to": "n34",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 24
+    },
+    {
+      "id": "e25",
+      "from": "n34",
+      "to": "n35",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 25
+    },
+    {
+      "id": "e26",
+      "from": "n35",
+      "to": "n36",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 26
+    },
+    {
+      "id": "e27",
+      "from": "n36",
+      "to": "n37",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 27
+    },
+    {
+      "id": "e28",
+      "from": "n37",
+      "to": "n38",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 28
+    },
+    {
+      "id": "e29",
+      "from": "n38",
+      "to": "n39",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 29
+    },
+    {
+      "id": "e30",
+      "from": "n39",
+      "to": "n40",
+      "kind": "control",
+      "label": "yield",
+      "ordinal": 30
+    },
+    {
+      "id": "e31",
+      "from": "n39",
+      "to": "n41",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 31
+    },
+    {
+      "id": "e32",
+      "from": "n41",
+      "to": "n42",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 32
+    },
+    {
+      "id": "e33",
+      "from": "n42",
+      "to": "n43",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 33
+    },
+    {
+      "id": "e34",
+      "from": "n43",
+      "to": "n44",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 34
+    },
+    {
+      "id": "e35",
+      "from": "n44",
+      "to": "n45",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 35
+    },
+    {
+      "id": "e36",
+      "from": "n45",
+      "to": "n46",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 36
+    },
+    {
+      "id": "e37",
+      "from": "n46",
+      "to": "n47",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 37
+    },
+    {
+      "id": "e38",
+      "from": "n47",
+      "to": "n48",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 38
+    },
+    {
+      "id": "e39",
+      "from": "n48",
+      "to": "n49",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 39
+    },
+    {
+      "id": "e40",
+      "from": "n49",
+      "to": "n50",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 40
+    },
+    {
+      "id": "e41",
+      "from": "n50",
+      "to": "n51",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 41
+    },
+    {
+      "id": "e42",
+      "from": "n51",
+      "to": "n52",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 42
+    },
+    {
+      "id": "e43",
+      "from": "n52",
+      "to": "n53",
+      "kind": "control",
+      "label": "call",
+      "ordinal": 43
+    },
+    {
+      "id": "e44",
+      "from": "n53",
+      "to": "n54",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 44
+    },
+    {
+      "id": "e45",
+      "from": "n54",
+      "to": "n55",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 45
+    },
+    {
+      "id": "e46",
+      "from": "n55",
+      "to": "n56",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 46
+    },
+    {
+      "id": "e47",
+      "from": "n56",
+      "to": "n57",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 47
+    },
+    {
+      "id": "e48",
+      "from": "n57",
+      "to": "n58",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 48
+    },
+    {
+      "id": "e49",
+      "from": "n58",
+      "to": "n59",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 49
+    },
+    {
+      "id": "e50",
+      "from": "n59",
+      "to": "n60",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 50
+    },
+    {
+      "id": "e51",
+      "from": "n60",
+      "to": "n61",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 51
+    },
+    {
+      "id": "e52",
+      "from": "n61",
+      "to": "n62",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 52
+    },
+    {
+      "id": "e53",
+      "from": "n62",
+      "to": "n63",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 53
+    },
+    {
+      "id": "e54",
+      "from": "n63",
+      "to": "n64",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 54
+    },
+    {
+      "id": "e55",
+      "from": "n64",
+      "to": "n65",
+      "kind": "control",
+      "label": "call",
+      "ordinal": 55
+    },
+    {
+      "id": "e56",
+      "from": "n65",
+      "to": "n66",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 56
+    },
+    {
+      "id": "e57",
+      "from": "n66",
+      "to": "n67",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 57
+    },
+    {
+      "id": "e58",
+      "from": "n67",
+      "to": "n68",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 58
+    },
+    {
+      "id": "e59",
+      "from": "n68",
+      "to": "n69",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 59
+    },
+    {
+      "id": "e60",
+      "from": "n69",
+      "to": "n70",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 60
+    },
+    {
+      "id": "e61",
+      "from": "n70",
+      "to": "n71",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 61
+    },
+    {
+      "id": "e62",
+      "from": "n71",
+      "to": "n72",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 62
+    },
+    {
+      "id": "e63",
+      "from": "n72",
+      "to": "n73",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 63
+    },
+    {
+      "id": "e64",
+      "from": "n73",
+      "to": "n74",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 64
+    },
+    {
+      "id": "e65",
+      "from": "n74",
+      "to": "n75",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 65
+    },
+    {
+      "id": "e66",
+      "from": "n75",
+      "to": "n76",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 66
+    },
+    {
+      "id": "e67",
+      "from": "n76",
+      "to": "n77",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 67
+    },
+    {
+      "id": "e68",
+      "from": "n77",
+      "to": "n78",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 68
+    },
+    {
+      "id": "e69",
+      "from": "n78",
+      "to": "n79",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 69
+    },
+    {
+      "id": "e70",
+      "from": "n79",
+      "to": "n80",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 70
+    },
+    {
+      "id": "e71",
+      "from": "n80",
+      "to": "n81",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 71
+    },
+    {
+      "id": "e72",
+      "from": "n81",
+      "to": "n82",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 72
+    },
+    {
+      "id": "e73",
+      "from": "n82",
+      "to": "n83",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 73
+    },
+    {
+      "id": "e74",
+      "from": "n83",
+      "to": "n84",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 74
+    },
+    {
+      "id": "e75",
+      "from": "n84",
+      "to": "n85",
+      "kind": "control",
+      "label": "call",
+      "ordinal": 75
+    },
+    {
+      "id": "e76",
+      "from": "n85",
+      "to": "n86",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 76
+    },
+    {
+      "id": "e77",
+      "from": "n86",
+      "to": "n87",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 77
+    },
+    {
+      "id": "e78",
+      "from": "n87",
+      "to": "n88",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 78
+    },
+    {
+      "id": "e79",
+      "from": "n88",
+      "to": "n89",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 79
+    },
+    {
+      "id": "e80",
+      "from": "n89",
+      "to": "n90",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 80
+    },
+    {
+      "id": "e81",
+      "from": "n90",
+      "to": "n91",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 81
+    },
+    {
+      "id": "e82",
+      "from": "n91",
+      "to": "n92",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 82
+    },
+    {
+      "id": "e83",
+      "from": "n92",
+      "to": "n93",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 83
+    },
+    {
+      "id": "e84",
+      "from": "n93",
+      "to": "n94",
+      "kind": "control",
+      "label": "call",
+      "ordinal": 84
+    },
+    {
+      "id": "e85",
+      "from": "n94",
+      "to": "n95",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 85
+    },
+    {
+      "id": "e86",
+      "from": "n95",
+      "to": "n96",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 86
+    },
+    {
+      "id": "e87",
+      "from": "n96",
+      "to": "n97",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 87
+    },
+    {
+      "id": "e88",
+      "from": "n97",
+      "to": "n98",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 88
+    },
+    {
+      "id": "e89",
+      "from": "n98",
+      "to": "n99",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 89
+    },
+    {
+      "id": "e90",
+      "from": "n99",
+      "to": "n100",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 90
+    },
+    {
+      "id": "e91",
+      "from": "n100",
+      "to": "n101",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 91
+    },
+    {
+      "id": "e92",
+      "from": "n101",
+      "to": "n102",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 92
+    },
+    {
+      "id": "e93",
+      "from": "n102",
+      "to": "n103",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 93
+    },
+    {
+      "id": "e94",
+      "from": "n103",
+      "to": "n104",
+      "kind": "control",
+      "label": "call",
+      "ordinal": 94
+    },
+    {
+      "id": "e95",
+      "from": "n104",
+      "to": "n105",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 95
+    },
+    {
+      "id": "e96",
+      "from": "n105",
+      "to": "n106",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 96
+    }
+  ],
+  "semantic_hash": "3bbb87d7520d9b76be8d3d65d93020537f9a03e651331bb598ac731f9a7448f9",
+  "@driver": {
+    "@abi": 1,
+    "@requires": {
+      "kuhul": ">= 1.0",
+      "khl_abi": 1,
+      "scxq2": ">= 2.0"
+    },
+    "@capabilities": [
+      "tensor.map"
+    ],
+    "@phase_hooks": {
+      "Sek": "dispatch",
+      "Ch'en": "collect_status",
+      "Xul": "commit_tensor_state"
+    },
+    "@provider": "fold",
+    "@resources": [],
+    "@hash": "3bbb87d7520d9b76be8d3d65d93020537f9a03e651331bb598ac731f9a7448f9"
+  }
+}

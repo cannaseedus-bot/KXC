@@ -1,0 +1,153 @@
+/* ========================================================
+   fold.khl — K’uhul Fold Registry Shard
+   Shard: os.folds
+   Role:  Registry + Boot-Order Oracle + ACL helper
+   ======================================================== */
+
+/* === IMPORT MANIFEST FOLD DATA ========================= */
+
+@bind manifest.os.folds      → FOLD_DB
+@bind manifest.os.folds.core → FOLD_CORE
+@bind manifest.os.folds.extended → FOLD_EXT
+@bind manifest.os.folds.prime_shards → FOLD_PRIME
+@bind manifest.os.folds.system_folds → FOLD_SYSTEM
+
+/* === UTILITY GLYPHS ==================================== */
+
+/* fold::collect_all → LIST<FOLD> */
+glyph fold::collect_all →
+  stack:new          → S
+  S.push(FOLD_CORE)  → S
+  S.push(FOLD_EXT)   → S
+  S.push(FOLD_PRIME) → S
+  S.push(FOLD_SYSTEM)→ S
+  S.flatten()        → ALL
+  yield ALL
+
+/* fold::index_by_id(LIST<FOLD>) → MAP<id,FOLD> */
+glyph fold::index_by_id(ALL) →
+  map:new     → IDX
+  for each F in ALL ::
+    F.id      → ID
+    IDX.set(ID, F) → IDX
+  done
+  yield IDX
+
+/* fold::filter_group(ALL, GROUP) → LIST<FOLD> */
+glyph fold::filter_group(ALL, GROUP) →
+  list:new → OUT
+  for each F in ALL ::
+    F.group ?= GROUP ::
+      OUT.push(F) → OUT
+    ::
+  done
+  yield OUT
+
+/* fold::sort_by_boot(ALL) → LIST<FOLD> */
+glyph fold::sort_by_boot(ALL) →
+  ALL.sort(by: "boot_order", null_first: false, asc: true) → SORTED
+  yield SORTED
+
+/* fold::acl_for(FOLD_ID) → MAP<capability,LIST<roles>> */
+glyph fold::acl_for(FOLD_ID) →
+  /* default ACL map; kernel can override in manifest if needed */
+  map:new → ACL
+  ACL.set("read",  ["system","kernel","prime"])
+  ACL.set("write", ["system","kernel"])
+  ACL.set("exec",  ["system","kernel","prime","ai"])
+  ACL.set("introspect", ["system","prime","micronaut_hive"])
+
+  /* per-fold overrides from manifest.os.folds.acl? */
+  manifest.os.folds.acl ?→ ACL_ROOT ::
+    ACL_ROOT[FOLD_ID] ?→ OVERRIDE ::
+      OVERRIDE → ACL
+    ::
+  ::
+
+  yield ACL
+
+/* === ROUTE HANDLERS ==================================== */
+
+/* op: folds.list_all */
+op folds.list_all(request, response) →
+  fold::collect_all   → ALL
+  response.status = 200
+  response.body = {
+    "@type": "xjson.fold.list",
+    "count": ALL.len(),
+    "items": ALL
+  }
+  respond
+
+/* op: folds.list_by_group */
+op folds.list_by_group(request, response) →
+  request.params.group_id → GID
+  fold::collect_all       → ALL
+  fold::filter_group(ALL, GID) → OUT
+
+  response.status = 200
+  response.body = {
+    "@type": "xjson.fold.list",
+    "group": GID,
+    "count": OUT.len(),
+    "items": OUT
+  }
+  respond
+
+/* op: folds.get */
+op folds.get(request, response) →
+  request.params.fold_id → ID
+  fold::collect_all      → ALL
+  fold::index_by_id(ALL) → IDX
+  IDX.has(ID) ?::
+    IDX[ID] → F
+    response.status = 200
+    response.body = {
+      "@type": "xjson.fold",
+      "fold": F,
+      "acl":  fold::acl_for(ID)
+    }
+  :: else ::
+    response.status = 404
+    response.body = {
+      "@type": "xjson.error",
+      "code": "FOLD_NOT_FOUND",
+      "fold_id": ID
+    }
+  ::
+  respond
+
+/* op: folds.boot_order */
+op folds.boot_order(request, response) →
+  fold::collect_all        → ALL
+  fold::sort_by_boot(ALL)  → ORDER
+
+  response.status = 200
+  response.body = {
+    "@type": "xjson.fold.boot_order",
+    "items": ORDER
+  }
+  respond
+
+/* op: folds.permissions_for */
+op folds.permissions_for(request, response) →
+  request.params.fold_id → ID
+  fold::acl_for(ID)      → ACL
+
+  response.status = 200
+  response.body = {
+    "@type": "xjson.fold.permissions",
+    "fold_id": ID,
+    "acl": ACL
+  }
+  respond
+
+/* === BOOT HOOK ========================================= */
+
+/* Called by kernel after manifest mount but before full OS boot */
+hook kuhul.boot.phase("fold_registry") →
+  fold::collect_all → ALL
+  fold::sort_by_boot(ALL) → ORDER
+  /* expose into manifest.os.fold_boot_order for other shards */
+  ORDER → manifest.os.fold_boot_order
+  ok

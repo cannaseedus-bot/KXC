@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="420" height="60" viewBox="0 0 420 60">
+  <rect width="420" height="60" fill="#111827"/>
+  <text x="20" y="24" fill="#E5E7EB" font-family="monospace" font-size="14">SMCA {{GEOMETRY}}</text>
+  <text x="20" y="46" fill="#9CA3AF" font-family="monospace" font-size="12">kernel={{KERNEL}} hash={{HASH}}</text>
+</svg>

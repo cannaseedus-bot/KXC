@@ -1,0 +1,32 @@
+{
+  "tasks": [
+    {
+      "id": "serve_xshard",
+      "action": "serve-xshard",
+      "description": "Start NNC-K adaptive-layer-streaming server for local GPT-OSS DDS inference",
+      "provider": "xshard-server",
+      "model_dir": "E:\\models\\GPT-OSS\\hf",
+      "gguf": "C:\\Users\\canna\\.lmstudio\\models\\lmstudio-community\\gpt-oss-20b-GGUF\\gpt-oss-20b-MXFP4.gguf",
+      "port": 1235,
+      "streaming": true,
+      "max_cached_layers": 4,
+      "prefetch_ahead": 2,
+      "depends_on": []
+    },
+    {
+      "id": "distil_v01_xshard",
+      "action": "distil",
+      "description": "LoRA distillation: from_zero v0.1 with local xshard GPT-OSS teacher (DDS streaming)",
+      "provider": "python-distil",
+      "student": "models/from_zero/from_zero_v0.1_folded.safetensors",
+      "out_lora": "models/from_zero/from_zero_v0.1_xshard_lora.safetensors",
+      "atomic_dom": "models/from_zero/atomic.manifest.json",
+      "rank": 8,
+      "steps": 200,
+      "lr": 1e-4,
+      "xshard_url": "http://127.0.0.1:1235",
+      "teacher_tokens": 128,
+      "depends_on": []
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+[Pop OpenCLTraining]
+  [Muwan dispatch 64 1 1]
+  [Sek needsMatMul true]
+  [Sek needsSoftmax true]
+[Xul]

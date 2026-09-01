@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="urn:kuhul:klsl:lowering-manifest:v1"
+           xmlns="urn:kuhul:klsl:lowering-manifest:v1"
+           elementFormDefault="qualified"
+           attributeFormDefault="unqualified">
+
+  <xs:annotation>
+    <xs:documentation>
+      XML equivalent of build/shaders/klsl-lowering-manifest.json. Use this
+      when exporting deterministic lowering reports to XML/KXML tooling.
+    </xs:documentation>
+  </xs:annotation>
+
+  <xs:element name="loweringManifest" type="LoweringManifestType"/>
+
+  <xs:complexType name="LoweringManifestType">
+    <xs:sequence>
+      <xs:element name="shader" type="ShaderResultType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="kind" type="xs:string" fixed="kuhul.klsl.lowering-manifest.v1"/>
+    <xs:attribute name="sourceDir" type="xs:anyURI" use="required"/>
+    <xs:attribute name="wgslDir" type="xs:anyURI" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="ShaderResultType">
+    <xs:sequence>
+      <xs:element name="opcode" type="OpcodeHexType" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="error" type="xs:string" minOccurs="0"/>
+    </xs:sequence>
+    <xs:attribute name="source" type="xs:anyURI" use="required"/>
+    <xs:attribute name="target" type="xs:anyURI" use="required"/>
+    <xs:attribute name="status" type="StatusType" use="required"/>
+  </xs:complexType>
+
+  <xs:simpleType name="StatusType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="ok"/>
+      <xs:enumeration value="error"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="OpcodeHexType">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="0x[0-9A-Fa-f]{2}"/>
+    </xs:restriction>
+  </xs:simpleType>
+</xs:schema>

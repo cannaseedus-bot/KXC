@@ -1,0 +1,91 @@
+{
+  "protocol": "kast/1",
+  "registry_hash": "77c64564951bdcd3f041d90761431ade031dee720b56c7bfadd8ff59b7fffa90",
+  "source_kind": "khl",
+  "source_id": "inference.khl",
+  "entry_node_id": "n0",
+  "nodes": [
+    {
+      "id": "n0",
+      "kind": "glyph",
+      "fold": "Sek",
+      "lane": "driver",
+      "glyph": "inference::compute",
+      "opcode": "GLYPH",
+      "symbol": "inference::compute",
+      "type": "driver_glyph",
+      "operands": [
+        "TENSOR_INPUT"
+      ],
+      "attributes": {
+        "driver": ""
+      }
+    },
+    {
+      "id": "n1",
+      "kind": "call",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "attention::dispatch",
+      "opcode": "CALL",
+      "symbol": "attention::dispatch",
+      "type": "operator_call",
+      "operands": [
+        "TENSOR_INPUT"
+      ],
+      "attributes": {
+        "result": "ATTN_MAP"
+      }
+    },
+    {
+      "id": "n2",
+      "kind": "yield",
+      "fold": "Xul",
+      "lane": "output",
+      "glyph": "yield",
+      "opcode": "YIELD",
+      "symbol": "ATTN_MAP",
+      "type": "return_value",
+      "operands": [],
+      "attributes": {}
+    }
+  ],
+  "edges": [
+    {
+      "id": "e0",
+      "from": "n0",
+      "to": "n1",
+      "kind": "control",
+      "label": "call",
+      "ordinal": 0
+    },
+    {
+      "id": "e1",
+      "from": "n1",
+      "to": "n2",
+      "kind": "control",
+      "label": "yield",
+      "ordinal": 1
+    }
+  ],
+  "semantic_hash": "3b8b750351b88fd2e4592501ba06502f257f3dea44b460d3b6e7ccfd54471a49",
+  "@driver": {
+    "@abi": 1,
+    "@requires": {
+      "kuhul": ">= 1.0",
+      "khl_abi": 1,
+      "scxq2": ">= 2.0"
+    },
+    "@capabilities": [
+      "tensor.map"
+    ],
+    "@phase_hooks": {
+      "Sek": "dispatch",
+      "Ch'en": "collect_status",
+      "Xul": "commit_tensor_state"
+    },
+    "@provider": "inference",
+    "@resources": [],
+    "@hash": "3b8b750351b88fd2e4592501ba06502f257f3dea44b460d3b6e7ccfd54471a49"
+  }
+}

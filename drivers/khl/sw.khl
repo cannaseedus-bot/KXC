@@ -1,0 +1,6 @@
+/* sw.khl - System Watchdog Law */
+glyph system::watchdog →
+  if os.health < 0.2 ::
+    system::trigger_recovery()
+  done
+  yield ok

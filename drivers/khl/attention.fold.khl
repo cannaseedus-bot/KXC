@@ -1,0 +1,64 @@
+/* ========================================================
+   attention.fold.khl — K’uhul Attention Fold Router
+   Role: Deterministic Q/K/V Lane Dispatcher
+   Law: Fold = Attention-Addressable Reasoning Lane
+   ======================================================== */
+
+@bind manifest.os.attention_folds → ATTN_CONFIG
+
+/* === ATTENTION DISPATCHER ============================== */
+
+/* attention::attend(problem_vector) → MAP<fold_id, weight> */
+glyph attention::attend(Q_VECTOR) →
+  map:new → SCORES
+  for each FOLD_ID, FOLD_SPEC in ATTN_CONFIG ::
+    /* Determine similarity between Q and Fold K-Roles */
+    attention::calculate_score(Q_VECTOR, FOLD_SPEC.k) → SCORE
+    SCORES.set(FOLD_ID, SCORE) → SCORES
+  done
+  yield SCORES
+
+/* attention::execute_lane(fold_id, Q) → V_PAYLOAD */
+glyph attention::execute_lane(ID, Q) →
+  ATTN_CONFIG[ID] → SPEC
+  
+  /* 1. Retrieve Constraints (K) */
+  attention::fetch_keys(SPEC.k) → K_DATA
+  
+  /* 2. Rank Context */
+  attention::rank(Q, K_DATA) → RANKED
+  
+  /* 3. Apply Decision Logic / Suppress Unsafe */
+  if ID == "security" ::
+    attention::guard(RANKED) → FINAL
+  else ::
+    attention::process(RANKED, SPEC.attention_ops) → FINAL
+  done
+  
+  /* 4. Return Value (V) */
+  attention::extract_values(FINAL, SPEC.v) → V
+  yield V
+
+/* === OPERATORS ========================================= */
+
+/* op: attention.dispatch */
+op attention.dispatch(request, response) →
+  request.body.q → USER_Q
+  
+  /* Calculate across all lanes */
+  attention::attend(USER_Q) → ATTENTION_MAP
+  
+  /* Pick top lanes and execute */
+  list:new → RESULTS
+  for each LANE in ATTENTION_MAP.top(3) ::
+    attention::execute_lane(LANE.id, USER_Q) → V
+    RESULTS.push({ "lane": LANE.id, "score": LANE.weight, "v": V }) → RESULTS
+  done
+
+  response.body = {
+    "@type": "xjson.attention.result",
+    "q": USER_Q,
+    "attention_distribution": ATTENTION_MAP,
+    "evidence": RESULTS
+  }
+  respond

@@ -1,0 +1,4 @@
+[Pop OpenCLTensorEvolve]
+  [Muwan dispatch 256 1 1]
+  [Sek needsPhaseMatch true]
+[Xul]

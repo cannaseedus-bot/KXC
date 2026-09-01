@@ -1,0 +1,6 @@
+{
+  "@kernel": "neural_layer_kuhul",
+  "@version": "1.0.0",
+  "@frozen": false,
+  "description": "K'UHUL linear layer kernel: out[r,j] = sum_k(X[r,k] * W[k,j]) + b[j]. Bias is an independent weight buffer at register t2, separate from W at t1."
+}

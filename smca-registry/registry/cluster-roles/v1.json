@@ -1,0 +1,31 @@
+{
+  "@registry": "cluster-roles",
+  "@version": "1.0.0",
+  "entries": [
+    {
+      "id": "Compute",
+      "may": ["Execute μ-ops"],
+      "may_not": ["Decide truth"]
+    },
+    {
+      "id": "Proof",
+      "may": ["Verify legality"],
+      "may_not": ["Execute"]
+    },
+    {
+      "id": "Settlement",
+      "may": ["Order commits"],
+      "may_not": ["Compute"]
+    },
+    {
+      "id": "Ledger",
+      "may": ["Append memory"],
+      "may_not": ["Execute"]
+    },
+    {
+      "id": "Relay",
+      "may": ["Transport"],
+      "may_not": ["Interpret"]
+    }
+  ]
+}

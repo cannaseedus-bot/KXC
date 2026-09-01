@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "smca/schema/collapse/v1",
+  "title": "SMCA Collapse Geometry Entry",
+  "type": "object",
+  "required": ["id", "meaning"],
+  "properties": {
+    "id": {"type": "string"},
+    "meaning": {"type": "string"}
+  },
+  "additionalProperties": false
+}

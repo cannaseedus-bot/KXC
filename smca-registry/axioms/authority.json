@@ -1,0 +1,18 @@
+{
+  "@axiom": "authority.gradient",
+  "@version": "1.0.0",
+  "gradient": [
+    "MATRIX",
+    "CM-1",
+    "SCXQ7",
+    "SCXQ2",
+    "SCO/1",
+    "IDB"
+  ],
+  "rules": [
+    "Authority flows downward only.",
+    "No layer may escalate authority upward.",
+    "No layer may skip a layer.",
+    "No collapse without law."
+  ]
+}

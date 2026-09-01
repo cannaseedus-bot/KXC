@@ -1,0 +1,228 @@
+// ============================================================
+// FILE: KUHUL_FUNCTIONS.kuhul
+// K'UHUL function binding declarations — external node bindings
+//
+// Core realization:
+//   Compute = pi-field is pure, no side effects
+//   Action  = functions have side effects, they touch the world
+//   Bridge  = functions are just external nodes with bindings
+//   Rule    = KUHUL calls functions; functions don't call KUHUL
+//
+// Implementation: native/kxml/kuhul_functions.h (FunctionRegistry)
+// KXML binding: <bind from="..." to="..." transform="kuhul.tool" />
+// ============================================================
+
+(⟁SYSTEM⟁) kuhul_functions_v1 {
+
+  // ── Function declarations ────────────────────────────────────────────────
+
+  (⟁TYPE⟁) FunctionDecl {
+    @syntax:   "fn <name>(<args>) -> <return>",
+    @effect:   "io | process | tool | agent | micronaut | skill | action | verb | bot | shell | network",
+    @bind:     "registry key for C++ FunctionRegistry",
+    @rule:     "Pure pi-field (no effect) OR effectful function (has effect). Never mixed."
+  }
+
+  // ── File system ──────────────────────────────────────────────────────────
+
+  (⟁POP⟁) fn_read_file {
+    @signature: "fn read_file(path: string) -> string",
+    @effect:    "io",
+    @bind:      "filesystem.read",
+    @example: [|
+      [Tensor content = read_file("data.txt")]
+    |]
+  }
+
+  (⟁POP⟁) fn_write_file {
+    @signature: "fn write_file(path: string, content: string) -> bool",
+    @effect:    "io",
+    @bind:      "filesystem.write",
+    @example: [|
+      [Tensor ok = write_file("output.txt", content)]
+    |]
+  }
+
+  // ── Process execution ────────────────────────────────────────────────────
+
+  (⟁POP⟁) fn_exec {
+    @signature: "fn exec(cmd: string, args: list<string>) -> list<string>",
+    @effect:    "process",
+    @bind:      "os.exec",
+    @example: [|
+      [Tensor lines = exec("python", ["script.py", "--arg", "value"])]
+    |]
+  }
+
+  (⟁POP⟁) fn_shell {
+    @signature: "fn shell(cmd: string) -> bool",
+    @effect:    "shell",
+    @bind:      "os.shell",
+    @example: [|
+      [Tensor ok = shell("echo 'Hello from KUHUL'")]
+    |]
+  }
+
+  // ── Tool system ──────────────────────────────────────────────────────────
+
+  (⟁POP⟁) fn_tool {
+    @signature: "fn tool(name: string, input: map) -> map",
+    @effect:    "tool",
+    @bind:      "tool.call",
+    @example: [|
+      [Tensor result = tool("calculator", {op: "add", a: 2, b: 3})]
+    |]
+  }
+
+  // ── Agent system ─────────────────────────────────────────────────────────
+
+  (⟁POP⟁) fn_agent {
+    @signature: "fn agent(name: string, prompt: string) -> string",
+    @effect:    "agent",
+    @bind:      "agent.invoke",
+    @example: [|
+      [Tensor reply = agent("assistant", "Explain Fibonacci folds")]
+    |]
+  }
+
+  // ── Micronaut system ─────────────────────────────────────────────────────
+
+  (⟁POP⟁) fn_micronaut {
+    @signature: "fn micronaut(name: string, args: map) -> map",
+    @effect:    "micronaut",
+    @bind:      "micronaut.spawn",
+    @example: [|
+      [Tensor capsule = micronaut("data_processor", {mode: "compress"})]
+    |]
+  }
+
+  // ── Skill system ─────────────────────────────────────────────────────────
+
+  (⟁POP⟁) fn_skill {
+    @signature: "fn skill(name: string, input: any) -> any",
+    @effect:    "skill",
+    @bind:      "skill.execute",
+    @example: [|
+      [Tensor folded = skill("fibonacci_fold", tensor_data)]
+    |]
+  }
+
+  // ── Action system ────────────────────────────────────────────────────────
+
+  (⟁POP⟁) fn_action {
+    @signature: "fn action(name: string, params: map) -> map",
+    @effect:    "action",
+    @bind:      "action.perform",
+    @example: [|
+      [Tensor result = action("deploy", {target: "production"})]
+    |]
+  }
+
+  // ── NLP verb system ──────────────────────────────────────────────────────
+
+  (⟁POP⟁) fn_verb {
+    @signature: "fn verb(name: string, subject: string, object: string) -> string",
+    @effect:    "verb",
+    @bind:      "nlp.verb",
+    @example: [|
+      [Tensor sentence = verb("calculate", "GPU", "matrix product")]
+    |]
+  }
+
+  // ── Bot system ───────────────────────────────────────────────────────────
+
+  (⟁POP⟁) fn_bot {
+    @signature: "fn bot(name: string, message: string) -> string",
+    @effect:    "bot",
+    @bind:      "bot.respond",
+    @example: [|
+      [Tensor reply = bot("helpbot", "What is KUHUL?")]
+    |]
+  }
+
+  // ── Network ──────────────────────────────────────────────────────────────
+
+  (⟁POP⟁) fn_http {
+    @signature: "fn http(method: string, url: string, body: string) -> map",
+    @effect:    "network",
+    @bind:      "http.request",
+    @example: [|
+      [Tensor resp = http("GET", "https://api.example.com/data", "")]
+    |]
+  }
+
+  // ── Complete deploy pipeline example ─────────────────────────────────────
+
+  (⟁POP⟁) deploy_pipeline {
+
+    // Phase Pop: Load config
+    [Tensor config = read_file("deploy.json")]
+    [Tensor params = json_parse(config)]
+
+    // Phase Sek: Execute tools and agents
+    [Tensor validation = tool("validator", params)]
+
+    [K'ayab' validation.status == "pass"]
+      [Tensor capsule = micronaut("deployer", {
+        mode:   "rolling_update",
+        target: params.cluster
+      })]
+      [Tensor deploy_result = action("deploy", {
+        capsule_id: capsule.pid,
+        strategy:   "blue-green"
+      })]
+      [Tensor notify = bot("ops", "Deployment started: " ⊕ capsule.pid)]
+    [Kumk'u]
+
+    // Phase Ch'en: Monitor
+    [Tensor status = shell("kubectl get pods -l app=" ⊕ params.app)]
+    [K'ayab' status]
+      [Tensor complete = verb("notify", "team", "deployment complete")]
+    [Kumk'u]
+
+    // Phase Xul: Record and signal
+    [Tensor log_ok = write_file("deployment.log", "Completed")]
+    [Tensor ping   = http("POST", "https://hooks.slack.com/...", "{\"text\":\"Deployed!\"}")]
+
+    [Xul {deployed: true, capsule: capsule, log: log_ok}]
+  }
+
+  // ── KXML binding syntax ───────────────────────────────────────────────────
+
+  (⟁EXAMPLE⟁) kxml_function_nodes {
+    @xml: [|
+      <!-- Functions are external nodes with bindings. -->
+      <!-- The graph doesn't care if a node is a shader or a shell command. -->
+      <!-- Both are just bindings. -->
+
+      <node id="call_tool" phase="Sek" domain="action" device="cpu">
+        <bind from="tool_name,input" to="output"
+              transform="kuhul.tool" />
+        <effect type="tool" side_effect="true" />
+      </node>
+
+      <node id="spawn_micronaut" phase="Wo" domain="process" device="cpu">
+        <bind from="capsule_name,params" to="process_id"
+              transform="kuhul.micronaut" />
+        <effect type="spawn" isolated="true" />
+      </node>
+
+      <edge from="call_tool.output" to="spawn_micronaut.params" />
+    |]
+  }
+
+  // ── Init ─────────────────────────────────────────────────────────────────
+
+  (⟁POP⟁) init {
+    console.log("K'UHUL Functions v1")
+    console.log("  12 built-in functions: read_file write_file exec shell")
+    console.log("                         tool agent micronaut skill action")
+    console.log("                         verb bot http")
+    console.log("  C++ impl: native/kxml/kuhul_functions.h (FunctionRegistry)")
+    console.log("  KXML:     <bind transform='kuhul.tool' /> etc.")
+    console.log("  Rule:     KUHUL calls functions. Functions don't call KUHUL.")
+    [Xul {status: "ready", functions: 12}]
+  }
+
+  [init]
+}

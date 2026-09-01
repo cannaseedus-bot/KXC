@@ -1,0 +1,105 @@
+{
+  "protocol": "kast/1",
+  "registry_hash": "1ce7e71523dce22a628fd985de5c45e2688d551d6ba75b1b34843c3cbe5b930f",
+  "source_kind": "khl",
+  "source_id": "sw.khl",
+  "entry_node_id": "n0",
+  "nodes": [
+    {
+      "id": "n0",
+      "kind": "glyph",
+      "fold": "Xul",
+      "lane": "driver",
+      "glyph": "system::watchdog",
+      "opcode": "GLYPH",
+      "symbol": "system::watchdog",
+      "type": "driver_glyph",
+      "operands": [],
+      "attributes": {
+        "driver": ""
+      }
+    },
+    {
+      "id": "n1",
+      "kind": "if",
+      "fold": "Sek",
+      "lane": "control",
+      "glyph": "if",
+      "opcode": "IF",
+      "symbol": "os.health < 0.2",
+      "type": "control_flow",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n2",
+      "kind": "stmt",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "expr",
+      "opcode": "STMT",
+      "symbol": "system::trigger_recovery()",
+      "type": "expression",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n3",
+      "kind": "yield",
+      "fold": "Xul",
+      "lane": "output",
+      "glyph": "yield",
+      "opcode": "YIELD",
+      "symbol": "ok",
+      "type": "return_value",
+      "operands": [],
+      "attributes": {}
+    }
+  ],
+  "edges": [
+    {
+      "id": "e0",
+      "from": "n0",
+      "to": "n1",
+      "kind": "control",
+      "label": "if",
+      "ordinal": 0
+    },
+    {
+      "id": "e1",
+      "from": "n1",
+      "to": "n2",
+      "kind": "control",
+      "label": "next",
+      "ordinal": 1
+    },
+    {
+      "id": "e2",
+      "from": "n1",
+      "to": "n3",
+      "kind": "control",
+      "label": "yield",
+      "ordinal": 2
+    }
+  ],
+  "semantic_hash": "b39d13b40ad6fc4b1c4deefb334b4245b4b57f7ca6999460f11bb7ab4b7c3b3a",
+  "@driver": {
+    "@abi": 1,
+    "@requires": {
+      "kuhul": ">= 1.0",
+      "khl_abi": 1,
+      "scxq2": ">= 2.0"
+    },
+    "@capabilities": [
+      "tensor.map"
+    ],
+    "@phase_hooks": {
+      "Sek": "dispatch",
+      "Ch'en": "collect_status",
+      "Xul": "commit_tensor_state"
+    },
+    "@provider": "sw",
+    "@resources": [],
+    "@hash": "b39d13b40ad6fc4b1c4deefb334b4245b4b57f7ca6999460f11bb7ab4b7c3b3a"
+  }
+}

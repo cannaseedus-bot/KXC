@@ -1,0 +1,25 @@
+// cssc_softmax.kuhul — row-wise softmax as a CSS-C kernel (one thread per row).
+//   Out[r,j] = exp(In[r,j] - max_r) / sum_j exp(In[r,j] - max_r)
+// Numerically stable (subtract row max). Authored in KLSL, lowered to WGSL+HLSL.
+// NB: the lowerer maps `let x =` -> `uint x =`, so float temps use `var x: f32` or inline.
+
+@shader_language: wgsl
+@target_backends: ["wgpu", "d3d11"]
+
+@shaders: {
+  "softmax": {
+    "@type": "compute",
+    "@workgroup": [64, 1, 1],
+    "@inputs": {
+      "In": { "@type": "f32", "@layout": "read", "@shape": ["rows", "cols"] }
+    },
+    "@outputs": {
+      "Out": { "@type": "f32", "@layout": "read_write", "@shape": ["rows", "cols"] }
+    },
+    "@uniforms": {
+      "rows": "u32",
+      "cols": "u32"
+    },
+    "@kernel": "let row = global_id.x;\nif (row >= params.rows) { return; }\nvar mx: f32 = -100000000.0;\nfor (var j: u32 = 0u; j < params.cols; j = j + 1u) { if (In[row * params.cols + j] > mx) { mx = In[row * params.cols + j]; } }\nvar sm: f32 = 0.0;\nfor (var j: u32 = 0u; j < params.cols; j = j + 1u) { sm = sm + exp(In[row * params.cols + j] - mx); }\nfor (var j: u32 = 0u; j < params.cols; j = j + 1u) { Out[row * params.cols + j] = exp(In[row * params.cols + j] - mx) / sm; }"
+  }
+}

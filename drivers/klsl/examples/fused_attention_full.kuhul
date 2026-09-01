@@ -1,0 +1,7 @@
+[Pop FusedAttention]
+  [Muwan dispatch 64 1 1]
+  [Sek needsDecompress true]
+  [Sek needsSoftmax true]
+  [Sek needsMatMul true]
+  [Sek kvInt4 true]
+[Xul]

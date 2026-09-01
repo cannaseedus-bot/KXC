@@ -1,0 +1,7 @@
+/* gpt2.runtime.khl - GPT-2 Inference Adapter */
+glyph gpt2::forward(TOKEN_IDS) →
+  gpt2::embedding_lookup(TOKEN_IDS) → X
+  for each BLOCK in gpt2.blocks ::
+    X = gpt2::transformer_block(X, BLOCK)
+  done
+  yield X

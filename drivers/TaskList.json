@@ -1,0 +1,25 @@
+{
+  "tasks": [
+    {
+      "id": "probe-opencl",
+      "action": "probe_opencl",
+      "description": "Confirm a usable standard OpenCL platform before dispatch",
+      "provider": "opencl",
+      "depends_on": []
+    },
+    {
+      "id": "prepare-qkv",
+      "action": "stream_xshard",
+      "description": "Admit the next GPT-OSS Q/K/V tile family",
+      "provider": "opencl_cpu_executor",
+      "depends_on": []
+    },
+    {
+      "id": "verify-working-set",
+      "action": "verify_scx",
+      "description": "Verify the admitted layer working set",
+      "provider": "opencl_cpu_executor",
+      "depends_on": ["prepare-qkv"]
+    }
+  ]
+}

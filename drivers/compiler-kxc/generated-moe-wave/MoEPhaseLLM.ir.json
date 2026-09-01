@@ -1,0 +1,39 @@
+{
+  "name": "MoEPhaseLLM",
+  "threads": [32, 1, 1],
+  "needsDecompress": false,
+  "needsSoftmax": false,
+  "needsMatMul": false,
+  "kvInt4": true,
+  "isMoEKernel": true,
+  "needsMoERoute": true,
+  "needsMoEExpertFFN": true,
+  "needsMoECombine": true,
+  "needsPhaseMatch": true,
+  "smca": {
+    "kernelClass": "moe_route_top2",
+    "collapseClass": "routing.top2",
+    "lawful": true,
+    "registryMatched": true,
+    "layers": ["MATRIX", "SCXQ2", "SCXQ7", "SCO/1", "IDB"],
+    "requires": ["topk_stable", "deterministic_join"],
+    "forbids": ["side_effects", "order_dependence"],
+    "notes": ["Kernel class resolved via kxc registry overlay.", "MATRIX: source K'uhul parsed into AST.", "SCXQ2: semantic ops lowered into backend-neutral IR.", "SCXQ7: legality and caps-aware optimization applied.", "SCO/1: backend emitters produce executable artifacts.", "IDB: sidecar metadata emitted for external verification.", "Registry forbid checked: side_effects not observed in current lowering.", "Registry forbid checked: order_dependence not observed in current lowering."]
+  },
+  "resources": [
+    {"name": "hidden_states", "kind": "structured_float", "shape": ["seq_len", "model_dim"]},
+    {"name": "router_weights", "kind": "structured_float", "shape": ["model_dim", "num_experts"]},
+    {"name": "expert_outputs_a", "kind": "structured_float", "shape": ["seq_len", "head_dim"]},
+    {"name": "expert_outputs_b", "kind": "structured_float", "shape": ["seq_len", "head_dim"]},
+    {"name": "expert_phase", "kind": "phase_array", "shape": ["num_experts", "phase_bytes"]},
+    {"name": "combined", "kind": "structured_float", "shape": ["seq_len", "head_dim"]}
+  ],
+  "tensors": [
+    {"name": "hidden_states", "storage": "float", "shape": ["seq_len", "model_dim"]},
+    {"name": "router_weights", "storage": "float", "shape": ["model_dim", "num_experts"]},
+    {"name": "expert_outputs_a", "storage": "float", "shape": ["seq_len", "head_dim"]},
+    {"name": "expert_outputs_b", "storage": "float", "shape": ["seq_len", "head_dim"]},
+    {"name": "expert_phase", "storage": "int4", "shape": ["num_experts", "phase_bytes"]},
+    {"name": "combined", "storage": "float", "shape": ["seq_len", "head_dim"]}
+  ]
+}

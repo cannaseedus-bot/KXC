@@ -1,0 +1,7 @@
+{
+  "@registry": "SMCA",
+  "@type": "collapse-geometry",
+  "versions": {
+    "v1": "v1.json"
+  }
+}

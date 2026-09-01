@@ -1,0 +1,50 @@
+{
+  "@kind": "kuhul.klslc-llama-adapter.v1",
+  "@id": "adapter://klslc/llama-cpp",
+  "@version": "1.0.0",
+  "description": "Adapter contract linking llama.cpp model execution to K'UHUL opcode dispatch and KLSL-compiled WebGPU or CPU implementations.",
+  "host": {
+    "api": "llama.cpp OpenAI-compatible completion/chat host",
+    "input_formats": ["gguf", "mgguf", "dds", "jrom"],
+    "opcode_registry": "programs/opcode.table.json",
+    "model_manifest": "models/<model>/atomic.manifest.json"
+  },
+  "compiler": {
+    "wrapper": "drivers/klsl/klslc.cmd",
+    "binary_entry": "drivers/klsl/bin/klslc.exe",
+    "binary": "dist/xvm-d3d12/build-ninja3/kxc/kxc.exe",
+    "source": "drivers/klsl/klsl_compiler.cpp",
+    "outputs": ["webgpu", "cpu", "hlsl", "glsl"]
+  },
+  "dispatch": {
+    "selection": "manifest backend capability plus device availability",
+    "webgpu": {
+      "driver": "drivers/klsl/webgpu",
+      "transport": "compiled opcode buffers and shader bindings",
+      "status": "contracted; runtime smoke test pending"
+    },
+    "cpu": {
+      "driver": "DirectXMath or scalar host fallback",
+      "status": "available"
+    },
+    "opencl_1_2": {
+      "driver": "drivers/opencl_1_2",
+      "status": "separate native path; not WebGPU"
+    },
+    "webgl2": {
+      "driver": "drivers/webgl2",
+      "status": "browser visualization/tensor path; not WebGPU"
+    }
+  },
+  "return_adapter": {
+    "result": "K'UHUL semantic result",
+    "host_response": "OpenAI-compatible response or AtomicDOM event",
+    "continuation": "preserve completion messages and request another segment when finish_reason=length"
+  },
+  "safety": {
+    "validate_opcode": true,
+    "validate_tensor_shapes": true,
+    "validate_manifest": true,
+    "never_execute_unknown_opcode": true
+  }
+}

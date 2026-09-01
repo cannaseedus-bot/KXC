@@ -1,0 +1,387 @@
+(*===================================================================*)
+(* KUHUL OSCILLATOR VM — SIGNAL-GEOMETRY LANGUAGE                   *)
+(* (x,y,z) = (phase, amplitude, harmonic_energy)                    *)
+(* Sound is a byproduct. The attractor geometry is primary.         *)
+(* Version: 1.0                                                     *)
+(*===================================================================*)
+
+(*-------------------------------------------------------------------*)
+(* PART I: CORE STATE VECTOR                                        *)
+(*-------------------------------------------------------------------*)
+
+[Pop oscillator_state]
+  [Sek log "Oscillator VM — state vector (x, y, z)"]
+
+  // State S = (x, y, z)
+  //   x = phase angle (radians)    — position on the attractor orbit
+  //   y = amplitude                — energy in the oscillation
+  //   z = harmonic energy          — coupling to 3rd harmonic
+
+  // Sample formula (projection of 3D geometric state to scalar):
+  //   sample = y * sin(x) + z * sin(3x)
+
+  [Tensor oscillator_registers = GeometricTensor({
+      R0: { name: "phase",           symbol: "x", initial: 0.0 },
+      R1: { name: "amplitude",       symbol: "y", initial: 0.8 },
+      R2: { name: "harmonic_energy", symbol: "z", initial: 0.3 },
+      R3: { name: "temp",            symbol: "t", initial: 0.0 },
+      R4: { name: "tensor_ptr",      symbol: "T", initial: null },
+      R5: { name: "cluster_ptr",     symbol: "C", initial: null },
+      R6: { name: "model_ptr",       symbol: "M", initial: null },
+      R7: { name: "stack_ptr",       symbol: "S", initial: 0 }
+  })]
+
+  [Sek log "State vector initialized: x=0.0 y=0.8 z=0.3"]
+[Xul]
+
+(*-------------------------------------------------------------------*)
+(* PART II: OPCODE TABLE (7-instruction minimal set)                *)
+(*-------------------------------------------------------------------*)
+
+[Pop oscillator_opcodes]
+  [Sek log "Defining oscillator VM opcode table"]
+
+  // Instruction format: | opcode 1B | value 4B | = 5 bytes/instruction
+  // Extended format:    | opcode 1B | argA 1B | argB 2B | argC 4B | = 8 bytes
+
+  [Tensor opcode_table = GeometricTensor({
+      // Phase operations
+      PX: { opcode: 0x01, arity: 1, effect: "R0 = value",      mnemonic: "PHASE_SET"  },
+      DX: { opcode: 0x04, arity: 1, effect: "R0 += value",     mnemonic: "PHASE_STEP" },
+
+      // Amplitude operations
+      AY: { opcode: 0x02, arity: 1, effect: "R1 = value",      mnemonic: "AMP_SET"    },
+      SY: { opcode: 0x05, arity: 1, effect: "R1 *= value",     mnemonic: "AMP_SCALE"  },
+
+      // Harmonic energy operations
+      HZ: { opcode: 0x03, arity: 1, effect: "R2 = value",      mnemonic: "HARM_SET"   },
+      MZ: { opcode: 0x06, arity: 1, effect: "R2 += value",     mnemonic: "HARM_MIX"   },
+
+      // Output (projection from 3D attractor to scalar)
+      OUT: { opcode: 0x07, arity: 0, effect: "emit y*sin(x) + z*sin(3x)", mnemonic: "EMIT" },
+
+      // Tensor operations (extended)
+      TENSOR_LOAD:    { opcode: 0x20, arity: 1, effect: "R4 = tensor"    },
+      TENSOR_ROTATE:  { opcode: 0x21, arity: 2, effect: "rotate(R4, v)"  },
+      TENSOR_SCALE:   { opcode: 0x22, arity: 2, effect: "scale(R4, v)"   },
+      TENSOR_SHEAR:   { opcode: 0x23, arity: 2, effect: "shear(R4, v)"   },
+      TENSOR_REFLECT: { opcode: 0x24, arity: 2, effect: "reflect(R4, p)" },
+      TENSOR_PROJECT: { opcode: 0x25, arity: 2, effect: "project(R4, p)" },
+
+      // Cluster operations
+      CLUSTER_CREATE:   { opcode: 0x30, arity: 0, effect: "R5 = new_cluster()"    },
+      CLUSTER_ADD:      { opcode: 0x31, arity: 1, effect: "R5.add(R4)"            },
+      CLUSTER_RELATION: { opcode: 0x32, arity: 1, effect: "R5.relate(mode)"       },
+      CLUSTER_INFER:    { opcode: 0x33, arity: 1, effect: "result = R5.infer(R4)" },
+
+      // Neural glyph operations (K'UHUL geometric operators)
+      NEURAL_PATH:  { opcode: 0x40, arity: 1, effect: "(⟿) generate path"     },
+      WEIGHT_APPLY: { opcode: 0x41, arity: 1, effect: "(⤂) apply weights"      },
+      ACTIVATION:   { opcode: 0x42, arity: 1, effect: "(⤃) morph activation"   },
+      BACKPROP:     { opcode: 0x43, arity: 1, effect: "(⤄) gradient backprop"   },
+
+      // SCX compression (attractor → compact representation)
+      ROTATE_COMPRESS:       { opcode: 0x50, effect: "(↻) rotational compress"   },
+      SYMMETRY_COMPRESS:     { opcode: 0x51, effect: "(↔) symmetry compress"     },
+      HIERARCHICAL_COMPRESS: { opcode: 0x52, effect: "(⤒) hierarchical compress" },
+      PROGRESSIVE_DETAIL:    { opcode: 0x53, effect: "(⤓) progressive detail"    },
+
+      // Control flow
+      JMP:         { opcode: 0x60, arity: 1, effect: "pc = target"              },
+      JMP_IF:      { opcode: 0x61, arity: 2, effect: "if cond: pc = target"     },
+      LOOP_SPHERE: { opcode: 0x62, arity: 2, effect: "(⟲) spherical iteration"  },
+      PATH_ITER:   { opcode: 0x63, arity: 2, effect: "(⤧) path iteration"       },
+
+      // Rendering
+      SVG_RENDER:  { opcode: 0x70, arity: 1, effect: "render tensor as SVG"     },
+      SVG_PATH:    { opcode: 0x71, arity: 1, effect: "render path"              },
+      SVG_CLUSTER: { opcode: 0x72, arity: 1, effect: "render cluster"           },
+
+      // Mayan fold (vigesimal tensor contraction)
+      MAYAN_FOLD: { opcode: 0x90, arity: 2,
+                    effect: "Rdst = Σ T[z] * 20^z  (dot with basis [1,20,400,8000,...])" }
+  })]
+
+  [Sek log "Opcode table defined: 7 core + 26 extended opcodes"]
+[Xul]
+
+(*-------------------------------------------------------------------*)
+(* PART III: FIVE ATTRACTOR FAMILIES → OPCODE SEQUENCES             *)
+(*-------------------------------------------------------------------*)
+
+[Pop attractor_families]
+  [Sek log "Mapping attractor geometry to oscillator VM programs"]
+
+  // FAMILY 1: CIRCLE — pure oscillation
+  // x(t) = A*sin(ωt)  →  phase space: (x, dx/dt) = circle
+  [Pop attractor_circle]
+    [Wo config]→[Ch'en program]
+    [Sek let prog = [
+        {op: PX, val: 0.0},          // phase = 0
+        {op: AY, val: config.A},     // amplitude = A
+        {op: HZ, val: 0.0},          // no harmonics — pure sine
+        {op: DX, val: config.omega}, // step by ω
+        {op: OUT}                    // emit y*sin(x)
+    ]]
+    [Sek return prog]
+  [Xul]
+
+  // FAMILY 2: POLYGON — harmonic locking (1+3, 1+3+5)
+  // distorted guitar, triangle wave, clipped waveform
+  // strong 3rd harmonic → orbit becomes triangular
+  [Pop attractor_polygon]
+    [Wo config]→[Ch'en program]
+    [Sek let prog = [
+        {op: PX, val: 0.0},
+        {op: AY, val: config.A},
+        {op: HZ, val: config.harm_ratio},  // 0.33 = triangle, 0.5 = square
+        {op: DX, val: config.omega},
+        {op: OUT}
+    ]]
+    [Sek return prog]
+  [Xul]
+
+  // FAMILY 3: TORUS — two interacting oscillators
+  // x = sin(f1*t), y = sin(f2*t)
+  // rational f1/f2 → closed orbit; irrational → dense fill
+  [Pop attractor_torus]
+    [Wo config]→[Ch'en program]
+    // Uses two oscillator pairs in the trig-brain lattice
+    [Sek let prog = [
+        {op: PX, val: 0.0},
+        {op: AY, val: config.A},
+        {op: HZ, val: config.coupling},          // z couples two oscillators
+        {op: DX, val: config.f1},                // advance primary phase
+        {op: MZ, val: config.f2 - config.f1},    // mix secondary frequency
+        {op: OUT}
+    ]]
+    [Sek return prog]
+  [Xul]
+
+  // FAMILY 4: STRANGE ATTRACTOR — chaos/noise
+  // cymbals, feedback, overdrive, wind turbulence
+  // nonlinear feedback → fractal geometry, never repeats
+  [Pop attractor_strange]
+    [Wo config]→[Ch'en program]
+    [Sek let prog = [
+        {op: PX, val: 0.0},
+        {op: AY, val: config.A},
+        {op: HZ, val: config.nonlinearity},  // strong harmonic injection
+        {op: DX, val: config.omega},
+        {op: MZ, val: config.feedback},      // feedback into harmonic energy
+        {op: SY, val: config.saturation},    // amplitude saturation
+        {op: OUT}
+    ]]
+    [Sek return prog]
+  [Xul]
+
+  // FAMILY 5: SPIRAL — attack and decay
+  // energy entering or leaving the system
+  // plucked string, piano, drum
+  [Pop attractor_spiral]
+    [Wo config]→[Ch'en program]
+    [Sek let prog = [
+        {op: PX, val: 0.0},
+        {op: AY, val: config.A_initial},     // start at peak amplitude
+        {op: HZ, val: config.harm_initial},
+        {op: DX, val: config.omega},
+        {op: SY, val: config.decay_rate},    // amplitude decays each step
+        {op: MZ, val: config.harm_decay},    // harmonics decay too
+        {op: OUT}
+    ]]
+    [Sek return prog]
+  [Xul]
+
+  [Sek log "Five attractor families mapped to VM programs"]
+[Xul]
+
+(*-------------------------------------------------------------------*)
+(* PART IV: EXECUTION LOOP                                          *)
+(*-------------------------------------------------------------------*)
+
+[Pop oscillator_execution_loop]
+  [Sek log "Oscillator VM execution loop"]
+
+  [Pop execute_program]
+    [Wo program] [Wo n_samples]→[Ch'en output]
+
+    [Sek let R0 = 0.0]  // phase
+    [Sek let R1 = 1.0]  // amplitude
+    [Sek let R2 = 0.0]  // harmonic energy
+    [Sek let pc = 0]
+    [Sek let samples = []]
+
+    [Sek while pc < len(program) and len(samples) < n_samples
+       do: [Sek let inst = program[pc]]
+
+            [Yax inst.op == PX]→[Sek if]→[then  [Sek R0 = inst.val]]
+            [Yax inst.op == AY]→[Sek if]→[then  [Sek R1 = inst.val]]
+            [Yax inst.op == HZ]→[Sek if]→[then  [Sek R2 = inst.val]]
+            [Yax inst.op == DX]→[Sek if]→[then  [Sek R0 += inst.val]]
+            [Yax inst.op == SY]→[Sek if]→[then  [Sek R1 *= inst.val]]
+            [Yax inst.op == MZ]→[Sek if]→[then  [Sek R2 += inst.val]]
+
+            [Yax inst.op == OUT]→[Sek if]→[then
+               // Project 3D geometric state → scalar
+               // This is the "output byproduct" — one transducer surface
+               [Sek let sample = R1 * sin(R0) + R2 * sin(3 * R0)]
+               [Sek samples.append(sample)]
+
+               // But the same state can also render as:
+               //   SVG:    position = (R0, R1), color = R2
+               //   XML:    <oscillator phase=R0 amp=R1 harm=R2/>
+               //   SCXQ2:  concept_hash = hash(R0,R1,R2)
+            ]
+
+            // Cycle program when it runs out (continuous oscillation)
+            [Sek pc = (pc + 1) % len(program)]
+       Xul]
+
+    [Sek return samples]
+  [Xul]
+
+  [Sek log "Execution loop defined"]
+[Xul]
+
+(*-------------------------------------------------------------------*)
+(* PART V: EXAMPLE PROGRAMS                                         *)
+(*-------------------------------------------------------------------*)
+
+[Pop oscillator_examples]
+  [Sek log "Running attractor family examples"]
+
+  // Pure sine (circle attractor)
+  [Sek let sine_prog = attractor_circle({A: 0.8, omega: 0.04})]
+  [Sek let sine_out  = execute_program(sine_prog, 256)]
+  [Sek log "Circle attractor: " + len(sine_out) + " samples generated"]
+
+  // Triangle wave (polygon attractor - 1st + 3rd harmonic)
+  [Sek let tri_prog = attractor_polygon({A: 0.8, harm_ratio: 0.33, omega: 0.04})]
+  [Sek let tri_out  = execute_program(tri_prog, 256)]
+  [Sek log "Polygon attractor (triangle): " + len(tri_out) + " samples"]
+
+  // Chord / vibrato (torus attractor)
+  [Sek let torus_prog = attractor_torus({A: 0.8, f1: 0.04, f2: 0.05, coupling: 0.2})]
+  [Sek let torus_out  = execute_program(torus_prog, 256)]
+  [Sek log "Torus attractor (two freqs): " + len(torus_out) + " samples"]
+
+  // Distortion / noise (strange attractor)
+  [Sek let chaos_prog = attractor_strange({
+      A: 0.8, omega: 0.04,
+      nonlinearity: 0.6, feedback: 0.15, saturation: 0.95
+  })]
+  [Sek let chaos_out = execute_program(chaos_prog, 256)]
+  [Sek log "Strange attractor (chaotic): " + len(chaos_out) + " samples"]
+
+  // Piano attack/decay (spiral attractor)
+  [Sek let spiral_prog = attractor_spiral({
+      A_initial: 1.0, harm_initial: 0.4,
+      omega: 0.04, decay_rate: 0.998, harm_decay: -0.002
+  })]
+  [Sek let spiral_out = execute_program(spiral_prog, 256)]
+  [Sek log "Spiral attractor (decay): " + len(spiral_out) + " samples"]
+
+  // All five produce DIFFERENT output surfaces from the SAME geometry:
+  //   Audio: the sample array above
+  //   SVG:   orbit curve plotted in (x, dx/dt) phase space
+  //   XML:   <attractor type="circle" phase="..." amp="..." harm="..."/>
+  //   SCXQ2: brain concept encoded from (phase, amplitude, harmonic)
+
+  [Sek log "Attractor examples complete — sound was the byproduct"]
+[Xul]
+
+(*-------------------------------------------------------------------*)
+(* PART VI: MAYAN FOLD INTEGRATION                                  *)
+(*-------------------------------------------------------------------*)
+
+[Pop mayan_fold_oscillator]
+  [Sek log "Mayan fold as vigesimal tensor contraction on oscillator stack"]
+
+  // A Mayan stack IS a vertical oscillator register stack
+  // MayanFold(T) = dot(T, [1,20,400,8000,...]) = basis projection
+
+  [Tensor mayan_basis = GeometricTensor({
+      basis: [1, 20, 400, 8000, 160000, 3200000],
+      // These are the positional weights: 20^0, 20^1, 20^2, ...
+      // Identical to XDSP twiddle factors but for vigesimal, not complex exponential
+      fold_operator: "MAYAN_FOLD",  // opcode 0x90
+      note: "MayanFold = FFT with base 20 instead of e^(2πi/N)"
+  })]
+
+  [Pop fold20]
+    [Wo tensor_stack]→[Ch'en scalar]
+
+    [Sek let result = 0]
+    [Sek for z: 0 to len(tensor_stack) - 1
+       do: [Sek let level_value = tensor_stack[z].dots * 1 +
+                                  tensor_stack[z].bars * 5 +
+                                  (tensor_stack[z].shell ? 0 : 0)]
+            [Sek result = result + level_value * (20 ^ z)]
+       Xul]
+
+    // Generic fold: fold(base=n) generalizes to:
+    //   fold2   = binary
+    //   fold10  = decimal
+    //   fold20  = Mayan vigesimal
+    //   foldN   = arbitrary positional system
+
+    [Sek return result]
+  [Xul]
+
+  // Example: 823 = 3 + 1*20 + 2*400
+  [Sek let stack_823 = [
+      {dots: 3, bars: 0, shell: false},
+      {dots: 1, bars: 0, shell: false},
+      {dots: 2, bars: 0, shell: false}
+  ]]
+  [Sek let val = fold20(stack_823)]
+  [Sek assert(val == 823)]
+  [Sek log "Mayan fold 823: " + val]
+
+  // The fold maps vertical glyph stack → scalar → oscillator register R0/R1/R2
+  // Visual: glyphs on stone → geometric computation → audio/SVG/XML byproduct
+
+  [Sek log "Mayan fold integrated with oscillator VM"]
+[Xul]
+
+(*-------------------------------------------------------------------*)
+(* PART VII: ATTRACTOR GEOMETRY AS K'UHUL PROGRAM                  *)
+(*-------------------------------------------------------------------*)
+
+[Pop attractor_as_program]
+  [Sek log "The attractor IS the program — output is just the byproduct transducer"]
+
+  // Core insight:
+  // A geometric attractor in (x,y,z) phase space is already a program.
+  // The oscillator VM RUNS the attractor.
+  // What comes out depends on what transducer you attach:
+  //
+  //   transducer: audio     →  sample = R1*sin(R0) + R2*sin(3*R0)
+  //   transducer: SVG       →  circle at (R0, R1), radius R2
+  //   transducer: XML       →  <oscillator x=R0 y=R1 z=R2/>
+  //   transducer: SCXQ2     →  concept_hash = fnv1a(R0||R1||R2)
+  //   transducer: pixel     →  rgba(R0/2π, R1, R2, 1)
+  //   transducer: trig-cell →  {phase: R0, activation: R1, frequency: R2}
+
+  // DirectXMath folders = the native transducer substrate:
+  //   SHMath      = the attractor SPACE    (all valid orbital shapes)
+  //   XDSP        = the FOLD OPERATOR      (FFT = time ↔ attractor domain)
+  //   Stereo3D    = GEOMETRIC RENDERING    (project attractor → binaural)
+  //   MatrixStack = STACK MACHINE          ([Pop]/[Xul] execution geometry)
+
+  [Sek log "Attractor as program — the geometry is primary, sound is secondary"]
+[Xul]
+
+// Execute
+[oscillator_state]
+[oscillator_opcodes]
+[attractor_families]
+[oscillator_execution_loop]
+[oscillator_examples]
+[mayan_fold_oscillator]
+[attractor_as_program]
+
+(*===================================================================*)
+(* END OF KUHUL OSCILLATOR VM                                        *)
+(* Sound is a byproduct. The attractor geometry is the program.     *)
+(*===================================================================*)

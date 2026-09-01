@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="urn:kuhul:klsl:program:v1"
+           xmlns="urn:kuhul:klsl:program:v1"
+           elementFormDefault="qualified"
+           attributeFormDefault="unqualified">
+
+  <xs:annotation>
+    <xs:documentation>
+      Normalized XML form for KLSL/KUHUL shader programs lowered from .kuhul
+      source files. This schema models the shader AST after PEG parsing.
+    </xs:documentation>
+  </xs:annotation>
+
+  <xs:element name="program" type="ProgramType"/>
+
+  <xs:complexType name="ProgramType">
+    <xs:sequence>
+      <xs:element name="metadata" type="MetadataType" minOccurs="0"/>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element name="fold" type="FoldType"/>
+        <xs:element name="section" type="SectionType"/>
+        <xs:element name="shaderManifest" type="ShaderManifestRefType"/>
+      </xs:choice>
+    </xs:sequence>
+    <xs:attribute name="kind" type="xs:string" fixed="kuhul.klsl.program.v1"/>
+    <xs:attribute name="source" type="xs:anyURI" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="MetadataType">
+    <xs:sequence>
+      <xs:element name="property" type="PropertyType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="PropertyType">
+    <xs:attribute name="name" type="xs:string" use="required"/>
+    <xs:attribute name="value" type="xs:string" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="FoldType">
+    <xs:sequence>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element name="alloc" type="AllocType"/>
+        <xs:element name="read" type="NameRefType"/>
+        <xs:element name="write" type="WriteType"/>
+        <xs:element name="op" type="OpType"/>
+        <xs:element name="phase" type="PhaseType"/>
+        <xs:element name="invoke" type="InvokeType"/>
+      </xs:choice>
+    </xs:sequence>
+    <xs:attribute name="name" type="xs:string" default="Pop"/>
+  </xs:complexType>
+
+  <xs:complexType name="PhaseType">
+    <xs:sequence>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element name="read" type="NameRefType"/>
+        <xs:element name="write" type="WriteType"/>
+        <xs:element name="op" type="OpType"/>
+        <xs:element name="invoke" type="InvokeType"/>
+      </xs:choice>
+    </xs:sequence>
+    <xs:attribute name="name" type="xs:string" default="K'ayab'"/>
+  </xs:complexType>
+
+  <xs:complexType name="AllocType">
+    <xs:attribute name="name" type="xs:NCName" use="required"/>
+    <xs:attribute name="elementType" type="ElementType" use="required"/>
+    <xs:attribute name="shape" type="ShapeList" use="required"/>
+  </xs:complexType>
+
+  <xs:simpleType name="ElementType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="float32"/>
+      <xs:enumeration value="float64"/>
+      <xs:enumeration value="f32"/>
+      <xs:enumeration value="f64"/>
+      <xs:enumeration value="int32"/>
+      <xs:enumeration value="int64"/>
+      <xs:enumeration value="i32"/>
+      <xs:enumeration value="i64"/>
+      <xs:enumeration value="uint32"/>
+      <xs:enumeration value="u32"/>
+      <xs:enumeration value="uint8"/>
+      <xs:enumeration value="bool"/>
+      <xs:enumeration value="complex64"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="ShapeList">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="(\?|\d+)(,(\?|\d+))*"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:complexType name="NameRefType">
+    <xs:attribute name="name" type="xs:NCName" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="WriteType">
+    <xs:attribute name="name" type="xs:NCName" use="required"/>
+    <xs:attribute name="value" type="xs:string" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="OpType">
+    <xs:sequence>
+      <xs:element name="operand" type="xs:string" minOccurs="1" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="glyph" type="GlyphType" use="required"/>
+    <xs:attribute name="opcode" type="OpcodeHexType"/>
+    <xs:attribute name="phase" type="xs:decimal"/>
+  </xs:complexType>
+
+  <xs:simpleType name="GlyphType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="⊗"/>
+      <xs:enumeration value="⊕"/>
+      <xs:enumeration value="⊖"/>
+      <xs:enumeration value="⊛"/>
+      <xs:enumeration value="⊜"/>
+      <xs:enumeration value="⊝"/>
+      <xs:enumeration value="⊞"/>
+      <xs:enumeration value="⤍"/>
+      <xs:enumeration value="↻"/>
+      <xs:enumeration value="⟲"/>
+      <xs:enumeration value="∿"/>
+      <xs:enumeration value="⊙"/>
+      <xs:enumeration value="≋"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="OpcodeHexType">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="0x[0-9A-Fa-f]{2}"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:complexType name="InvokeType">
+    <xs:sequence>
+      <xs:element name="arg" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="name" type="xs:NCName" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="SectionType">
+    <xs:sequence>
+      <xs:element name="property" type="PropertyType" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="section" type="SectionType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="tag" type="xs:string" use="required"/>
+    <xs:attribute name="name" type="xs:NCName" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="ShaderManifestRefType">
+    <xs:attribute name="href" type="xs:anyURI" use="required"/>
+  </xs:complexType>
+</xs:schema>

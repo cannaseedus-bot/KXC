@@ -1,0 +1,18 @@
+{
+  "@axiom": "memory.idb",
+  "@version": "1.0.0",
+  "definition": {
+    "id": "IDB",
+    "properties": [
+      "Append-only",
+      "Hash-addressed",
+      "Causally ordered",
+      "Externally verifiable"
+    ]
+  },
+  "exclusions": [
+    "Storage backend",
+    "Serialization format",
+    "Indexing strategy"
+  ]
+}

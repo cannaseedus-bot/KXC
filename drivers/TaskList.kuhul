@@ -1,0 +1,20 @@
+TaskList {
+    task "probe-opencl" {
+        action "probe_opencl"
+        description "Confirm a usable standard OpenCL platform before dispatch"
+        provider "opencl"
+    }
+
+    task "prepare-qkv" {
+        action "stream_xshard"
+        description "Admit the next GPT-OSS Q/K/V tile family"
+        provider "opencl_cpu_executor"
+    }
+
+    task "verify-working-set" {
+        action "verify_scx"
+        description "Verify the admitted layer working set"
+        provider "opencl_cpu_executor"
+        depends ["prepare-qkv"]
+    }
+}

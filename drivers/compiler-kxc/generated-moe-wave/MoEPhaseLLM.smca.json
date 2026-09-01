@@ -1,0 +1,21 @@
+{
+  "kernel": "MoEPhaseLLM",
+  "target": "all",
+  "threads": [32, 1, 1],
+  "caps": {
+    "waveOps": true,
+    "heapTier": 2,
+    "bindingTier": 2,
+    "uma": false
+  },
+  "smca": {
+    "kernelClass": "moe_route_top2",
+    "collapseClass": "routing.top2",
+    "lawful": true,
+    "registryMatched": true,
+    "layers": ["MATRIX", "SCXQ2", "SCXQ7", "SCO/1", "IDB"],
+    "requires": ["topk_stable", "deterministic_join"],
+    "forbids": ["side_effects", "order_dependence"],
+    "notes": ["Kernel class resolved via kxc registry overlay.", "MATRIX: source K'uhul parsed into AST.", "SCXQ2: semantic ops lowered into backend-neutral IR.", "SCXQ7: legality and caps-aware optimization applied.", "SCO/1: backend emitters produce executable artifacts.", "IDB: sidecar metadata emitted for external verification.", "Registry forbid checked: side_effects not observed in current lowering.", "Registry forbid checked: order_dependence not observed in current lowering."]
+  }
+}

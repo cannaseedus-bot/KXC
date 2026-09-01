@@ -1,0 +1,622 @@
+{
+  "protocol": "kast/1",
+  "registry_hash": "0d93f945420b11438d7ad61948476118c7439d1acbb94abe48e0e1e5683814e9",
+  "source_kind": "khl",
+  "source_id": "phase.khl",
+  "entry_node_id": "n1",
+  "nodes": [
+    {
+      "id": "n0",
+      "kind": "bind",
+      "fold": "Pop",
+      "lane": "config",
+      "glyph": "bind",
+      "opcode": "BIND",
+      "symbol": "manifest.kuhul.phase.cycle",
+      "type": "manifest_ref",
+      "operands": [
+        "PHASE_CYCLE"
+      ],
+      "attributes": {
+        "manifest_path": "manifest.kuhul.phase.cycle"
+      }
+    },
+    {
+      "id": "n1",
+      "kind": "glyph",
+      "fold": "Pop",
+      "lane": "driver",
+      "glyph": "phase::current",
+      "opcode": "GLYPH",
+      "symbol": "phase::current",
+      "type": "driver_glyph",
+      "operands": [],
+      "attributes": {
+        "driver": ""
+      }
+    },
+    {
+      "id": "n2",
+      "kind": "call",
+      "fold": "Pop",
+      "lane": "compute",
+      "glyph": "state::read_phase",
+      "opcode": "CALL",
+      "symbol": "state::read_phase",
+      "type": "operator_call",
+      "operands": [],
+      "attributes": {
+        "result": "P"
+      }
+    },
+    {
+      "id": "n3",
+      "kind": "yield",
+      "fold": "Xul",
+      "lane": "output",
+      "glyph": "yield",
+      "opcode": "YIELD",
+      "symbol": "P",
+      "type": "return_value",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n4",
+      "kind": "glyph",
+      "fold": "Wo",
+      "lane": "driver",
+      "glyph": "phase::legal",
+      "opcode": "GLYPH",
+      "symbol": "phase::legal",
+      "type": "driver_glyph",
+      "operands": [
+        "FROM",
+        "TO"
+      ],
+      "attributes": {
+        "driver": ""
+      }
+    },
+    {
+      "id": "n5",
+      "kind": "call",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "phase::index",
+      "opcode": "CALL",
+      "symbol": "phase::index",
+      "type": "operator_call",
+      "operands": [
+        "FROM"
+      ],
+      "attributes": {
+        "result": "I"
+      }
+    },
+    {
+      "id": "n6",
+      "kind": "call",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "phase::index",
+      "opcode": "CALL",
+      "symbol": "phase::index",
+      "type": "operator_call",
+      "operands": [
+        "TO"
+      ],
+      "attributes": {
+        "result": "J"
+      }
+    },
+    {
+      "id": "n7",
+      "kind": "if",
+      "fold": "Sek",
+      "lane": "control",
+      "glyph": "if",
+      "opcode": "IF",
+      "symbol": "(J == I + 1) || (FROM == \"Xul\" && TO == \"Pop\")",
+      "type": "control_flow",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n8",
+      "kind": "yield",
+      "fold": "Xul",
+      "lane": "output",
+      "glyph": "yield",
+      "opcode": "YIELD",
+      "symbol": "true",
+      "type": "return_value",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n9",
+      "kind": "yield",
+      "fold": "Xul",
+      "lane": "output",
+      "glyph": "yield",
+      "opcode": "YIELD",
+      "symbol": "false",
+      "type": "return_value",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n10",
+      "kind": "glyph",
+      "fold": "Yax",
+      "lane": "driver",
+      "glyph": "phase::transition",
+      "opcode": "GLYPH",
+      "symbol": "phase::transition",
+      "type": "driver_glyph",
+      "operands": [
+        "FROM",
+        "TO"
+      ],
+      "attributes": {
+        "driver": ""
+      }
+    },
+    {
+      "id": "n11",
+      "kind": "call",
+      "fold": "Wo",
+      "lane": "compute",
+      "glyph": "phase::legal",
+      "opcode": "CALL",
+      "symbol": "phase::legal",
+      "type": "operator_call",
+      "operands": [
+        "FROM",
+        "TO"
+      ],
+      "attributes": {
+        "result": "OK"
+      }
+    },
+    {
+      "id": "n12",
+      "kind": "if",
+      "fold": "Sek",
+      "lane": "control",
+      "glyph": "if",
+      "opcode": "IF",
+      "symbol": "OK",
+      "type": "control_flow",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n13",
+      "kind": "call",
+      "fold": "Pop",
+      "lane": "compute",
+      "glyph": "state::advance",
+      "opcode": "CALL",
+      "symbol": "state::advance",
+      "type": "operator_call",
+      "operands": [
+        "TO"
+      ],
+      "attributes": {
+        "result": "NEXT"
+      }
+    },
+    {
+      "id": "n14",
+      "kind": "yield",
+      "fold": "Xul",
+      "lane": "output",
+      "glyph": "yield",
+      "opcode": "YIELD",
+      "symbol": "NEXT",
+      "type": "return_value",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n15",
+      "kind": "call",
+      "fold": "Pop",
+      "lane": "compute",
+      "glyph": "state::reject",
+      "opcode": "CALL",
+      "symbol": "state::reject",
+      "type": "operator_call",
+      "operands": [
+        "FROM",
+        "TO"
+      ],
+      "attributes": {
+        "result": "ERR"
+      }
+    },
+    {
+      "id": "n16",
+      "kind": "yield",
+      "fold": "Xul",
+      "lane": "output",
+      "glyph": "yield",
+      "opcode": "YIELD",
+      "symbol": "ERR",
+      "type": "return_value",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n17",
+      "kind": "glyph",
+      "fold": "Sek",
+      "lane": "driver",
+      "glyph": "phase::fold",
+      "opcode": "GLYPH",
+      "symbol": "phase::fold",
+      "type": "driver_glyph",
+      "operands": [
+        "NAME"
+      ],
+      "attributes": {
+        "driver": ""
+      }
+    },
+    {
+      "id": "n18",
+      "kind": "call",
+      "fold": "Pop",
+      "lane": "compute",
+      "glyph": "state::current_phase",
+      "opcode": "CALL",
+      "symbol": "state::current_phase",
+      "type": "operator_call",
+      "operands": [],
+      "attributes": {
+        "result": "CP"
+      }
+    },
+    {
+      "id": "n19",
+      "kind": "call",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "fold::resolve",
+      "opcode": "CALL",
+      "symbol": "fold::resolve",
+      "type": "operator_call",
+      "operands": [
+        "CP",
+        "NAME"
+      ],
+      "attributes": {
+        "result": "F"
+      }
+    },
+    {
+      "id": "n20",
+      "kind": "call",
+      "fold": "Sek",
+      "lane": "compute",
+      "glyph": "fold::dispatch",
+      "opcode": "CALL",
+      "symbol": "fold::dispatch",
+      "type": "operator_call",
+      "operands": [
+        "F"
+      ],
+      "attributes": {
+        "result": "R"
+      }
+    },
+    {
+      "id": "n21",
+      "kind": "yield",
+      "fold": "Xul",
+      "lane": "output",
+      "glyph": "yield",
+      "opcode": "YIELD",
+      "symbol": "R",
+      "type": "return_value",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n22",
+      "kind": "glyph",
+      "fold": "Ch'en",
+      "lane": "driver",
+      "glyph": "phase::manifold",
+      "opcode": "GLYPH",
+      "symbol": "phase::manifold",
+      "type": "driver_glyph",
+      "operands": [],
+      "attributes": {
+        "driver": ""
+      }
+    },
+    {
+      "id": "n23",
+      "kind": "call",
+      "fold": "Pop",
+      "lane": "compute",
+      "glyph": "state::phase_history",
+      "opcode": "CALL",
+      "symbol": "state::phase_history",
+      "type": "operator_call",
+      "operands": [],
+      "attributes": {
+        "result": "H"
+      }
+    },
+    {
+      "id": "n24",
+      "kind": "call",
+      "fold": "Ch'en",
+      "lane": "compute",
+      "glyph": "manifold::build",
+      "opcode": "CALL",
+      "symbol": "manifold::build",
+      "type": "operator_call",
+      "operands": [
+        "H"
+      ],
+      "attributes": {
+        "result": "M"
+      }
+    },
+    {
+      "id": "n25",
+      "kind": "yield",
+      "fold": "Xul",
+      "lane": "output",
+      "glyph": "yield",
+      "opcode": "YIELD",
+      "symbol": "M",
+      "type": "return_value",
+      "operands": [],
+      "attributes": {}
+    },
+    {
+      "id": "n26",
+      "kind": "glyph",
+      "fold": "Xul",
+      "lane": "driver",
+      "glyph": "phase::commit",
+      "opcode": "GLYPH",
+      "symbol": "phase::commit",
+      "type": "driver_glyph",
+      "operands": [],
+      "attributes": {
+        "driver": ""
+      }
+    },
+    {
+      "id": "n27",
+      "kind": "call",
+      "fold": "Pop",
+      "lane": "compute",
+      "glyph": "state::store_phase",
+      "opcode": "CALL",
+      "symbol": "state::store_phase",
+      "type": "operator_call",
+      "operands": [],
+      "attributes": {
+        "result": "OK"
+      }
+    },
+    {
+      "id": "n28",
+      "kind": "yield",
+      "fold": "Xul",
+      "lane": "output",
+      "glyph": "yield",
+      "opcode": "YIELD",
+      "symbol": "OK",
+      "type": "return_value",
+      "operands": [],
+      "attributes": {}
+    }
+  ],
+  "edges": [
+    {
+      "id": "e0",
+      "from": "n1",
+      "to": "n2",
+      "kind": "control",
+      "label": "call",
+      "ordinal": 0
+    },
+    {
+      "id": "e1",
+      "from": "n2",
+      "to": "n3",
+      "kind": "control",
+      "label": "yield",
+      "ordinal": 1
+    },
+    {
+      "id": "e2",
+      "from": "n4",
+      "to": "n5",
+      "kind": "control",
+      "label": "call",
+      "ordinal": 2
+    },
+    {
+      "id": "e3",
+      "from": "n5",
+      "to": "n6",
+      "kind": "control",
+      "label": "call",
+      "ordinal": 3
+    },
+    {
+      "id": "e4",
+      "from": "n6",
+      "to": "n7",
+      "kind": "control",
+      "label": "if",
+      "ordinal": 4
+    },
+    {
+      "id": "e5",
+      "from": "n7",
+      "to": "n8",
+      "kind": "control",
+      "label": "yield",
+      "ordinal": 5
+    },
+    {
+      "id": "e6",
+      "from": "n7",
+      "to": "n9",
+      "kind": "control",
+      "label": "yield",
+      "ordinal": 6
+    },
+    {
+      "id": "e7",
+      "from": "n10",
+      "to": "n11",
+      "kind": "control",
+      "label": "call",
+      "ordinal": 7
+    },
+    {
+      "id": "e8",
+      "from": "n11",
+      "to": "n12",
+      "kind": "control",
+      "label": "if",
+      "ordinal": 8
+    },
+    {
+      "id": "e9",
+      "from": "n12",
+      "to": "n13",
+      "kind": "control",
+      "label": "call",
+      "ordinal": 9
+    },
+    {
+      "id": "e10",
+      "from": "n13",
+      "to": "n14",
+      "kind": "control",
+      "label": "yield",
+      "ordinal": 10
+    },
+    {
+      "id": "e11",
+      "from": "n12",
+      "to": "n15",
+      "kind": "control",
+      "label": "call",
+      "ordinal": 11
+    },
+    {
+      "id": "e12",
+      "from": "n15",
+      "to": "n16",
+      "kind": "control",
+      "label": "yield",
+      "ordinal": 12
+    },
+    {
+      "id": "e13",
+      "from": "n17",
+      "to": "n18",
+      "kind": "control",
+      "label": "call",
+      "ordinal": 13
+    },
+    {
+      "id": "e14",
+      "from": "n18",
+      "to": "n19",
+      "kind": "control",
+      "label": "call",
+      "ordinal": 14
+    },
+    {
+      "id": "e15",
+      "from": "n19",
+      "to": "n20",
+      "kind": "control",
+      "label": "call",
+      "ordinal": 15
+    },
+    {
+      "id": "e16",
+      "from": "n20",
+      "to": "n21",
+      "kind": "control",
+      "label": "yield",
+      "ordinal": 16
+    },
+    {
+      "id": "e17",
+      "from": "n22",
+      "to": "n23",
+      "kind": "control",
+      "label": "call",
+      "ordinal": 17
+    },
+    {
+      "id": "e18",
+      "from": "n23",
+      "to": "n24",
+      "kind": "control",
+      "label": "call",
+      "ordinal": 18
+    },
+    {
+      "id": "e19",
+      "from": "n24",
+      "to": "n25",
+      "kind": "control",
+      "label": "yield",
+      "ordinal": 19
+    },
+    {
+      "id": "e20",
+      "from": "n26",
+      "to": "n27",
+      "kind": "control",
+      "label": "call",
+      "ordinal": 20
+    },
+    {
+      "id": "e21",
+      "from": "n27",
+      "to": "n28",
+      "kind": "control",
+      "label": "yield",
+      "ordinal": 21
+    }
+  ],
+  "semantic_hash": "1fcad14837ddadac4f629f8a81fda9c4e33ddefd7025c65c7cc1bbe0cfd73052",
+  "@driver": {
+    "@abi": 1,
+    "@requires": {
+      "kuhul": ">= 1.0",
+      "khl_abi": 1,
+      "scxq2": ">= 2.0"
+    },
+    "@capabilities": [
+      "tensor.map"
+    ],
+    "@phase_hooks": {
+      "Sek": "dispatch",
+      "Ch'en": "collect_status",
+      "Xul": "commit_tensor_state"
+    },
+    "@provider": "phase",
+    "@resources": [],
+    "@hash": "1fcad14837ddadac4f629f8a81fda9c4e33ddefd7025c65c7cc1bbe0cfd73052"
+  }
+}

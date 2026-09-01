@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "smca/schema/cluster/v1",
+  "title": "SMCA Cluster Role",
+  "type": "object",
+  "required": ["id", "may", "may_not"],
+  "properties": {
+    "id": {"type": "string"},
+    "may": {"type": "array", "items": {"type": "string"}},
+    "may_not": {"type": "array", "items": {"type": "string"}}
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,17 @@
+{
+  "geometry": "collapse-geometry/v1",
+  "kernel": "binary_split",
+  "conformance_hash": "53ce2a0af432994efc231a3b6ec3b4114c6629353d122c466b998a1eb31f9b50",
+  "vectors": [
+    {
+      "name": "valid.cm1",
+      "hex": "01020e1e0f0e1e0f0304",
+      "valid": true
+    },
+    {
+      "name": "invalid.cm1",
+      "hex": "01020e0304",
+      "valid": false
+    }
+  ]
+}

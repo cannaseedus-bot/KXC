@@ -1,0 +1,4 @@
+[Pop WebGL2MatMul]
+  [Muwan dispatch 16 16 1]
+  [Sek needsMatMul true]
+[Xul]

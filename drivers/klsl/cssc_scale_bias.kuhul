@@ -1,0 +1,29 @@
+// cssc_scale_bias.kuhul — a CSS-C "computation style sheet" kernel, authored in KLSL and
+// lowered to WGSL+HLSL by the real KLSL compiler (compile-klsl-shaders.mjs).
+//
+//   out[i] = in[i] * scale + bias      (per-element; verifiable end-to-end on the sm5 runtime)
+//
+// This closes the KLSL -> HLSL -> sm5 link: the compiler (not a hand-written HLSL string)
+// emits the cs_5_0 kernel that the D3D11 runtime dispatches.
+
+@shader_language: wgsl
+@target_backends: ["wgpu", "d3d11"]
+
+@shaders: {
+  "scale_bias": {
+    "@type": "compute",
+    "@workgroup": [64, 1, 1],
+    "@inputs": {
+      "in_buf": { "@type": "f32", "@layout": "read", "@shape": ["N"] }
+    },
+    "@outputs": {
+      "out_buf": { "@type": "f32", "@layout": "read_write", "@shape": ["N"] }
+    },
+    "@uniforms": {
+      "count": "u32",
+      "scale": "f32",
+      "bias": "f32"
+    },
+    "@kernel": "let i = global_id.x;\nif (i >= params.count) { return; }\nout_buf[i] = in_buf[i] * params.scale + params.bias;"
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "@manifest": "smca",
+  "@version": "1.0.0",
+  "@frozen": true,
+  "axioms": {
+    "architecture": "axioms/architecture.json",
+    "authority": "axioms/authority.json",
+    "collapse_geometry": "axioms/collapse-geometry.json",
+    "cluster_roles": "axioms/cluster-roles.json",
+    "memory_law": "axioms/memory-law.json"
+  },
+  "schemas": {
+    "kernel_tag": "schemas/kernel-tag.schema.json",
+    "collapse": "schemas/collapse.schema.json",
+    "cluster": "schemas/cluster.schema.json",
+    "idb": "schemas/idb.schema.json"
+  },
+  "registry": {
+    "collapse_geometry": "registry/collapse-geometry/v1.json",
+    "kernel_classes": "registry/kernel-classes/v1.json",
+    "cluster_roles": "registry/cluster-roles/v1.json"
+  },
+  "hashes": {
+    "manifest": "hashes/v1.manifest.hash"
+  }
+}
