@@ -1,0 +1,26 @@
+{
+  "stackId": "asx-xcfe-stack/v1",
+  "stackManifest": "C:/public_html/MX2LM/codex/AS-XCFE/native/xvm-d3d12/asx_manifest.json",
+  "stackCid": "fnv1a64:1c36e0cc928a7591",
+  "sourceKind": "kuhul",
+  "sourcePath": "C:\\Users\\canna\\_khanary_inspect\\versions\\kxc-v1.0.0\\examples\\neural_layer_kuhul_test.kuhul",
+  "sourceCid": "fnv1a64:92238f7563f2ab72",
+  "sourceSchema": "",
+  "originSourceKind": "",
+  "originSourcePath": "",
+  "originSourceCid": "",
+  "entries": [
+    {
+      "kernel": "neural_layer_kuhul",
+      "lawful": true,
+      "registryMatched": true,
+      "artifacts": [
+        {"name": "neural_layer_kuhul.cpp", "cid": "fnv1a64:fe8488bca5246654"},
+        {"name": "neural_layer_kuhul.hlsl", "cid": "fnv1a64:d40a3d8a9b457cf0"},
+        {"name": "neural_layer_kuhul.wgsl", "cid": "fnv1a64:bd2ac92da0411799"},
+        {"name": "neural_layer_kuhul.cpu.cpp", "cid": "fnv1a64:363210ca6e814fb3"},
+        {"name": "neural_layer_kuhul.smca.json", "cid": "fnv1a64:4381b830946c7fed"}
+      ]
+    }
+  ]
+}
