@@ -11,6 +11,7 @@
 #include "emit_cpu.h"
 #include "emit_opencl.h"
 #include "emit_webgl2.h"
+#include "emit_dml.h"
 #include "emit_manifest.h"
 
 #include <iostream>
@@ -108,6 +109,7 @@ int main(int argc, char* argv[]) {
     std::string cpuPath    = out(".cpu.cpp");
     std::string clPath     = out(".cl");
     std::string fragPath   = out(".frag");
+    std::string dmlPath    = out(".dml.json");
     std::string smcaPath   = out(".smca.json");
 
     if (!emit_cpp    (ir, cppPath,  err)) { std::cerr << err << "\n"; return 1; }
@@ -116,6 +118,7 @@ int main(int argc, char* argv[]) {
     if (!emit_cpu    (ir, cpuPath,  err)) { std::cerr << err << "\n"; return 1; }
     if (!emit_opencl (ir, clPath,   err)) { std::cerr << err << "\n"; return 1; }
     if (!emit_webgl2 (ir, fragPath, err)) { std::cerr << err << "\n"; return 1; }
+    if (!emit_dml    (ir, dmlPath,  err)) { std::cerr << err << "\n"; return 1; }
     if (!emit_manifest(ir, smcaPath, err)) { std::cerr << err << "\n"; return 1; }
 
     // ── IDB: sidecar ──────────────────────────────────────────────────────────
@@ -126,6 +129,7 @@ int main(int argc, char* argv[]) {
         {fs::path(cpuPath).filename().string(),  file_cid(cpuPath)},
         {fs::path(clPath).filename().string(),   file_cid(clPath)},
         {fs::path(fragPath).filename().string(), file_cid(fragPath)},
+        {fs::path(dmlPath).filename().string(),  file_cid(dmlPath)},
         {fs::path(smcaPath).filename().string(), file_cid(smcaPath)},
     };
 
@@ -142,6 +146,7 @@ int main(int argc, char* argv[]) {
               << fs::path(cpuPath).filename().string()  << " "
               << fs::path(clPath).filename().string()   << " "
               << fs::path(fragPath).filename().string() << " "
+              << fs::path(dmlPath).filename().string()  << " "
               << fs::path(smcaPath).filename().string() << "\n";
     return 0;
 }
