@@ -1,0 +1,59 @@
+{
+  "$schema": "π_field_v1",
+  "field_type": "wind",
+  "description": "Directional force field that applies constant force to bodies",
+  
+  "parameters": {
+    "direction": {
+      "type": "vector3",
+      "default": [1, 0, 0],
+      "description": "Normalized direction vector of wind force"
+    },
+    "strength": {
+      "type": "float",
+      "default": 0.5,
+      "range": [0.1, 10.0],
+      "description": "Magnitude of wind force"
+    }
+  },
+  
+  "application_rules": {
+    "applies_to": ["dynamic_bodies", "kinematic_bodies"],
+    "excludes": ["static_bodies"],
+    "requires_velocity": false,
+    "integration_method": "constant_force",
+    
+    "behavior": {
+      "directional": "Force applied in specified direction",
+      "drag_affected": "Force scaled by body's drag coefficient if available",
+      "continuous": "Applied every physics tick"
+    }
+  },
+  
+  "examples": [
+    {
+      "name": "Horizontal wind",
+      "description": "Gentle breeze from left to right",
+      "parameters": {
+        "direction": [1, 0, 0],
+        "strength": 0.8
+      }
+    },
+    {
+      "name": "Upward draft",
+      "description": "Vertical wind for floating elements",
+      "parameters": {
+        "direction": [0, 1, 0],
+        "strength": 1.2
+      }
+    },
+    {
+      "name": "Diagonal wind",
+      "description": "Wind at 45 degree angle",
+      "parameters": {
+        "direction": [0.707, 0.707, 0],
+        "strength": 1.5
+      }
+    }
+  ]
+}

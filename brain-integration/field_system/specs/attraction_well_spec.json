@@ -1,0 +1,78 @@
+{
+  "$schema": "π_field_v1",
+  "field_type": "attraction_well",
+  "description": "Central attraction or repulsion force field with falloff",
+  
+  "parameters": {
+    "position": {
+      "type": "vector3",
+      "default": [0, 0, 0],
+      "description": "Center position of the attraction well"
+    },
+    "strength": {
+      "type": "float",
+      "default": 2.0,
+      "range": [0.1, 20.0],
+      "description": "Strength of attraction force (positive = attract, negative = repel)"
+    },
+    "radius": {
+      "type": "float",
+      "default": 5.0,
+      "range": [1.0, 100.0],
+      "description": "Maximum radius of influence"
+    },
+    "falloff_power": {
+      "type": "float",
+      "default": 2.0,
+      "range": [0.5, 5.0],
+      "description": "Falloff exponent (higher = sharper drop-off)"
+    }
+  },
+  
+  "application_rules": {
+    "applies_to": ["dynamic_bodies", "kinematic_bodies"],
+    "excludes": ["static_bodies"],
+    "requires_velocity": false,
+    "integration_method": "radial_force",
+    
+    "behavior": {
+      "attraction": "Bodies are pulled toward center (positive strength)",
+      "repulsion": "Bodies are pushed away from center (negative strength)",
+      "falloff": "Force decreases with distance according to falloff_power",
+      "boundary": "No force applied outside radius"
+    }
+  },
+  
+  "examples": [
+    {
+      "name": "Central attractor",
+      "description": "Pull objects toward screen center",
+      "parameters": {
+        "position": [0, 0, 0],
+        "strength": 3.0,
+        "radius": 15.0,
+        "falloff_power": 2.0
+      }
+    },
+    {
+      "name": "Repulsion field",
+      "description": "Create exclusion zone around UI element",
+      "parameters": {
+        "position": [10, 5, 0],
+        "strength": -2.0,
+        "radius": 8.0,
+        "falloff_power": 1.5
+      }
+    },
+    {
+      "name": "Gentle pull",
+      "description": "Subtle attraction for navigation assistance",
+      "parameters": {
+        "position": [5, 5, 0],
+        "strength": 0.8,
+        "radius": 20.0,
+        "falloff_power": 3.0
+      }
+    }
+  ]
+}

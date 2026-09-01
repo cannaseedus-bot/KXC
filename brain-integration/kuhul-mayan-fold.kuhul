@@ -1,0 +1,637 @@
+(*===================================================================*)
+(* MAYAN FOLD MATH - VIGESIMAL TENSOR FOLDS IN PURE K'UHUL          *)
+(*===================================================================*)
+
+(*-------------------------------------------------------------------*)
+(* 1. GLYPH PRIMITIVES - DOTS, BARS, SHELLS                         *)
+(*-------------------------------------------------------------------*)
+
+[Pop mayan_glyph_primitives]
+  // Glyph type definitions
+  [Wo glyph_type: "dot" | "bar" | "shell" | "compound"]
+  [Wo glyph_value: 0 | 1 | 5 | <number>]
+
+  // Core glyph mapping (law-grade definition)
+  [Sek define_glyph_mapping
+     mapping: [
+        [symbol: "●" type: dot value: 1 representation: "dot"]
+        [symbol: "▬" type: bar value: 5 representation: "bar"]
+        [symbol: "◯" type: shell value: 0 representation: "shell"]
+        [symbol: "◉" type: compound value: 0 representation: "zero_with_dot"]
+        [symbol: "⬛" type: compound value: 0 representation: "zero_with_bar"]
+     ]]→[Ch'en glyph_map]
+
+  // Parse glyph to value
+  [Sek glyph_to_value
+     glyph: "●●"  // Two dots
+     mapping: glyph_map
+     strict: true]→[Ch'en value: 2]
+
+  // Parse compound glyph
+  [Sek parse_glyph_compound
+     glyph_string: "●●●▬"  // Three dots + one bar = 8
+     mapping: glyph_map
+     allow_compound: true]→[Ch'en value: 8]
+[Xul]
+
+(*-------------------------------------------------------------------*)
+(* 2. LEVEL STRUCTURE - VERTICAL STACKS                             *)
+(*-------------------------------------------------------------------*)
+
+[Pop mayan_level_stack]
+  // Define a level in the Mayan stack
+  [Sek create_level
+     position: 0  // Bottom level (20^0)
+     glyphs: ["●●●"]  // Three dots
+     name: "k'ahl"  // Level name in Mayan
+     metadata: [description: "ones place"]]→[Ch'en level_0]
+
+  [Sek create_level
+     position: 1  // 20^1 level
+     glyphs: ["●"]  // One dot
+     name: "k'al"
+     metadata: [description: "twenties place"]]→[Ch'en level_1]
+
+  [Sek create_level
+     position: 2  // 20^2 level
+     glyphs: ["●●"]  // Two dots
+     name: "bak"
+     metadata: [description: "four-hundreds place"]]→[Ch'en level_2]
+
+  [Sek create_level
+     position: 3  // 20^3 level
+     glyphs: ["▬●●"]  // One bar + two dots = 7
+     name: "pic"
+     metadata: [description: "eight-thousands place"]]→[Ch'en level_3]
+
+  // Assemble into tensor stack
+  [Sek assemble_tensor_stack
+     levels: [level_0 level_1 level_2 level_3]
+     order: ascending  // Bottom to top
+     validate_positions: true]→[Ch'en mayan_tensor]
+[Xul]
+
+(*-------------------------------------------------------------------*)
+(* 3. CORE FOLD OPERATOR - MAYAN FOLD MATH                          *)
+(*-------------------------------------------------------------------*)
+
+[Pop mayan_fold_operator]
+  // Law-grade definition of Mayan Fold
+  // MayanFold(T) = Σ levelValue(T[n]) * 20^n for n = 0 to k
+
+  [Wo tensor_stack]→[Ch'en T]
+
+  // Level value computation
+  [Sek compute_level_value
+     level: T[n]
+     glyph_parser: glyph_to_value
+     aggregation: sum]→[Ch'en level_scalar]
+
+  // Positional power
+  [Sek positional_power
+     base: 20
+     exponent: n
+     representation: vigesimal]→[Ch'en power_value]
+
+  // Fold accumulation
+  [Sek fold_accumulate
+     accumulator: 0
+     for n: 0 to T.height - 1
+     do: [Sek let level_value = compute_level_value(T[n])
+          Sek let term = level_value * (20 ^ n)
+          Sek accumulator = accumulator + term
+     ]→[Ch'en fold_result]
+
+  // Pure functional fold (recursive)
+  [Sek recursive_mayan_fold
+     tensor: T
+     index: 0
+     accumulator: 0
+     base: 20
+     do: [
+        [Yax (index >= tensor.height)]→[Sek if]→[then
+           [Sek return accumulator]
+        ]
+
+        [Sek let level_glyphs = tensor[index].glyphs]
+        [Sek let level_value = sum(glyph_to_value(g) for g in level_glyphs)]
+        [Sek let term = level_value * (base ^ index)]
+        [Sek let new_accumulator = accumulator + term]
+
+        [Sek recursive_mayan_fold
+           tensor: tensor
+           index: index + 1
+           accumulator: new_accumulator
+           base: base
+        ]
+     ]]→[Ch'en folded_value]
+[Xul]
+
+(*-------------------------------------------------------------------*)
+(* 4. TENSOR CONTRACTION INTERPRETATION                             *)
+(*-------------------------------------------------------------------*)
+
+[Pop mayan_tensor_contraction]
+  // Interpret Mayan stack as tensor with contraction
+
+  // Create rank-2 tensor representation
+  [Sek mayan_to_tensor
+     stack: mayan_tensor
+     representation: sparse
+     dimensions: [levels: 4 max_glyphs_per_level: 5]]→[Ch'en M]
+
+  // Tensor M is of shape [4, 5] where:
+  // - Dimension 0: vertical levels (0-3)
+  // - Dimension 1: glyph positions within level (0-4)
+  // Values: 0, 1, or 5 (glyph values)
+
+  // Contraction along level axis with positional weights
+  [Sek tensor_contract
+     tensor: M
+     axis: 0  // Contract along levels
+     weights: [1 20 400 8000]  // 20^n for n=0..3
+     operation: weighted_sum
+     result_shape: [5]  // Collapses to glyph positions
+     ]]→[Ch'en contracted_tensor]
+
+  // Further contraction along glyph axis
+  [Sek tensor_contract
+     tensor: contracted_tensor
+     axis: 0  // Contract along glyph positions
+     weights: [1 1 1 1 1]  // Simple sum
+     operation: sum
+     result_shape: []  // Scalar
+     ]]→[Ch'en final_scalar]
+
+  // This is exactly MayanFold expressed as double tensor contraction
+  [Sek log "Tensor contraction yields: " + final_scalar]
+[Xul]
+
+(*-------------------------------------------------------------------*)
+(* 5. HIERARCHICAL REDUCTION PATTERNS                               *)
+(*-------------------------------------------------------------------*)
+
+[Pop mayan_hierarchical_reduction]
+  // Define reduction patterns at each level
+
+  // Level 0 (ones): reduction by simple sum
+  [Sek define_reduction
+     level: 0
+     pattern: sum
+     operator: +
+     identity: 0]→[Ch'en reduction_0]
+
+  // Level 1 (twenties): reduction with carry
+  [Sek define_reduction
+     level: 1
+     pattern: sum_with_carry
+     operator: +
+     carry_threshold: 4  // 4 dots = 4, but 5 dots would be a bar
+     carry_mapping: [
+        [from: 5 to: [bar: 1 dots: 0]]  // 5 dots -> 1 bar
+        [from: 10 to: [bar: 2 dots: 0]] // 10 dots -> 2 bars
+     ]]→[Ch'en reduction_1]
+
+  // Level 2 (four-hundreds): reduction with bar/dot normalization
+  [Sek define_reduction
+     level: 2
+     pattern: normalize_to_glyphs
+     max_dots: 4
+     max_bars: 3  // 3 bars = 15, but would need carry to next level
+     carry_level: 3
+     carry_condition: (bars >= 4)  // 4 bars = 20 -> carry 1 to next level
+     ]]→[Ch'en reduction_2]
+
+  // Apply hierarchical reduction to tensor
+  [Sek hierarchical_reduce
+     tensor: mayan_tensor
+     reductions: [reduction_0 reduction_1 reduction_2 reduction_3]
+     bottom_up: true  // Start from lowest level
+     propagate_carries: true
+     ]]→[Ch'en normalized_tensor]
+[Xul]
+
+(*-------------------------------------------------------------------*)
+(* 6. GEOMETRIC INFERENCE ENGINE                                    *)
+(*-------------------------------------------------------------------*)
+
+[Pop mayan_geometric_inference]
+  // Infer geometric properties from Mayan folds
+
+  // Extract spatial hierarchy
+  [Sek infer_spatial_hierarchy
+     fold_result: mayan_fold_value
+     base: 20
+     decomposition: greedy
+     min_level: 0
+     max_level: 10]→[Ch'en spatial_levels]
+
+  // Each level represents a geometric scale
+  // Level 0: unit scale
+  // Level 1: 20x scale
+  // Level 2: 400x scale
+  // Level 3: 8000x scale
+
+  // Map to geometric coordinates
+  [Sek fold_to_coordinates
+     spatial_levels: spatial_levels
+     coordinate_system: mayan_grid
+     origin: [0 0]
+     scaling: exponential
+     orientation: vertical]→[Ch'en coordinates]
+
+  // Generate geometric lattice
+  [Sek generate_lattice
+     coordinates: coordinates
+     lattice_type: rectangular
+     connectivity: 4-neighbor
+     wrap_around: false]→[Ch'en mayan_lattice]
+
+  // Inference rule: The fold value determines the lattice density
+  [Sek infer_lattice_density
+     fold: mayan_fold_value
+     levels: spatial_levels
+     density_function: logarithmic
+     normalization: per_unit_area]→[Ch'en density_map]
+[Xul]
+
+(*-------------------------------------------------------------------*)
+(* 7. AGL GLYPH-CHAIN FOLD INTEGRATION                              *)
+(*-------------------------------------------------------------------*)
+
+[Pop agl_glyph_chain_fold]
+  // Integrate Mayan fold with AGL substrate
+
+  // Define AGL glyph chain
+  [Sek create_agl_chain
+     glyphs: ["▬" "●" "●" "●" "◯" "▬" "●"]
+     chain_type: linear
+     spacing: uniform
+     orientation: horizontal]→[Ch'en agl_chain]
+
+  // Apply Mayan fold to AGL chain segments
+  [Sek fold_agl_segments
+     chain: agl_chain
+     segment_size: 3  // Group every 3 glyphs as a level
+     fold_function: mayan_fold_operator
+     stride: 1
+     overlap: false]→[Ch'en folded_segments]
+
+  // Each folded segment becomes a new glyph in higher-level chain
+  [Sek build_hierarchical_chain
+     base_chain: agl_chain
+     fold_results: folded_segments
+     hierarchy_level: 1
+     new_glyph_mapping: value_to_glyph  // Map numbers back to glyphs
+     ]]→[Ch'en hierarchical_agl]
+
+  // Recursively fold until single glyph remains
+  [Sek recursive_agl_fold
+     chain: hierarchical_agl
+     max_depth: 4
+     stop_condition: (chain.length == 1)
+     ]]→[Ch'en final_glyph]
+
+  // This creates a fractal glyph structure
+  [Sek log "AGL Mayan Fold Complete: " + final_glyph]
+[Xul]
+
+(*-------------------------------------------------------------------*)
+(* 8. TRIG-BRAIN LATTICE VERTICAL CONTRACTION                       *)
+(*-------------------------------------------------------------------*)
+
+[Pop trigbrain_mayan_integration]
+  // Integrate Mayan fold with trig-brain lattice
+
+  // Define trig-brain lattice cell
+  [Sek create_trig_cell
+     coordinates: [x y z]
+     state: [folded_value: 0 raw_glyphs: []]]→[Ch'en trig_cell]
+
+  // Mayan fold as vertical lattice contraction
+  [Sek lattice_vertical_contract
+     lattice: trigbrain_lattice
+     axis: z  // Contract along vertical
+     fold_operator: mayan_fold_operator
+     per_xy: true  // Apply at each (x,y) column
+     ]]→[Ch'en contracted_lattice]
+
+  // The result is a 2D lattice where each cell contains
+  // the Mayan fold of the vertical stack above it
+
+  // Propagate folds through lattice
+  [Sek propagate_folds
+     lattice: contracted_lattice
+     propagation_rule: neighbor_average
+     kernel_size: 3x3
+     iterations: 5
+     boundary: periodic]→[Ch'en propagated]
+
+  // Each propagation step applies fold-like operations horizontally
+  [Sek horizontal_fold
+     lattice: propagated
+     direction: x_then_y
+     fold_operator: mayan_fold_operator
+     base: 20
+     ]→[Ch'en fully_folded_lattice]
+
+  // The entire trig-brain lattice becomes a multi-dimensional fold
+  [Sek log "Trig-brain Mayan integration complete"]
+[Xul]
+
+(*-------------------------------------------------------------------*)
+(* 9. CSS CUSTOM-PROPERTY CASCADE ANALOGY                           *)
+(*-------------------------------------------------------------------*)
+
+[Pop css_cascade_analogy]
+  // Model CSS cascade as Mayan fold
+
+  // CSS cascade levels (specificity hierarchy)
+  [Sek define_css_levels
+     levels: [
+        [name: "user_agent" position: 0 weight: 1]
+        [name: "user" position: 1 weight: 10]
+        [name: "author" position: 2 weight: 100]
+        [name: "inline" position: 3 weight: 1000]
+        [name: "important" position: 4 weight: 10000]
+     ]]→[Ch'en css_levels]
+
+  // CSS properties as glyphs
+  [Sek css_to_glyphs
+     rule: "color: red; font-size: 16px; margin: 10px;"
+     property_parser: tokenize
+     value_mapping: [
+        ["red" → "●"]
+        ["16px" → "▬●"]
+        ["10px" → "●●"]
+     ]]→[Ch'en css_glyphs]
+
+  // Cascade fold (like Mayan fold but with CSS specificity)
+  [Sek cascade_fold
+     css_stack: [
+        level_0: [glyphs: "●●" source: "user_agent"]
+        level_1: [glyphs: "▬" source: "user"]
+        level_2: [glyphs: "●●●" source: "author"]
+        level_3: [glyphs: "▬▬" source: "inline"]
+     ]
+     weight_function: level_specificity
+     resolution_rule: highest_wins
+     inheritance: true
+     ]]→[Ch'en computed_style]
+
+  // This shows Mayan fold as universal cascade pattern
+  [Sek log "CSS cascade as Mayan fold: " + computed_style]
+[Xul]
+
+(*-------------------------------------------------------------------*)
+(* 10. PRACTICAL MAYAN FOLD EXAMPLES                                *)
+(*-------------------------------------------------------------------*)
+
+[Pop mayan_fold_examples]
+  // Example 1: Simple number (823)
+  [Sek create_mayan_number
+     levels: [
+        [position: 0 glyphs: ["●●●"] value: 3]  // 3 × 20^0 = 3
+        [position: 1 glyphs: ["●"] value: 1]     // 1 × 20^1 = 20
+        [position: 2 glyphs: ["●●"] value: 2]    // 2 × 20^2 = 800
+     ]]→[Ch'en number_823]
+
+  [Sek mayan_fold_operator
+     tensor: number_823
+     base: 20]→[Ch'en result_823]  // = 823 ✓
+
+  // Example 2: Complex with bars (7,707)
+  [Sek create_mayan_number
+     levels: [
+        [position: 0 glyphs: ["▬●●"] value: 7]    // 7 × 1 = 7
+        [position: 1 glyphs: ["▬"] value: 5]       // 5 × 20 = 100
+        [position: 2 glyphs: ["▬▬▬●●●●"] value: 19] // 19 × 400 = 7,600
+        // Total: 7 + 100 + 7,600 = 7,707
+     ]]→[Ch'en number_7707]
+
+  [Sek mayan_fold_operator
+     tensor: number_7707
+     base: 20]→[Ch'en result_7707]  // = 7,707
+
+  // Example 3: Zero handling (shell)
+  [Sek create_mayan_number
+     levels: [
+        [position: 0 glyphs: ["◯"] value: 0]      // 0 × 1 = 0
+        [position: 1 glyphs: ["▬●"] value: 6]     // 6 × 20 = 120
+        [position: 2 glyphs: ["●●"] value: 2]     // 2 × 400 = 800
+        [position: 3 glyphs: ["●"] value: 1]      // 1 × 8000 = 8,000
+     ]]→[Ch'en number_8920]  // 0 + 120 + 800 + 8,000 = 8,920
+
+  [Sek mayan_fold_operator
+     tensor: number_8920
+     base: 20]→[Ch'en result_8920]  // = 8,920 ✓
+
+  // Example 4: Maximum 4-level value
+  [Sek create_mayan_number
+     levels: [
+        [position: 0 glyphs: ["▬▬▬●●●●"] value: 19]  // Max 19
+        [position: 1 glyphs: ["▬▬▬●●●●"] value: 19]  // Max 19
+        [position: 2 glyphs: ["▬▬▬●●●●"] value: 19]  // Max 19
+        [position: 3 glyphs: ["▬▬▬●●●●"] value: 19]  // Max 19
+     ]]→[Ch'en max_4level]
+
+  [Sek mayan_fold_operator
+     tensor: max_4level
+     base: 20]→[Ch'en result_max]
+  // = 19 + 19×20 + 19×400 + 19×8000
+  // = 19 + 380 + 7,600 + 152,000
+  // = 159,999
+
+  [Sek log "Maximum 4-level Mayan number: 159,999"]
+[Xul]
+
+(*-------------------------------------------------------------------*)
+(* 11. FORMAL LAW-GRADE DEFINITION                                  *)
+(*-------------------------------------------------------------------*)
+
+[Pop mayan_fold_law_grade]
+  // LAW 1: Glyph Primitive Mapping
+  [Sek define_law
+     name: "glyph_value_law"
+     statement: "∀ glyph ∈ {●, ▬, ◯}, ∃! value ∈ {1, 5, 0}"
+     mapping: [
+        value(●) = 1
+        value(▬) = 5
+        value(◯) = 0
+     ]
+     proof: "By definition from Mayan numeral system"
+  ]→[Ch'en law_1]
+
+  // LAW 2: Level Value Composition
+  [Sek define_law
+     name: "level_composition_law"
+     statement: "levelValue(G) = Σ glyphValue(g) for g ∈ G"
+     constraints: "0 ≤ levelValue(G) ≤ 19"
+     proof: "Each level can represent 0-19 before carry"
+  ]→[Ch'en law_2]
+
+  // LAW 3: Positional Weight
+  [Sek define_law
+     name: "positional_weight_law"
+     statement: "weight(n) = 20^n for n ∈ ℕ₀"
+     corollary: "weight(0) = 1, weight(1) = 20, weight(2) = 400, ..."
+  ]→[Ch'en law_3]
+
+  // LAW 4: Fold Definition (Core)
+  [Sek define_law
+     name: "mayan_fold_law"
+     statement: "MayanFold(T) = Σ_{n=0}^{k} levelValue(T[n]) × 20^n"
+     where: "T is a vertical stack of levels T[0..k]"
+     properties: [
+        deterministic: true
+        associative: false  // Order matters (vertical)
+        commutative: false  // Position matters
+        linear: true
+     ]
+  ]→[Ch'en law_4]
+
+  // LAW 5: Tensor Contraction Equivalence
+  [Sek define_law
+     name: "tensor_contraction_law"
+     statement: "MayanFold(T) ≡ contract(contract(M, axis=0), axis=1)"
+     where: "M is tensor representation of T"
+     proof: "Double contraction with weights [1,20,400,...] and [1,1,1,1,1]"
+  ]→[Ch'en law_5]
+
+  // LAW 6: Hierarchical Reduction
+  [Sek define_law
+     name: "hierarchical_reduction_law"
+     statement: "MayanFold(T) = reduce(reduce(...reduce(T[0])...))"
+     explanation: "Bottom-up reduction with carry propagation"
+     invariant: "Final value preserved through normalization"
+  ]→[Ch'en law_6]
+
+  // LAW 7: Geometric Inference
+  [Sek define_law
+     name: "geometric_inference_law"
+     statement: "∃ bijection between MayanFold values and lattice points"
+     mapping: "value ↔ (a₀, a₁, a₂, ...) where aₙ ∈ [0,19]"
+     dimension: "Number of levels = dimension of lattice"
+  ]→[Ch'en law_7]
+
+  // LAW 8: Recursive Self-Similarity
+  [Sek define_law
+     name: "recursive_fold_law"
+     statement: "MayanFold(T) = MayanFold(T[0..k-1]) + levelValue(T[k]) × 20^k"
+     corollary: "The fold can be computed incrementally"
+     application: "Streaming computation, online algorithms"
+  ]→[Ch'en law_8]
+
+  [Sek log "Mayan Fold Math - 8 Fundamental Laws Defined"]
+[Xul]
+
+(*-------------------------------------------------------------------*)
+(* 12. COMPLETE MAYAN FOLD SYSTEM                                   *)
+(*-------------------------------------------------------------------*)
+
+[Pop mayan_fold_system]
+  [Sek log "Initializing Complete Mayan Fold Math System"]
+
+  // Load all components
+  [Sek mayan_glyph_primitives]→[Ch'en glyphs]
+  [Sek mayan_level_stack]→[Ch'en stacks]
+  [Sek mayan_fold_operator]→[Ch'en fold]
+  [Sek mayan_tensor_contraction]→[Ch'en contraction]
+  [Sek mayan_hierarchical_reduction]→[Ch'en reduction]
+  [Sek mayan_geometric_inference]→[Ch'en geometry]
+  [Sek agl_glyph_chain_fold]→[Ch'en agl_integration]
+  [Sek trigbrain_mayan_integration]→[Ch'en trigbrain]
+  [Sek css_cascade_analogy]→[Ch'en cascade]
+  [Sek mayan_fold_examples]→[Ch'en examples]
+  [Sek mayan_fold_law_grade]→[Ch'en laws]
+
+  // Run verification suite
+  [Sek verify_mayan_fold
+     test_cases: [
+        [name: "823_from_page" input: [[3][1][2]] expected: 823]
+        [name: "zero_handling" input: [[0][6][2][1]] expected: 8920]
+        [name: "max_values" input: [[19][19][19][19]] expected: 159999]
+        [name: "bar_dot_mixed" input: [[7][5][19]] expected: 7707]
+     ]
+     tolerance: 0
+     verbose: true]→[Ch'en verification]
+
+  [Yax verification.all_passed]→[Sek if]→[then
+     [Sek log "Mayan Fold Math System Verified"]
+     [Sek log "System ready for integration with trig-brain lattice"]
+     [Sek log "Mayan fold operator available as primitive"]
+  ]→[else
+     [Sek log "Verification failed - check implementation"]
+  ]
+
+  // Export fold operator as primitive
+  [Sek export_primitive
+     name: "mayan_fold"
+     implementation: mayan_fold_operator
+     arity: 2  // tensor, base
+     type_signature: Tensor × Number → Number
+     laws: [law_1 law_2 law_3 law_4 law_5 law_6 law_7 law_8]
+  ]→[Ch'en exported_primitive]
+
+  [Sek log "Mayan Fold Math System Operational"]
+[Xul]
+
+(*-------------------------------------------------------------------*)
+(* 13. USAGE EXAMPLES - PURE K'UHUL                                 *)
+(*-------------------------------------------------------------------*)
+
+// Example A: Basic fold
+[Pop demo_basic_fold]
+  [Sek let stack = create_level_stack([
+     [position: 0 glyphs: ["●●●"]]
+     [position: 1 glyphs: ["●"]]
+     [position: 2 glyphs: ["●●"]]
+  ])]
+
+  [Sek let result = mayan_fold(stack, base=20)]
+  [Sek assert(result == 823)]
+  [Sek log "Basic fold works: " + result]
+[Xul]
+
+// Example B: Tensor contraction view
+[Pop demo_tensor_view]
+  [Sek let tensor = mayan_to_tensor([
+     [3] [1] [2]
+  ])]
+
+  [Sek let contracted = contract_tensor(tensor, weights=[1,20,400])]
+  [Sek assert(contracted == 823)]
+  [Sek log "Tensor contraction matches fold"]
+[Xul]
+
+// Example C: AGL integration
+[Pop demo_agl_integration]
+  [Sek let agl_chain = create_agl_chain("▬●●●◯▬●")]
+
+  [Sek let folded = fold_agl_chain(agl_chain,
+     segment_size=3,
+     fold_fn=mayan_fold
+  )]
+
+  [Sek log "AGL chain folded to: " + folded]
+[Xul]
+
+// Example D: Lattice generation
+[Pop demo_lattice]
+  [Sek let value = 823]
+  [Sek let lattice = value_to_mayan_lattice(value,
+     levels=3,
+     lattice_type="rectangular"
+  )]
+
+  [Sek render_lattice(lattice,
+     canvas="mayan-canvas",
+     colors=["#16f2aa" "#00e0ff" "#9966ff"]
+  )]
+
+  [Sek log "Lattice generated from Mayan fold"]
+[Xul]
+
+(*===================================================================*)
+(* END OF MAYAN FOLD MATH IMPLEMENTATION                            *)
+(*===================================================================*)

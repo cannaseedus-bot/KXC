@@ -1,0 +1,81 @@
+{
+  "$schema": "π_field_v1",
+  "field_type": "navigation_force",
+  "description": "Intelligent navigation force field that guides bodies toward targets with arrival behavior",
+  
+  "parameters": {
+    "target_position": {
+      "type": "vector3",
+      "default": [0, 0, 0],
+      "description": "Target position to navigate toward"
+    },
+    "strength": {
+      "type": "float",
+      "default": 2.0,
+      "range": [0.1, 10.0],
+      "description": "Strength of navigation force"
+    },
+    "arrival_radius": {
+      "type": "float",
+      "default": 1.0,
+      "range": [0.1, 10.0],
+      "description": "Radius at which arrival behavior begins (slowing down)"
+    },
+    "max_speed": {
+      "type": "float",
+      "default": 5.0,
+      "range": [0.1, 50.0],
+      "description": "Maximum speed the body can achieve"
+    },
+    "arrival_slowdown": {
+      "type": "float",
+      "default": 2.0,
+      "range": [0.5, 10.0],
+      "description": "Distance over which to slow down completely"
+    }
+  },
+  
+  "application_rules": {
+    "applies_to": ["dynamic_bodies", "kinematic_bodies"],
+    "excludes": ["static_bodies"],
+    "requires_velocity": true,
+    "integration_method": "steering_behavior",
+    
+    "behavior": {
+      "seek": "When outside arrival radius, full speed toward target",
+      "arrival": "When inside arrival radius, slow down proportionally",
+      "stopping": "Stop when within 0.01 units of target"
+    }
+  },
+  
+  "examples": [
+    {
+      "name": "Navigate to link",
+      "description": "When user clicks a link, apply navigation force to move viewport toward it",
+      "parameters": {
+        "target_position": "link_element_position",
+        "strength": 3.0,
+        "arrival_radius": 0.5
+      }
+    },
+    {
+      "name": "Return to origin",
+      "description": "Home button applies navigation force back to origin",
+      "parameters": {
+        "target_position": [0, 0, 0],
+        "strength": 1.5,
+        "max_speed": 3.0
+      }
+    },
+    {
+      "name": "Smooth transition",
+      "description": "Gentle navigation with large slowdown zone",
+      "parameters": {
+        "target_position": [10, 5, 0],
+        "strength": 1.0,
+        "arrival_radius": 2.0,
+        "arrival_slowdown": 3.0
+      }
+    }
+  ]
+}

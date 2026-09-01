@@ -1,0 +1,103 @@
+{
+  "$schema": "π_field_v1",
+  "field_type": "scroll_inertia",
+  "description": "Simulates physical scrolling with momentum, friction, and natural decay",
+  
+  "parameters": {
+    "direction": {
+      "type": "vector3",
+      "default": [0, 1, 0],
+      "description": "Normalized scroll direction vector"
+    },
+    "initial_speed": {
+      "type": "float",
+      "default": 10.0,
+      "range": [0, 100.0],
+      "description": "Initial scroll speed (units per second)"
+    },
+    "decay_rate": {
+      "type": "float",
+      "default": 2.0,
+      "range": [0.1, 10.0],
+      "description": "Exponential decay rate (per second)"
+    },
+    "strength": {
+      "type": "float",
+      "default": 1.0,
+      "range": [0.1, 5.0],
+      "description": "Overall strength multiplier"
+    },
+    "stop_threshold": {
+      "type": "float",
+      "default": 0.1,
+      "range": [0.01, 1.0],
+      "description": "Speed below which scrolling stops completely"
+    },
+    "bounce_factor": {
+      "type": "float",
+      "default": 0.3,
+      "range": [0, 1.0],
+      "description": "Bounce when hitting boundaries (0 = no bounce, 1 = full bounce)"
+    },
+    "boundary_min": {
+      "type": "vector3",
+      "default": null,
+      "description": "Minimum boundary position (null = no boundary)"
+    },
+    "boundary_max": {
+      "type": "vector3",
+      "default": null,
+      "description": "Maximum boundary position (null = no boundary)"
+    }
+  },
+  
+  "application_rules": {
+    "applies_to": ["all_bodies"],
+    "requires_velocity": true,
+    "integration_method": "exponential_decay",
+    
+    "physics_model": {
+      "momentum": "Speed persists over time",
+      "friction": "Decay simulates air/surface friction",
+      "boundaries": "Optional bounce at boundaries",
+      "natural_feel": "Mimics physical scrolling devices"
+    }
+  },
+  
+  "examples": [
+    {
+      "name": "Vertical page scroll",
+      "description": "Traditional vertical scrolling with inertia",
+      "parameters": {
+        "direction": [0, 1, 0],
+        "initial_speed": 15.0,
+        "decay_rate": 3.0,
+        "boundary_min": [null, 0, null],
+        "boundary_max": [null, 100, null]
+      }
+    },
+    {
+      "name": "Horizontal carousel",
+      "description": "Horizontal scrolling with bounce at ends",
+      "parameters": {
+        "direction": [1, 0, 0],
+        "initial_speed": 8.0,
+        "decay_rate": 2.5,
+        "bounce_factor": 0.5,
+        "boundary_min": [0, null, null],
+        "boundary_max": [10, null, null]
+      }
+    },
+    {
+      "name": "Zoom inertia",
+      "description": "Inertia for zoom/pinch gestures",
+      "parameters": {
+        "direction": [0, 0, 1],
+        "initial_speed": 5.0,
+        "decay_rate": 4.0,
+        "boundary_min": [null, null, 0.1],
+        "boundary_max": [null, null, 10.0]
+      }
+    }
+  ]
+}
