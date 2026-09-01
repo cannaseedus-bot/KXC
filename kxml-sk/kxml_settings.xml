@@ -1,0 +1,146 @@
+<?xml version="1.0"?>
+<!--
+  kxml_settings.xml — KXML node type spec for Win2D codegen.
+
+  Mirrors Settings.xml format so the existing codegen pipeline can emit:
+    - C++ KXMLMicronaut subclasses (KXMLNode_Attention, KXMLNode_FFN, etc.)
+    - JSON tool schemas for toolcall_data.py TOOLS dict
+    - XCFE @ namespace registrations
+
+  Win2D codegen maps:
+    D2D Namespace  →  K'UHUL KXML domain
+    D2D Enum       →  K'UHUL phase / opcode enum
+    D2D Struct     →  K'UHUL node parameter struct
+    D2D Interface  →  K'UHUL micronaut interface
+    D2D Effect     →  K'UHUL KXML node type
+-->
+
+<Settings>
+
+  <Prefix Value="KXML"/>
+  <FilenameBase Value="KXMLNodes"/>
+  <RootNamespace Value="KXML.K'UHUL"/>
+
+  <!-- ── Phase machine (replaces D2D render state enums) ──────────────────── -->
+  <Namespace Name="KXML" NameOverride="KXML">
+
+    <Enum Name="PHASE" ShouldProject="true" ProjectedNameOverride="KXMLPhase">
+      <Field Name="POP"   ProjectedNameOverride="Pop"   ProjectedValueOverride="0"/>
+      <Field Name="WO"    ProjectedNameOverride="Wo"    ProjectedValueOverride="1"/>
+      <Field Name="SEK"   ProjectedNameOverride="Sek"   ProjectedValueOverride="2"/>
+      <Field Name="CHEN"  ProjectedNameOverride="Chen"  ProjectedValueOverride="3"/>
+      <Field Name="XUL"   ProjectedNameOverride="Xul"   ProjectedValueOverride="4"/>
+    </Enum>
+
+    <Enum Name="DOMAIN" ShouldProject="true" ProjectedNameOverride="KXMLDomain">
+      <Field Name="COMPUTE"   ProjectedNameOverride="Compute"/>
+      <Field Name="STORAGE"   ProjectedNameOverride="Storage"/>
+      <Field Name="ROUTING"   ProjectedNameOverride="Routing"/>
+      <Field Name="META"      ProjectedNameOverride="Meta"/>
+      <Field Name="UI"        ProjectedNameOverride="Ui"/>
+    </Enum>
+
+    <Enum Name="DEVICE" ShouldProject="true" ProjectedNameOverride="KXMLDevice">
+      <Field Name="CPU"  ProjectedNameOverride="Cpu"/>
+      <Field Name="GPU"  ProjectedNameOverride="Gpu"/>
+      <Field Name="AUTO" ProjectedNameOverride="Auto"/>
+    </Enum>
+
+    <Enum Name="GRAVITY" ShouldProject="true" ProjectedNameOverride="KXMLGravity">
+      <Field Name="FLOAT"  ProjectedNameOverride="Float"  ProjectedValueOverride="0"/>
+      <Field Name="EMBED"  ProjectedNameOverride="Embed"  ProjectedValueOverride="1"/>
+      <Field Name="NORMAL" ProjectedNameOverride="Normal" ProjectedValueOverride="2"/>
+      <Field Name="HEAVY"  ProjectedNameOverride="Heavy"  ProjectedValueOverride="3"/>
+    </Enum>
+
+  </Namespace>
+
+  <!-- ── Node parameter structs (replaces D2D effect input structs) ──────── -->
+  <Namespace Name="KXML.Nodes" NameOverride="KXMLNodes">
+
+    <!-- Attention node — maps to D2D ColorMatrix effect pattern -->
+    <Struct Name="ATTENTION_NODE" ShouldProject="true" ProjectedNameOverride="AttentionNode">
+      <Field Name="N_HEADS"     Type="uint32"  Default="12"/>
+      <Field Name="HEAD_DIM"    Type="uint32"  Default="64"/>
+      <Field Name="SEQ_LEN"     Type="uint32"  Default="1024"/>
+      <Field Name="CAUSAL_MASK" Type="bool"    Default="true"/>
+      <Field Name="PHASE"       Type="PHASE"   Default="Sek"/>
+      <Field Name="DOMAIN"      Type="DOMAIN"  Default="Compute"/>
+      <Field Name="GRAVITY"     Type="GRAVITY" Default="Normal"/>
+    </Struct>
+
+    <!-- FFN / MLP node -->
+    <Struct Name="FFN_NODE" ShouldProject="true" ProjectedNameOverride="FfnNode">
+      <Field Name="HIDDEN_DIM"  Type="uint32"  Default="768"/>
+      <Field Name="INTER_DIM"   Type="uint32"  Default="3072"/>
+      <Field Name="ACTIVATION"  Type="string"  Default="gelu"/>
+      <Field Name="PHASE"       Type="PHASE"   Default="Sek"/>
+      <Field Name="GRAVITY"     Type="GRAVITY" Default="Normal"/>
+    </Struct>
+
+    <!-- Layer norm node -->
+    <Struct Name="LAYERNORM_NODE" ShouldProject="true" ProjectedNameOverride="LayerNormNode">
+      <Field Name="DIM"         Type="uint32"  Default="768"/>
+      <Field Name="EPSILON"     Type="float"   Default="1e-5"/>
+      <Field Name="PHASE"       Type="PHASE"   Default="Wo"/>
+      <Field Name="GRAVITY"     Type="GRAVITY" Default="Heavy"/>
+    </Struct>
+
+    <!-- Embedding node (token + position) -->
+    <Struct Name="EMBED_NODE" ShouldProject="true" ProjectedNameOverride="EmbedNode">
+      <Field Name="VOCAB_SIZE"  Type="uint32"  Default="50257"/>
+      <Field Name="N_CTX"       Type="uint32"  Default="1024"/>
+      <Field Name="N_EMBD"      Type="uint32"  Default="768"/>
+      <Field Name="PHASE"       Type="PHASE"   Default="Pop"/>
+      <Field Name="GRAVITY"     Type="GRAVITY" Default="Embed"/>
+    </Struct>
+
+    <!-- LM head output node -->
+    <Struct Name="LM_HEAD_NODE" ShouldProject="true" ProjectedNameOverride="LmHeadNode">
+      <Field Name="VOCAB_SIZE"  Type="uint32"  Default="50257"/>
+      <Field Name="PHASE"       Type="PHASE"   Default="Xul"/>
+      <Field Name="GRAVITY"     Type="GRAVITY" Default="Heavy"/>
+    </Struct>
+
+    <!-- Loss node -->
+    <Struct Name="LOSS_NODE" ShouldProject="true" ProjectedNameOverride="LossNode">
+      <Field Name="LOSS_TYPE"   Type="string"  Default="cross_entropy"/>
+      <Field Name="TARGET_LOSS" Type="float"   Default="0.5"/>
+      <Field Name="PHASE"       Type="PHASE"   Default="Chen"/>
+      <Field Name="GRAVITY"     Type="GRAVITY" Default="Heavy"/>
+    </Struct>
+
+    <!-- Optimizer node (field-based) -->
+    <Struct Name="FIELD_OPTIMIZER_NODE" ShouldProject="true" ProjectedNameOverride="FieldOptimizerNode">
+      <Field Name="LR"               Type="float"   Default="1e-5"/>
+      <Field Name="BETA1"            Type="float"   Default="0.9"/>
+      <Field Name="BETA2"            Type="float"   Default="0.999"/>
+      <Field Name="WEIGHT_DECAY"     Type="float"   Default="0.1"/>
+      <Field Name="GRAD_CLIP"        Type="float"   Default="1.0"/>
+      <!-- Physics fields -->
+      <Field Name="ATTRACTION_WELL"  Type="bool"    Default="true"/>
+      <Field Name="SCROLL_INERTIA"   Type="bool"    Default="true"/>
+      <Field Name="WIND_FIELD"       Type="bool"    Default="true"/>
+      <Field Name="NAVIGATION_FORCE" Type="bool"    Default="true"/>
+      <Field Name="TARGET_LOSS"      Type="float"   Default="0.5"/>
+      <Field Name="PHASE"            Type="PHASE"   Default="Chen"/>
+    </Struct>
+
+  </Namespace>
+
+  <!-- ── KXML graph node interface (replaces D2D ICanvasEffect) ───────────── -->
+  <Namespace Name="KXML.Interface" NameOverride="KXMLInterface">
+
+    <Interface Name="IKXML_NODE" ShouldProject="true" ProjectedNameOverride="IKXMLNode">
+      <Method Name="Forward"   ReturnType="tensor" Parameters="[tensor input]"/>
+      <Method Name="Backward"  ReturnType="tensor" Parameters="[tensor grad_out, float lr]"/>
+      <Method Name="Transition" ReturnType="void"  Parameters="[PHASE next_phase]"/>
+      <Property Name="Phase"   Type="PHASE"   ReadOnly="false"/>
+      <Property Name="Domain"  Type="DOMAIN"  ReadOnly="true"/>
+      <Property Name="Gravity" Type="GRAVITY" ReadOnly="false"/>
+      <Property Name="Lipschitz" Type="float" ReadOnly="true"/>
+    </Interface>
+
+  </Namespace>
+
+</Settings>
