@@ -37,6 +37,21 @@ static void classify(const KernelDesc& d, KernelIR& ir) {
         ir.collapseClass = "attention.fused";
         ir.requires_     = {"deterministic_join", "bounded_reduction"};
         ir.forbids       = {"side_effects", "order_dependence"};
+    } else if (d.needsMeshlet) {
+        ir.kernelClass   = "mesh_meshlet_cull";
+        ir.collapseClass = "mesh.cull";
+        ir.requires_     = {"frustum_test", "cone_test"};
+        ir.forbids       = {"side_effects"};
+    } else if (d.needsNormalCompute || d.needsTangentFrame) {
+        ir.kernelClass   = "mesh_normal_compute";
+        ir.collapseClass = "mesh.normals";
+        ir.requires_     = {"atomic_accumulate", "scalar_arrays"};
+        ir.forbids       = {"vec3f_layout"};  // WGSL alignment rule
+    } else if (d.needsVertexProcess) {
+        ir.kernelClass   = "mesh_vertex_process";
+        ir.collapseClass = "mesh.vertex";
+        ir.requires_     = {"scalar_arrays", "stride_offset_uniform"};
+        ir.forbids       = {"vec3f_layout"};
     } else {
         ir.kernelClass   = "generic-compute";
         ir.collapseClass = "compute.generic";

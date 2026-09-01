@@ -8,14 +8,19 @@ struct KernelDesc {
     std::string name;
     uint32_t threads[3] = {1, 1, 1};
     // [Sek] properties
-    bool needsDecompress    = false;
-    bool needsSoftmax       = false;
-    bool needsMatMul        = false;
-    bool kvInt4             = false;
-    bool needsMoERoute      = false;
-    bool needsMoEExpertFFN  = false;
-    bool needsMoECombine    = false;
-    bool needsPhaseMatch    = false;
+    bool needsDecompress     = false;
+    bool needsSoftmax        = false;
+    bool needsMatMul         = false;
+    bool kvInt4              = false;
+    bool needsMoERoute       = false;
+    bool needsMoEExpertFFN   = false;
+    bool needsMoECombine     = false;
+    bool needsPhaseMatch     = false;
+    // mesh / vertex compute (WebGPU compute-vertex-data patterns)
+    bool needsNormalCompute  = false;  // atomicAdd normal accumulation from triangle soup
+    bool needsTangentFrame   = false;  // tangent + bitangent from pos/nrm/uv scalar arrays
+    bool needsMeshlet        = false;  // meshlet frustum + cone culling pass
+    bool needsVertexProcess  = false;  // generic scalar-array vertex processing w/ stride/offset
 };
 
 // ── Backend-neutral IR (SCXQ2 layer) ─────────────────────────────────────────

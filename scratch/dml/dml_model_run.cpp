@@ -1,0 +1,174 @@
+// dml_model_run.cpp — a WHOLE gpt2 model on the HD 4600, weights RESIDENT, activations on-device.
+// Embedding is precomputed (mdl_embed.bin); this runs 12 fused transformer layers + ln_f +
+// lm_head entirely on the GPU, each layer's weights uploaded once and resident. Compares the
+// logits to the CPU driver's ERF-gelu forward (model_prep.py). Turns "correct layer" -> "correct
+// model": one GPU sync per layer instead of ~12 ops each round-tripping through the CPU.
+#define NOMINMAX
+#define DML_TARGET_VERSION_USE_LATEST 1
+#include <windows.h>
+#include <d3d12.h>
+#include <dxgi1_4.h>
+#include <DirectML.h>
+#include <vector>
+#include <string>
+#include <cstdio>
+#include <cstdint>
+#include <cmath>
+#include <fstream>
+#include <sstream>
+#include <algorithm>
+#pragma comment(lib,"d3d12.lib")
+#pragma comment(lib,"dxgi.lib")
+#pragma comment(lib,"dxguid.lib")
+#pragma comment(lib,"DirectML.lib")
+
+static ID3D12Device* dev; static ID3D12CommandQueue* q; static ID3D12CommandAllocator* alloc;
+static ID3D12GraphicsCommandList* cl; static ID3D12Fence* fence; static UINT64 fv; static HANDLE fe;
+static IDMLDevice* dml; static IDMLCommandRecorder* rec;
+
+static std::vector<float> readBin(const std::string&p,size_t n){ std::vector<float> v(n); std::ifstream f(p,std::ios::binary); f.read((char*)v.data(),n*4); return v; }
+static D3D12_HEAP_PROPERTIES hp(D3D12_HEAP_TYPE t){ D3D12_HEAP_PROPERTIES h{}; h.Type=t; h.CreationNodeMask=1; h.VisibleNodeMask=1; return h; }
+static D3D12_RESOURCE_DESC bd(UINT64 b,D3D12_RESOURCE_FLAGS f=D3D12_RESOURCE_FLAG_NONE){ D3D12_RESOURCE_DESC d{}; d.Dimension=D3D12_RESOURCE_DIMENSION_BUFFER; d.Width=b; d.Height=1; d.DepthOrArraySize=1; d.MipLevels=1; d.SampleDesc.Count=1; d.Layout=D3D12_TEXTURE_LAYOUT_ROW_MAJOR; d.Flags=f; return d; }
+static D3D12_RESOURCE_BARRIER trans(ID3D12Resource*r,D3D12_RESOURCE_STATES a,D3D12_RESOURCE_STATES b){ D3D12_RESOURCE_BARRIER x{}; x.Type=D3D12_RESOURCE_BARRIER_TYPE_TRANSITION; x.Transition.pResource=r; x.Transition.StateBefore=a; x.Transition.StateAfter=b; x.Transition.Subresource=D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES; return x; }
+static D3D12_RESOURCE_BARRIER uavbar(){ D3D12_RESOURCE_BARRIER x{}; x.Type=D3D12_RESOURCE_BARRIER_TYPE_UAV; x.UAV.pResource=nullptr; return x; }
+static void flush(){ cl->Close(); ID3D12CommandList*ls[]={cl}; q->ExecuteCommandLists(1,ls); q->Signal(fence,++fv); fence->SetEventOnCompletion(fv,fe); WaitForSingleObject(fe,INFINITE); alloc->Reset(); cl->Reset(alloc,nullptr); }
+static ID3D12Resource* mkDef(UINT64 b){ ID3D12Resource*r=nullptr; auto h=hp(D3D12_HEAP_TYPE_DEFAULT); auto d=bd(b,D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS); dev->CreateCommittedResource(&h,D3D12_HEAP_FLAG_NONE,&d,D3D12_RESOURCE_STATE_COMMON,nullptr,IID_PPV_ARGS(&r)); return r; }
+static ID3D12Resource* uploadV(const std::vector<float>& v){ UINT64 b=v.size()*4; ID3D12Resource* g=mkDef(b); auto h=hp(D3D12_HEAP_TYPE_UPLOAD); auto d=bd(b); ID3D12Resource*u=nullptr; dev->CreateCommittedResource(&h,D3D12_HEAP_FLAG_NONE,&d,D3D12_RESOURCE_STATE_GENERIC_READ,nullptr,IID_PPV_ARGS(&u)); void*p; D3D12_RANGE nr{0,0}; u->Map(0,&nr,&p); memcpy(p,v.data(),b); u->Unmap(0,nullptr); auto b1=trans(g,D3D12_RESOURCE_STATE_COMMON,D3D12_RESOURCE_STATE_COPY_DEST); cl->ResourceBarrier(1,&b1); cl->CopyBufferRegion(g,0,u,0,b); auto b2=trans(g,D3D12_RESOURCE_STATE_COPY_DEST,D3D12_RESOURCE_STATE_UNORDERED_ACCESS); cl->ResourceBarrier(1,&b2); flush(); u->Release(); return g; }
+static ID3D12Resource* uploadBin(const std::string&n,size_t k){ return uploadV(readBin(n,k)); }
+
+static DML_TENSOR_DESC T(DML_BUFFER_TENSOR_DESC& bt, std::vector<UINT> sz){ bt={}; bt.DataType=DML_TENSOR_DATA_TYPE_FLOAT32; bt.DimensionCount=(UINT)sz.size(); static std::vector<std::vector<UINT>> keep; keep.push_back(sz); bt.Sizes=keep.back().data(); UINT64 e=1; for(UINT s: sz) e*=s; bt.TotalTensorSizeInBytes=e*4; DML_TENSOR_DESC t{DML_TENSOR_TYPE_BUFFER,&bt}; return t; }
+
+struct Op { IDMLCompiledOperator* c; ID3D12DescriptorHeap* heap; IDMLBindingTable* bt; UINT descN; ID3D12Resource* tmp; UINT64 tmpB; };
+static Op setupOp(IDMLCompiledOperator* c, std::vector<ID3D12Resource*> ins, std::vector<ID3D12Resource*> outs){
+    Op o{}; o.c=c;
+    IDMLOperatorInitializer* ini=nullptr; IDMLCompiledOperator* cops[]={c}; dml->CreateOperatorInitializer(1,cops,IID_PPV_ARGS(&ini));
+    DML_BINDING_PROPERTIES ip=ini->GetBindingProperties(), ep=c->GetBindingProperties();
+    o.descN=std::max(ip.RequiredDescriptorCount,ep.RequiredDescriptorCount); o.tmpB=std::max(ip.TemporaryResourceSize,ep.TemporaryResourceSize);
+    D3D12_DESCRIPTOR_HEAP_DESC hd{}; hd.Type=D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV; hd.NumDescriptors=o.descN; hd.Flags=D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE; dev->CreateDescriptorHeap(&hd,IID_PPV_ARGS(&o.heap));
+    o.tmp=o.tmpB?mkDef(o.tmpB):nullptr;
+    ID3D12DescriptorHeap* heaps[]={o.heap}; cl->SetDescriptorHeaps(1,heaps);
+    DML_BINDING_TABLE_DESC td{}; td.Dispatchable=ini; td.CPUDescriptorHandle=o.heap->GetCPUDescriptorHandleForHeapStart(); td.GPUDescriptorHandle=o.heap->GetGPUDescriptorHandleForHeapStart(); td.SizeInDescriptors=o.descN; dml->CreateBindingTable(&td,IID_PPV_ARGS(&o.bt));
+    if(o.tmpB && ip.TemporaryResourceSize){ DML_BUFFER_BINDING b{o.tmp,0,o.tmpB}; DML_BINDING_DESC d{DML_BINDING_TYPE_BUFFER,&b}; o.bt->BindTemporaryResource(&d); }
+    rec->RecordDispatch(cl,ini,o.bt); flush(); ini->Release();
+    td.Dispatchable=c; o.bt->Reset(&td);
+    if(o.tmpB){ DML_BUFFER_BINDING b{o.tmp,0,o.tmpB}; DML_BINDING_DESC d{DML_BINDING_TYPE_BUFFER,&b}; o.bt->BindTemporaryResource(&d); }
+    std::vector<DML_BUFFER_BINDING> ibb(ins.size()); std::vector<DML_BINDING_DESC> ibd(ins.size());
+    for(size_t i=0;i<ins.size();i++){ if(ins[i]){ auto rr=ins[i]->GetDesc(); ibb[i]={ins[i],0,rr.Width}; ibd[i]={DML_BINDING_TYPE_BUFFER,&ibb[i]}; } else ibd[i]={DML_BINDING_TYPE_NONE,nullptr}; }
+    o.bt->BindInputs((UINT)ibd.size(), ibd.data());
+    std::vector<DML_BUFFER_BINDING> obb(outs.size()); std::vector<DML_BINDING_DESC> obd(outs.size());
+    for(size_t i=0;i<outs.size();i++){ if(outs[i]){ auto rr=outs[i]->GetDesc(); obb[i]={outs[i],0,rr.Width}; obd[i]={DML_BINDING_TYPE_BUFFER,&obb[i]}; } else obd[i]={DML_BINDING_TYPE_NONE,nullptr}; }
+    o.bt->BindOutputs((UINT)obd.size(), obd.data());
+    return o;
+}
+static std::vector<Op> gAll;
+static void rec1(Op o){ ID3D12DescriptorHeap* heaps[]={o.heap}; cl->SetDescriptorHeaps(1,heaps); rec->RecordDispatch(cl,o.c,o.bt); auto u=uavbar(); cl->ResourceBarrier(1,&u); }
+
+static IDMLCompiledOperator* cGemm(UINT M,UINT K,UINT N,bool bias){
+    DML_BUFFER_TENSOR_DESC a,b,c,o; DML_TENSOR_DESC aT=T(a,{1,1,M,K}),bT=T(b,{1,1,K,N}),cT=T(c,{1,1,M,N}),oT=T(o,{1,1,M,N});
+    DML_GEMM_OPERATOR_DESC g{}; g.ATensor=&aT; g.BTensor=&bT; g.CTensor=bias?&cT:nullptr; g.OutputTensor=&oT; g.Alpha=1; g.Beta=1;
+    DML_OPERATOR_DESC od{DML_OPERATOR_GEMM,&g}; IDMLOperator* op=nullptr; if(FAILED(dml->CreateOperator(&od,IID_PPV_ARGS(&op)))) return nullptr;
+    IDMLCompiledOperator* cc=nullptr; if(FAILED(dml->CompileOperator(op,DML_EXECUTION_FLAG_NONE,IID_PPV_ARGS(&cc)))) return nullptr; op->Release(); return cc;
+}
+static IDMLCompiledOperator* cLN(UINT S,UINT E){
+    DML_BUFFER_TENSOR_DESC x,g,b,o; DML_TENSOR_DESC xT=T(x,{1,1,S,E}),gT=T(g,{1,1,1,E}),bT=T(b,{1,1,1,E}),oT=T(o,{1,1,S,E});
+    static UINT ax[1]={3}; DML_MEAN_VARIANCE_NORMALIZATION1_OPERATOR_DESC m{}; m.InputTensor=&xT; m.ScaleTensor=&gT; m.BiasTensor=&bT; m.OutputTensor=&oT; m.AxisCount=1; m.Axes=ax; m.NormalizeVariance=TRUE; m.Epsilon=1e-5f;
+    DML_OPERATOR_DESC od{DML_OPERATOR_MEAN_VARIANCE_NORMALIZATION1,&m}; IDMLOperator* op=nullptr; if(FAILED(dml->CreateOperator(&od,IID_PPV_ARGS(&op)))) return nullptr;
+    IDMLCompiledOperator* cc=nullptr; if(FAILED(dml->CompileOperator(op,DML_EXECUTION_FLAG_NONE,IID_PPV_ARGS(&cc)))) return nullptr; op->Release(); return cc;
+}
+static IDMLCompiledOperator* cGelu(UINT S,UINT N){
+    DML_BUFFER_TENSOR_DESC i,o; DML_TENSOR_DESC iT=T(i,{1,1,S,N}),oT=T(o,{1,1,S,N});
+    DML_ACTIVATION_GELU_OPERATOR_DESC g{&iT,&oT}; DML_OPERATOR_DESC od{DML_OPERATOR_ACTIVATION_GELU,&g}; IDMLOperator* op=nullptr; if(FAILED(dml->CreateOperator(&od,IID_PPV_ARGS(&op)))) return nullptr;
+    IDMLCompiledOperator* cc=nullptr; if(FAILED(dml->CompileOperator(op,DML_EXECUTION_FLAG_NONE,IID_PPV_ARGS(&cc)))) return nullptr; op->Release(); return cc;
+}
+static IDMLCompiledOperator* cAdd(UINT S,UINT E){
+    DML_BUFFER_TENSOR_DESC a,b,o; DML_TENSOR_DESC aT=T(a,{1,1,S,E}),bT=T(b,{1,1,S,E}),oT=T(o,{1,1,S,E});
+    DML_ELEMENT_WISE_ADD1_OPERATOR_DESC ad{&aT,&bT,&oT,nullptr}; DML_OPERATOR_DESC od{DML_OPERATOR_ELEMENT_WISE_ADD1,&ad}; IDMLOperator* op=nullptr; if(FAILED(dml->CreateOperator(&od,IID_PPV_ARGS(&op)))) return nullptr;
+    IDMLCompiledOperator* cc=nullptr; if(FAILED(dml->CompileOperator(op,DML_EXECUTION_FLAG_NONE,IID_PPV_ARGS(&cc)))) return nullptr; op->Release(); return cc;
+}
+static IDMLCompiledOperator* cMHA(UINT S,UINT E,UINT Hn,float scale){
+    DML_BUFFER_TENSOR_DESC qd,kd,vd,rd,od2; DML_TENSOR_DESC qt=T(qd,{1,S,E}),kt=T(kd,{1,S,E}),vt=T(vd,{1,S,E}),rt=T(rd,{1,Hn,S,S}),ot=T(od2,{1,S,E});
+    DML_MULTIHEAD_ATTENTION_OPERATOR_DESC m{}; m.QueryTensor=&qt; m.KeyTensor=&kt; m.ValueTensor=&vt; m.RelativePositionBiasTensor=&rt; m.OutputTensor=&ot;
+    m.Scale=scale; m.MaskFilterValue=-1e9f; m.HeadCount=Hn; m.MaskType=DML_MULTIHEAD_ATTENTION_MASK_TYPE_NONE;
+    DML_OPERATOR_DESC od{DML_OPERATOR_MULTIHEAD_ATTENTION,&m}; IDMLOperator* op=nullptr; if(FAILED(dml->CreateOperator(&od,IID_PPV_ARGS(&op)))) return nullptr;
+    IDMLCompiledOperator* cc=nullptr; if(FAILED(dml->CompileOperator(op,DML_EXECUTION_FLAG_NONE,IID_PPV_ARGS(&cc)))) return nullptr; op->Release(); return cc;
+}
+
+int main(){
+    UINT S=0,E=0,Hn=0,H=0,L=0,V=0; { std::ifstream f("mdl_dims.txt"); std::stringstream d; d<<f.rdbuf(); d>>S>>E>>Hn>>H>>L>>V; }
+    if(!S||!E||!L||!V){ printf("no dims (run from scratch/dml after model_prep.py)\n"); return 1; }
+    UINT Hd=E/Hn; float scale=1.0f/std::sqrt((float)Hd);
+    auto ref=readBin("mdl_ref.bin",(size_t)S*V);
+
+    IDXGIFactory4* fac; CreateDXGIFactory1(IID_PPV_ARGS(&fac)); IDXGIAdapter1* ad=nullptr; DXGI_ADAPTER_DESC1 dd{};
+    for(UINT i=0; fac->EnumAdapters1(i,&ad)!=DXGI_ERROR_NOT_FOUND; ++i){ ad->GetDesc1(&dd); if(dd.Flags&DXGI_ADAPTER_FLAG_SOFTWARE){ad->Release();ad=nullptr;continue;} if(SUCCEEDED(D3D12CreateDevice(ad,D3D_FEATURE_LEVEL_11_0,IID_PPV_ARGS(&dev)))) break; ad->Release(); ad=nullptr; }
+    if(!dev){ printf("no d3d12\n"); return 1; }
+    D3D12_COMMAND_QUEUE_DESC qd{}; qd.Type=D3D12_COMMAND_LIST_TYPE_DIRECT; dev->CreateCommandQueue(&qd,IID_PPV_ARGS(&q));
+    dev->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT,IID_PPV_ARGS(&alloc)); dev->CreateCommandList(0,D3D12_COMMAND_LIST_TYPE_DIRECT,alloc,nullptr,IID_PPV_ARGS(&cl));
+    dev->CreateFence(0,D3D12_FENCE_FLAG_NONE,IID_PPV_ARGS(&fence)); fe=CreateEvent(nullptr,FALSE,FALSE,nullptr);
+    DMLCreateDevice(dev,DML_CREATE_DEVICE_FLAG_NONE,IID_PPV_ARGS(&dml)); dml->CreateCommandRecorder(IID_PPV_ARGS(&rec));
+    printf("[dev] %ls  WHOLE MODEL S=%u L=%u E=%u Hn=%u V=%u (weights resident, on-device forward)\n",dd.Description,S,L,E,Hn,V);
+
+    // upload all weights resident (each uploaded once)
+    auto up=[&](const std::string&n,size_t k){ return uploadBin(n,k); };
+    std::vector<ID3D12Resource*> ln1g(L),ln1b(L),wq(L),wk(L),wv(L),bq(L),bk(L),bv(L),wap(L),bap(L),ln2g(L),ln2b(L),wfc(L),bfc(L),wmp(L),bmp(L);
+    for(UINT i=0;i<L;i++){ std::string p="mdl_l"+std::to_string(i)+"_";
+        ln1g[i]=up(p+"ln1g.bin",E); ln1b[i]=up(p+"ln1b.bin",E);
+        wq[i]=up(p+"wq.bin",(size_t)E*E); wk[i]=up(p+"wk.bin",(size_t)E*E); wv[i]=up(p+"wv.bin",(size_t)E*E);
+        bq[i]=up(p+"bq.bin",(size_t)S*E); bk[i]=up(p+"bk.bin",(size_t)S*E); bv[i]=up(p+"bv.bin",(size_t)S*E);
+        wap[i]=up(p+"wap.bin",(size_t)E*E); bap[i]=up(p+"bap.bin",(size_t)S*E);
+        ln2g[i]=up(p+"ln2g.bin",E); ln2b[i]=up(p+"ln2b.bin",E);
+        wfc[i]=up(p+"wfc.bin",(size_t)E*H); bfc[i]=up(p+"bfc.bin",(size_t)S*H);
+        wmp[i]=up(p+"wmp.bin",(size_t)H*E); bmp[i]=up(p+"bmp.bin",(size_t)S*E);
+    }
+    ID3D12Resource *lnfg=up("mdl_lnfg.bin",E),*lnfb=up("mdl_lnfb.bin",E),*lmh=up("mdl_lmhead.bin",(size_t)E*V);
+    std::vector<float> rpbv((size_t)Hn*S*S); for(UINT h=0;h<Hn;h++) for(UINT i=0;i<S;i++) for(UINT j=0;j<S;j++) rpbv[(h*S+i)*S+j]=(j<=i)?0.0f:-1e9f;
+    ID3D12Resource* rpb=uploadV(rpbv);
+    ID3D12Resource* embed=up("mdl_embed.bin",(size_t)S*E);
+
+    // hidden-state buffers per layer boundary + shared scratch
+    auto B=[&](UINT n){ return mkDef((UINT64)n*4); };
+    std::vector<ID3D12Resource*> hbuf(L+1); hbuf[0]=embed; for(UINT i=1;i<=L;i++) hbuf[i]=B(S*E);
+    ID3D12Resource *ln1=B(S*E),*qb=B(S*E),*kb=B(S*E),*vb=B(S*E),*attn=B(S*E),*ap=B(S*E),*x1=B(S*E),*ln2=B(S*E),*fc=B(S*H),*gg=B(S*H),*mp=B(S*E);
+    ID3D12Resource *lnf=B(S*E),*logits=B(S*V);
+
+    // compile the distinct op types once, reuse across layers
+    IDMLCompiledOperator *opLN=cLN(S,E),*opGEE=cGemm(S,E,E,true),*opMHA=cMHA(S,E,Hn,scale),*opADD=cAdd(S,E),*opGEH=cGemm(S,E,H,true),*opGELU=cGelu(S,H),*opGHE=cGemm(S,H,E,true),*opLMH=cGemm(S,E,V,false);
+    if(!opLN||!opGEE||!opMHA||!opADD||!opGEH||!opGELU||!opGHE||!opLMH){ printf("compile failed\n"); return 2; }
+
+    // build binding (setupOp) for every op of every layer + head. Runtime = record + one flush.
+    std::vector<Op> layerOps;
+    for(UINT i=0;i<L;i++){ ID3D12Resource* xin=hbuf[i]; ID3D12Resource* xout=hbuf[i+1];
+        layerOps.push_back(setupOp(opLN ,{xin,ln1g[i],ln1b[i]},{ln1}));
+        layerOps.push_back(setupOp(opGEE,{ln1,wq[i],bq[i]},{qb}));
+        layerOps.push_back(setupOp(opGEE,{ln1,wk[i],bk[i]},{kb}));
+        layerOps.push_back(setupOp(opGEE,{ln1,wv[i],bv[i]},{vb}));
+        layerOps.push_back(setupOp(opMHA,{qb,kb,vb, nullptr,nullptr,nullptr, nullptr,nullptr, rpb, nullptr,nullptr},{attn,nullptr,nullptr}));
+        layerOps.push_back(setupOp(opGEE,{attn,wap[i],bap[i]},{ap}));
+        layerOps.push_back(setupOp(opADD,{ap,xin},{x1}));
+        layerOps.push_back(setupOp(opLN ,{x1,ln2g[i],ln2b[i]},{ln2}));
+        layerOps.push_back(setupOp(opGEH,{ln2,wfc[i],bfc[i]},{fc}));
+        layerOps.push_back(setupOp(opGELU,{fc},{gg}));
+        layerOps.push_back(setupOp(opGHE,{gg,wmp[i],bmp[i]},{mp}));
+        layerOps.push_back(setupOp(opADD,{mp,x1},{xout}));
+    }
+    Op oLnf=setupOp(opLN,{hbuf[L],lnfg,lnfb},{lnf});
+    Op oLmh=setupOp(opLMH,{lnf,lmh,nullptr},{logits});   // no bias -> C slot = NONE
+
+    // RUN: whole model, one flush.
+    for(Op& o: layerOps) rec1(o);
+    rec1(oLnf); rec1(oLmh);
+    auto b1=trans(logits,D3D12_RESOURCE_STATE_UNORDERED_ACCESS,D3D12_RESOURCE_STATE_COPY_SOURCE); cl->ResourceBarrier(1,&b1);
+    ID3D12Resource* rbk=nullptr; auto rh=hp(D3D12_HEAP_TYPE_READBACK); auto rz=bd((UINT64)S*V*4); dev->CreateCommittedResource(&rh,D3D12_HEAP_FLAG_NONE,&rz,D3D12_RESOURCE_STATE_COPY_DEST,nullptr,IID_PPV_ARGS(&rbk));
+    cl->CopyResource(rbk,logits); flush();
+    std::vector<float> out(S*V); void*p; D3D12_RANGE rr{0,(SIZE_T)S*V*4}; rbk->Map(0,&rr,&p); memcpy(out.data(),p,S*V*4); D3D12_RANGE nw{0,0}; rbk->Unmap(0,&nw);
+
+    // compare logits (scale-norm) + next-token argmax on the last position
+    double maxAbs=0,absmax=0; for(size_t i=0;i<(size_t)S*V;i++){ maxAbs=std::max(maxAbs,(double)std::fabs(out[i]-ref[i])); absmax=std::max(absmax,(double)std::fabs(ref[i])); }
+    auto argmax=[&](const float*base){ int a=0; float m=base[0]; for(UINT j=1;j<V;j++) if(base[j]>m){m=base[j];a=(int)j;} return a; };
+    int ga=argmax(&out[(S-1)*V]); int ra=argmax(&ref[(S-1)*V]);
+    printf("[verify] logits[%u,%u]  max abs %.3e  scale %.2f  scale-norm %.2e\n",S,V,maxAbs,absmax,maxAbs/absmax);
+    printf("[verify] next-token argmax  gpu=%d  cpu(erf)=%d  %s\n",ga,ra,ga==ra?"MATCH":"DIFFER");
+    bool pass=(maxAbs/absmax<1e-3)&&(ga==ra);
+    printf("=== %s: WHOLE gpt2 model on HD4600 (weights resident, on-device) vs CPU driver (erf-gelu) ===\n",pass?"PASS":"FAIL");
+    return pass?0:1;
+}

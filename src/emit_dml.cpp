@@ -6,17 +6,16 @@
 // Maps KernelIR classification to KuhulIR::DMLOperatorDesc::Type int
 // (mirrors the MapToDMLType() enum from kdml/src/lowering_to_dml.cpp)
 static int dml_type(const KernelIR& ir) {
-    // tensor_attention_fused → MatMul (type 2)
-    if (ir.desc.needsSoftmax && ir.desc.needsMatMul) return 2; // MatMul
-    // moe_route_top2 → Custom (type 0 reserved for extension)
-    if (ir.desc.needsMoERoute)  return 19; // Custom
-    // generic with matmul → MatMul
-    if (ir.desc.needsMatMul)    return 2;  // MatMul
-    // phase field / evolve → ElementWise (type 16)
-    if (ir.desc.needsPhaseMatch) return 16; // ElementWise
-    // decompress / INT4 → Custom
-    if (ir.desc.needsDecompress) return 19; // Custom
-    // generic-compute → Custom
+    if (ir.desc.needsSoftmax && ir.desc.needsMatMul) return 2;  // MatMul (ScaledDotProduct)
+    if (ir.desc.needsMoERoute)     return 19; // Custom
+    if (ir.desc.needsMatMul)       return 2;  // MatMul
+    if (ir.desc.needsPhaseMatch)   return 16; // ElementWise
+    if (ir.desc.needsDecompress)   return 19; // Custom
+    // mesh compute: no DML equivalent — emit as Custom placeholder
+    if (ir.desc.needsNormalCompute) return 19; // Custom (multi-pass atomic)
+    if (ir.desc.needsTangentFrame)  return 19; // Custom
+    if (ir.desc.needsMeshlet)       return 19; // Custom (cull pass)
+    if (ir.desc.needsVertexProcess) return 16; // ElementWise (per-element scalar)
     return 19;
 }
 

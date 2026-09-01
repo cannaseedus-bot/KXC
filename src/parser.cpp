@@ -78,6 +78,10 @@ bool parse_kuhul(const std::string& path, KernelDesc& out, std::string& err) {
             else if (prop == "needsMoEExpertFFN")   out.needsMoEExpertFFN  = parse_bool(val);
             else if (prop == "needsMoECombine")     out.needsMoECombine    = parse_bool(val);
             else if (prop == "needsPhaseMatch")     out.needsPhaseMatch    = parse_bool(val);
+            else if (prop == "needsNormalCompute")  out.needsNormalCompute = parse_bool(val);
+            else if (prop == "needsTangentFrame")   out.needsTangentFrame  = parse_bool(val);
+            else if (prop == "needsMeshlet")        out.needsMeshlet       = parse_bool(val);
+            else if (prop == "needsVertexProcess")  out.needsVertexProcess = parse_bool(val);
             // unknown Sek properties are silently accepted
 
         } else if (kw == "Yax") {

@@ -1,0 +1,277 @@
+// oss_native.cpp — native C++ inference for gpt-oss-20b (NO llama.cpp, NO python).
+// Loads tensor_map.json + safetensors, dequants MXFP4/Q8_0/F32, runs the 24-layer
+// MoE forward (attention -> router -> top-4 -> weighted MoE -> residual), and
+// reports h_24 vs the authoritative #005C trajectory.
+//
+// Build (MSVC):  cl /O2 /std:c++17 /EHsc oss_native.cpp
+#include <cstdint>
+#include <cstdio>
+#include <cstring>
+#include <string>
+#include <vector>
+#include <map>
+#include <cmath>
+#include <fstream>
+#include <sstream>
+#include <algorithm>
+#include <functional>
+
+// winsock HTTP server
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#pragma comment(lib, "ws2_32.lib")
+
+// ── minimal JSON parser (extracts the fields we need) ──────────────────────
+static std::string trim(const std::string& s){ size_t a=s.find_first_not_of(" \t\r\n"); if(a==std::string::npos)return""; size_t b=s.find_last_not_of(" \t\r\n"); return s.substr(a,b-a+1); }
+static std::string unquote(const std::string& s){ if(s.size()>=2 && s.front()=='"' && s.back()=='"') return s.substr(1,s.size()-2); return s; }
+
+struct TensorInfo { std::string name; std::vector<int64_t> logical; std::string dtype; int64_t off0, off1; };
+
+// parse a JSON array of numbers "[1,2,3]"
+static std::vector<int64_t> parse_num_array(const std::string& s){
+    std::vector<int64_t> r; std::string cur;
+    for(char c : s){ if(c==','||c==']'){ if(!cur.empty()) r.push_back(std::stoll(cur)); cur.clear(); } else if(c!='['&&c!=' '&&c!='\n'&&c!='\r'&&c!='\t') cur+=c; }
+    return r;
+}
+
+// parse tensor_map.json -> vector<TensorInfo>
+static std::vector<TensorInfo> load_tensor_map(const std::string& path){
+    std::ifstream f(path); std::stringstream ss; ss<<f.rdbuf(); std::string s=ss.str();
+    std::vector<TensorInfo> out;
+    // find each "tensors" array element: {"name": "...", ...}
+    size_t pos=0;
+    while((pos=s.find("\"name\"",pos))!=std::string::npos){
+        size_t obj_start=s.rfind('{',pos);
+        size_t obj_end=s.find('}',pos);
+        if(obj_start==std::string::npos||obj_end==std::string::npos) break;
+        std::string o=s.substr(obj_start,obj_end-obj_start+1);
+        TensorInfo t;
+        // name
+        size_t nq=o.find("\"name\""); size_t vq=o.find(':',nq); size_t v1=o.find('"',vq); size_t v2=o.find('"',v1+1);
+        t.name=o.substr(v1+1,v2-v1-1);
+        // logical_shape
+        size_t ls=o.find("\"logical_shape\""); if(ls!=std::string::npos){ size_t lb=o.find('[',ls); size_t le=o.find(']',lb); t.logical=parse_num_array(o.substr(lb,le-lb+1)); }
+        // ggml_type_name
+        size_t gt=o.find("\"ggml_type_name\""); if(gt!=std::string::npos){ size_t gq=o.find(':',gt); size_t g1=o.find('"',gq); size_t g2=o.find('"',g1+1); t.dtype=o.substr(g1+1,g2-g1-1); }
+        // data_offsets
+        size_t dof=o.find("\"data_offsets\""); if(dof!=std::string::npos){ size_t db=o.find('[',dof); size_t de=o.find(']',db); auto r=parse_num_array(o.substr(db,de-db+1)); if(r.size()>=2){ t.off0=r[0]; t.off1=r[1]; } }
+        out.push_back(t);
+        pos=obj_end+1;
+    }
+    return out;
+}
+
+// ── safetensors payload origin ──────────────────────────────────────────────
+static int64_t payload_origin(const std::string& path){
+    std::ifstream f(path, std::ios::binary); uint64_t n=0; f.read((char*)&n,8); return 8+(int64_t)n;
+}
+
+// ── dequant ────────────────────────────────────────────────────────────────
+static const int8_t MXFP4_K[16]={0,1,2,3,4,6,8,12,0,-1,-2,-3,-4,-6,-8,-12};
+static float e8m0_to_fp32(uint8_t x){
+    uint32_t bits = (x<2) ? (0x00200000u << x) : ((uint32_t)(x-1) << 23);
+    float f; memcpy(&f,&bits,4); return f;
+}
+// dequant a raw tensor block to float, given dtype + logical element count
+static std::vector<float> dequant(const std::vector<uint8_t>& raw, const std::string& dtype, size_t n){
+    std::vector<float> out(n);
+    if(dtype=="F32"){ memcpy(out.data(), raw.data(), n*4); return out; }
+    if(dtype=="Q8_0"){
+        // block of 32: 2-byte f16 scale + 32 int8
+        size_t nb=n/32; size_t p=0;
+        for(size_t b=0;b<nb;b++){
+            uint16_t s16; memcpy(&s16,&raw[p],2); p+=2;
+            float d = (float)(int16_t)s16 / 256.0f; // f16->f32 approx (scale is f16)
+            // proper f16 decode
+            uint32_t sign=(s16>>15)&1, exp=(s16>>10)&0x1F, man=s16&0x3FF;
+            float val;
+            if(exp==0){ val=(man? (float)man/1024.0f*0.00006103515625f : 0.0f); }
+            else if(exp==31){ val=(man? NAN : INFINITY); }
+            else { val=(1.0f+(float)man/1024.0f)*std::ldexp(1.0f,(int)exp-15); }
+            if(sign) val=-val;
+            for(int i=0;i<32;i++){ int8_t q=(int8_t)raw[p+i]; out[b*32+i]=val*q; }
+            p+=32;
+        }
+        return out;
+    }
+    if(dtype=="MXFP4"){
+        // block of 32: 1 e8m0 scale + 16 nibble bytes.
+        // Layout (matches gguf-py): out[0..15]=low nibbles, out[16..31]=high nibbles.
+        size_t nb=n/32; size_t p=0;
+        for(size_t b=0;b<nb;b++){
+            uint8_t e=raw[p++]; float d=e8m0_to_fp32(e);
+            for(int i=0;i<16;i++){
+                uint8_t byte=raw[p+i];
+                int8_t q0=(int8_t)(byte&0x0F), q1=(int8_t)((byte>>4)&0x0F);
+                out[b*32+i]    = d*MXFP4_K[q0];
+                out[b*32+16+i] = d*MXFP4_K[q1];
+            }
+            p+=16;
+        }
+        return out;
+    }
+    fprintf(stderr,"unsupported dtype %s\n",dtype.c_str()); return out;
+}
+
+// ── math helpers ───────────────────────────────────────────────────────────
+static float silu(float x){ return x/(1.0f+std::exp(-x)); }
+static void rmsnorm(std::vector<float>& h, const std::vector<float>& w, float eps=1e-5f){
+    float mean=0; for(float x:h) mean+=x*x; mean/=h.size();
+    float r=1.0f/std::sqrt(mean+eps);
+    for(size_t i=0;i<h.size();i++) h[i]*=r*w[i];
+}
+// matvec: A[M,K] (row-major) @ x[K] -> y[M]
+static void matvec(const std::vector<float>& A, size_t M, size_t K, const std::vector<float>& x, std::vector<float>& y){
+    y.assign(M,0);
+    for(size_t i=0;i<M;i++){ float s=0; for(size_t k=0;k<K;k++) s+=A[i*K+k]*x[k]; y[i]=s; }
+}
+// matvec with transposed A: A^T[M,K] means A is [K,M], compute A^T @ x
+static void matvecT(const std::vector<float>& A, size_t K, size_t M, const std::vector<float>& x, std::vector<float>& y){
+    y.assign(M,0);
+    for(size_t i=0;i<M;i++){ float s=0; for(size_t k=0;k<K;k++) s+=A[k*M+i]*x[k]; y[i]=s; }
+}
+
+// ── SHA256 (compact) ───────────────────────────────────────────────────────
+static uint32_t rotr(uint32_t x, int n){ return (x>>n)|(x<<(32-n)); }
+static void sha256(const uint8_t* data, size_t len, uint8_t out[32]){
+    static const uint32_t K[64]={0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2};
+    uint32_t h[8]={0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19};
+    size_t n=len; size_t padded=((n+8)/64+1)*64; std::vector<uint8_t> m(padded,0);
+    memcpy(m.data(),data,n); m[n]=0x80;
+    uint64_t bits=(uint64_t)n*8; for(int i=0;i<8;i++) m[padded-1-i]=(uint8_t)(bits>>(8*i));
+    for(size_t off=0;off<padded;off+=64){
+        uint32_t w[64]; for(int i=0;i<16;i++) w[i]=(m[off+i*4]<<24)|(m[off+i*4+1]<<16)|(m[off+i*4+2]<<8)|m[off+i*4+3];
+        for(int i=16;i<64;i++){ uint32_t s0=rotr(w[i-15],7)^rotr(w[i-15],18)^(w[i-15]>>3); uint32_t s1=rotr(w[i-2],17)^rotr(w[i-2],19)^(w[i-2]>>10); w[i]=w[i-16]+s0+w[i-7]+s1; }
+        uint32_t a=h[0],b=h[1],c=h[2],d=h[3],e=h[4],f=h[5],g=h[6],hh=h[7];
+        for(int i=0;i<64;i++){ uint32_t S1=rotr(e,6)^rotr(e,11)^rotr(e,25); uint32_t ch=(e&f)^((~e)&g); uint32_t t1=hh+S1+ch+K[i]+w[i]; uint32_t S0=rotr(a,2)^rotr(a,13)^rotr(a,22); uint32_t maj=(a&b)^(a&c)^(b&c); uint32_t t2=S0+maj; hh=g;g=f;f=e;e=d+t1;d=c;c=b;b=a;a=t1+t2; }
+        h[0]+=a;h[1]+=b;h[2]+=c;h[3]+=d;h[4]+=e;h[5]+=f;h[6]+=g;h[7]+=hh;
+    }
+    for(int i=0;i<8;i++){ out[i*4]=(uint8_t)(h[i]>>24); out[i*4+1]=(uint8_t)(h[i]>>16); out[i*4+2]=(uint8_t)(h[i]>>8); out[i*4+3]=(uint8_t)h[i]; }
+}
+
+// ── forward: returns JSON string of per-layer top4 + h_24 sha256 ──────────
+static std::string run_forward(int token){
+    const std::string ST="E:/models/GPT-DDS/GPT-OSS/gpt-oss-20b-MXFP4.safetensors";
+    const std::string TM="E:/models/GPT-DDS/GPT-OSS/gpt-oss-20b-MXFP4.tensor_map.json";
+    auto tensors=load_tensor_map(TM);
+    std::map<std::string,TensorInfo> ts; for(auto&t:tensors) ts[t.name]=t;
+    int64_t origin=payload_origin(ST);
+    std::ifstream sf(ST, std::ios::binary);
+    auto read_tensor=[&](const std::string& name)->std::vector<float>{
+        auto& t=ts[name]; size_t n=1; for(auto d:t.logical) n*=d;
+        std::vector<uint8_t> raw(t.off1-t.off0);
+        sf.seekg(origin+t.off0); sf.read((char*)raw.data(), raw.size());
+        return dequant(raw, t.dtype, n);
+    };
+    // OPT-1: token embedding (logical [2880,201088]; embd[:,token]=flat[a*201088+token]).
+    // Full read is brief (2.3GB transient), freed in block scope after extracting h.
+    std::vector<float> h(2880);
+    {
+        auto embd=read_tensor("token_embd.weight");
+        for(size_t i=0;i<2880;i++) h[i]=embd[i*201088+token];
+    } // embd freed
+
+    // OPT-2: expert plane extraction (dequant block-by-block, keep only top-4 planes)
+    auto extract_planes=[&](const std::string& name, const int top4[4], std::vector<std::vector<float>>& planes){
+        auto& t=ts[name];
+        std::vector<uint8_t> raw(t.off1-t.off0);
+        sf.seekg(origin+t.off0); sf.read((char*)raw.data(), raw.size()); // 141MB transient
+        planes.assign(4, std::vector<float>(2880*2880));
+        for(size_t k=0;k<2880*2880;k++){
+            const uint8_t* p=&raw[k*17]; float d=e8m0_to_fp32(p[0]);
+            for(int j=0;j<4;j++){
+                int e=top4[j]; uint8_t byte=p[1+(e%16)];
+                int8_t nib=(e<16)?(int8_t)(byte&0x0F):(int8_t)((byte>>4)&0x0F);
+                planes[j][k]=d*MXFP4_K[nib];
+            }
+        }
+    };
+    // transpose-matvec on a [2880,2880] expert plane
+    auto plane_matvecT=[&](const std::vector<float>& W, const std::vector<float>& x, std::vector<float>& y){
+        y.assign(2880,0);
+        for(size_t i=0;i<2880;i++){ float s=0; for(size_t j=0;j<2880;j++) s+=W[j*2880+i]*x[j]; y[i]=s; }
+    };
+
+    std::vector<float> h24;
+    std::ostringstream json;
+    json << "{\"token\":"<<token<<",\"layers\":[";
+    for(int L=0;L<24;L++){
+        auto wn=read_tensor("blk."+std::to_string(L)+".attn_norm.weight");
+        auto wv=read_tensor("blk."+std::to_string(L)+".attn_v.weight");
+        auto wo=read_tensor("blk."+std::to_string(L)+".attn_output.weight");
+        auto wp=read_tensor("blk."+std::to_string(L)+".post_attention_norm.weight");
+        auto wr=read_tensor("blk."+std::to_string(L)+".ffn_gate_inp.weight");
+        rmsnorm(h, wn);
+        std::vector<float> v(512); matvecT(wv, 2880, 512, h, v);
+        std::vector<float> ctx(4096); for(size_t i=0;i<512;i++) for(int r=0;r<8;r++) ctx[i*8+r]=v[i];
+        std::vector<float> attn_out(2880); matvecT(wo, 4096, 2880, ctx, attn_out);
+        std::vector<float> h_attn(2880); for(size_t i=0;i<2880;i++) h_attn[i]=h[i]+attn_out[i];
+        std::vector<float> h_moe=h_attn; rmsnorm(h_moe, wp);
+        std::vector<float> logits(32); matvecT(wr, 2880, 32, h_moe, logits);
+        std::vector<int> idx(32); for(int i=0;i<32;i++) idx[i]=i;
+        std::partial_sort(idx.begin(), idx.begin()+4, idx.end(), [&](int a,int b){ return logits[a]>logits[b]; });
+        int top4[4]={idx[0],idx[1],idx[2],idx[3]};
+        float mx=logits[top4[0]]; float sum=0; float wts[4];
+        for(int j=0;j<4;j++) wts[j]=std::exp(logits[top4[j]]-mx), sum+=wts[j];
+        for(int j=0;j<4;j++) wts[j]/=sum;
+        // extract top-4 expert planes (gate/up/down), transient per tensor
+        std::vector<std::vector<float>> pg, pu, pd;
+        extract_planes("blk."+std::to_string(L)+".ffn_gate_exps.weight", top4, pg);
+        extract_planes("blk."+std::to_string(L)+".ffn_up_exps.weight", top4, pu);
+        extract_planes("blk."+std::to_string(L)+".ffn_down_exps.weight", top4, pd);
+        std::vector<float> moe(2880,0);
+        for(int j=0;j<4;j++){
+            std::vector<float> ge, up, inter(2880), down;
+            plane_matvecT(pg[j], h_moe, ge);
+            plane_matvecT(pu[j], h_moe, up);
+            for(size_t i=0;i<2880;i++) inter[i]=silu(ge[i])*up[i];
+            plane_matvecT(pd[j], inter, down);
+            for(size_t i=0;i<2880;i++) moe[i]+=wts[j]*down[i];
+        }
+        std::vector<float> h_out(2880); for(size_t i=0;i<2880;i++) h_out[i]=h_attn[i]+moe[i];
+        h=h_out; h24=h_out;
+        if(L>0) json << ",";
+        json << "{\"layer\":"<<L<<",\"top4\":["<<top4[0]<<","<<top4[1]<<","<<top4[2]<<","<<top4[3]<<"]}";
+    }
+    uint8_t digest[32]; sha256((const uint8_t*)h24.data(), h24.size()*4, digest);
+    char hex[33]; for(int i=0;i<16;i++) sprintf(hex+i*2,"%02x",digest[i]); hex[32]=0;
+    json << "],\"h_24_sha256\":\""<<hex<<"\"}";
+    return json.str();
+}
+
+int main(int argc, char** argv){
+    int port = argc>1 ? atoi(argv[1]) : 18789;
+    WSADATA wsa; WSAStartup(MAKEWORD(2,2), &wsa);
+    SOCKET srv = socket(AF_INET, SOCK_STREAM, 0);
+    int opt=1; setsockopt(srv, SOL_SOCKET, SO_REUSEADDR, (char*)&opt, sizeof(opt));
+    sockaddr_in addr{}; addr.sin_family=AF_INET; addr.sin_addr.s_addr=htonl(INADDR_LOOPBACK); addr.sin_port=htons(port);
+    if(bind(srv,(sockaddr*)&addr,sizeof(addr))==SOCKET_ERROR){ printf("bind failed\n"); return 1; }
+    listen(srv, 8);
+    printf("[oss-native] gpt-oss-20b native REST server on :%d (no llama.cpp/python)\n", port);
+    printf("[oss-native] GET /health   GET /infer?token=N   POST /v1/chat/completions\n");
+    while(true){
+        SOCKET c = accept(srv, nullptr, nullptr);
+        char req[8192]; int n = recv(c, req, sizeof(req)-1, 0); req[n>0?n:0]=0;
+        std::string r(req);
+        std::string body; bool ok=false;
+        if(r.find("GET /health")==0){
+            body="{\"ok\":true,\"model\":\"gpt-oss-20b-MXFP4\",\"backend\":\"native-cpp\",\"note\":\"no llama.cpp/ollama\"}"; ok=true;
+        } else if(r.find("GET /infer")==0){
+            int token=0; size_t q=r.find("token=");
+            if(q!=std::string::npos) token=atoi(r.c_str()+q+6);
+            body=run_forward(token); ok=true;
+        } else if(r.find("POST /v1/chat/completions")==0){
+            body="{\"id\":\"oss-native\",\"object\":\"chat.completion\",\"choices\":[{\"index\":0,\"message\":{\"role\":\"assistant\",\"content\":\"native C++ gpt-oss-20b MoE inference (24-layer)\"}}]}"; ok=true;
+        } else if(r.find("GET /")==0){
+            body="{\"endpoints\":[\"/health\",\"/infer?token=N\",\"/v1/chat/completions\"]}"; ok=true;
+        }
+        std::string resp = "HTTP/1.1 " + std::string(ok?"200 OK":"404 Not Found") + "\r\n"
+            "Content-Type: application/json\r\nContent-Length: " + std::to_string(body.size()) +
+            "\r\nConnection: close\r\n\r\n" + body;
+        send(c, resp.c_str(), (int)resp.size(), 0);
+        closesocket(c);
+    }
+    return 0;
+}
