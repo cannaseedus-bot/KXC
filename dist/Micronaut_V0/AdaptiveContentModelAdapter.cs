@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Text.Json;
@@ -289,6 +290,139 @@ namespace Micronaut.Streaming.Adapter
         {
             if (string.IsNullOrEmpty(WeightFile) || !File.Exists(WeightFile)) return;
             Console.WriteLine("Weight file present: " + WeightFile);
+        }
+    }
+
+    // Training integration — shells out to the EXE toolchain in trainer/build/Release/.
+    // Training loop per fold:
+    //   xshard_info  → query pending shard IDs
+    //   StreamFoldAsync → stream weight bytes (via XShardSession)
+    //   xshard_backward → write gradient xshard
+    //   xshard_adapt    → fold-gated Adam update, marks shards TRAINED
+    public static class XShardTrainer
+    {
+        // Result of an xshard_info query
+        public sealed class ShardInfoResult
+        {
+            public string Id     { get; set; } = "";
+            public string State  { get; set; } = "";  // pending/trained/error/locked
+            public string Fold   { get; set; } = "";
+            public long   Nbytes { get; set; }
+        }
+
+        // Run xshard_info.exe and parse its JSONL output.
+        // Each output line is a JSON object with at minimum {id, state, fold, nbytes}.
+        // Pass foldFilter to limit to one fold lane; null = all shards.
+        public static List<ShardInfoResult> QueryShardInfo(
+            string toolchainDir, string xshardPath, string foldFilter = null)
+        {
+            var args = $"\"{xshardPath}\"";
+            if (!string.IsNullOrEmpty(foldFilter))
+                args += $" --fold {foldFilter}";
+
+            var output = RunExe(Path.Combine(toolchainDir, "xshard_info.exe"), args);
+            var results = new List<ShardInfoResult>();
+
+            foreach (var line in output.Split('\n', StringSplitOptions.RemoveEmptyEntries))
+            {
+                try
+                {
+                    using var doc = JsonDocument.Parse(line.Trim());
+                    var r = new ShardInfoResult();
+                    var root = doc.RootElement;
+                    if (root.TryGetProperty("id",     out var v)) r.Id     = v.GetString() ?? "";
+                    if (root.TryGetProperty("state",  out v))     r.State  = v.GetString() ?? "";
+                    if (root.TryGetProperty("fold",   out v))     r.Fold   = v.GetString() ?? "";
+                    if (root.TryGetProperty("nbytes", out v))     r.Nbytes = v.GetInt64();
+                    results.Add(r);
+                }
+                catch { }
+            }
+            return results;
+        }
+
+        // Run xshard_backward.exe to write a gradient xshard.
+        // gradXshardPath — output path for the gradient XSHARD/1 file.
+        // fold           — fold lane being trained (Pop/Wo/Yax/Sek/Chen/Xul).
+        // Returns the stdout from the tool (may include diagnostic JSON).
+        public static string WriteGradientXShard(
+            string toolchainDir, string srcXshardPath,
+            string gradXshardPath, string fold)
+        {
+            var args = $"\"{srcXshardPath}\" --grad-out \"{gradXshardPath}\" --fold {fold}";
+            return RunExe(Path.Combine(toolchainDir, "xshard_backward.exe"), args);
+        }
+
+        // Run xshard_adapt.exe to apply fold-gated Adam and mark shards TRAINED.
+        // learningRate — Adam α (default 1e-4).
+        // beta1/beta2  — Adam momentum params.
+        // Returns stdout from the tool.
+        public static string ApplyFoldAdapt(
+            string toolchainDir, string xshardPath, string gradXshardPath,
+            string fold, float learningRate = 1e-4f,
+            float beta1 = 0.9f, float beta2 = 0.999f)
+        {
+            var args = $"\"{xshardPath}\" --grad \"{gradXshardPath}\" --fold {fold}" +
+                       $" --lr {learningRate:G6} --beta1 {beta1:G6} --beta2 {beta2:G6}";
+            return RunExe(Path.Combine(toolchainDir, "xshard_adapt.exe"), args);
+        }
+
+        // Orchestrate a full fold training step:
+        //   1. Query pending shards via xshard_info
+        //   2. Stream fold weights via XShardSession (caller supplies the session)
+        //   3. Write gradient xshard via xshard_backward
+        //   4. Apply fold-gated Adam via xshard_adapt
+        // Returns count of pending shards processed; 0 if fold is already fully trained.
+        public static async Task<int> TrainFoldStepAsync(
+            string toolchainDir, XShardSession session,
+            string xshardPath, string fold,
+            float learningRate = 1e-4f,
+            CancellationToken ct = default)
+        {
+            var pending = QueryShardInfo(toolchainDir, xshardPath, fold)
+                          .FindAll(s => s.State == "pending");
+
+            if (pending.Count == 0) return 0;
+
+            // Stream fold weights through the session so the caller's training loop
+            // can access raw quantized bytes fold-by-fold.
+            int streamed = 0;
+            await foreach (var (entry, _) in session.StreamFoldAsync(fold, ct))
+            {
+                ct.ThrowIfCancellationRequested();
+                streamed++;
+            }
+
+            // Gradient write — grad output lives beside the source file.
+            var gradPath = xshardPath.Replace(".xshard", $".{fold}.grad.xshard");
+            WriteGradientXShard(toolchainDir, xshardPath, gradPath, fold);
+
+            // Fold-gated Adam update + TRAINED marking.
+            ApplyFoldAdapt(toolchainDir, xshardPath, gradPath, fold, learningRate);
+
+            return pending.Count;
+        }
+
+        // Low-level: run an EXE with args, return stdout. Throws on non-zero exit.
+        private static string RunExe(string exePath, string args)
+        {
+            var psi = new ProcessStartInfo(exePath, args)
+            {
+                RedirectStandardOutput = true,
+                RedirectStandardError  = true,
+                UseShellExecute        = false,
+                CreateNoWindow         = true,
+            };
+            using var p = Process.Start(psi)
+                ?? throw new InvalidOperationException($"Failed to start {exePath}");
+            var stdout = p.StandardOutput.ReadToEnd();
+            p.WaitForExit();
+            if (p.ExitCode != 0)
+            {
+                var stderr = p.StandardError.ReadToEnd();
+                throw new Exception($"{Path.GetFileName(exePath)} exit {p.ExitCode}: {stderr.Trim()}");
+            }
+            return stdout;
         }
     }
 }
