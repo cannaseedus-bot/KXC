@@ -1,0 +1,113 @@
+{
+  "@kind": "kuhul.glyph_pattern_map.v1",
+  "@role": "Canonical pattern-family to Kuhul glyph mapping above GGML lane descriptors.",
+  "@rule": "XCFE controls legal phase/fold movement; Kuhul glyphs name semantic intent; native_glyph_engine executes bounded binary lanes; GGML/WebGPU provides backend tensor ops.",
+  "@sources": {
+    "glyph_geometry": "tools/Kuhul-c++/pi_kuhul_glyph_geometry.json",
+    "ggml_lanes": "tools/Kuhul-c++/glyph_ggml_lanes.json",
+    "ops_summary": ".llama.cpp/docs/ops.md",
+    "backend_tables": ".llama.cpp/docs/ops",
+    "abi": "tools/Kuhul-c++/native_glyph_engine_abi.dll"
+  },
+  "patterns": [
+    {
+      "pattern_family": "buffer",
+      "glyphs": ["⟁Pop", "⟁Wo", "⟁K'at", "⟁Manik"],
+      "phase_path": ["Pop", "Wo", "Sek", "Ch'en", "Xul"],
+      "semantic_role": "Load, store, carry, and move row-major or byte-level buffers.",
+      "lowering_target": "native_glyph_engine_abi",
+      "abi_opcode": null,
+      "ggml_op": null,
+      "backend_status": "descriptor",
+      "examples": ["MathML matrix values become f32 LinALG buffers before WO_MATMUL."]
+    },
+    {
+      "pattern_family": "graph",
+      "glyphs": ["⟁Eb", "⟁Ben", "⟁Ix", "⟁Kan"],
+      "phase_path": ["Pop", "Wo", "Yax", "Sek", "Ch'en", "Xul"],
+      "semantic_role": "Represent paths, links, semantic binds, adjacency, and intersection masks.",
+      "lowering_target": "future_graph_mask_lane",
+      "abi_opcode": null,
+      "ggml_op": null,
+      "backend_status": "descriptor",
+      "examples": ["Graph adjacency masks will later constrain attention and map routing."]
+    },
+    {
+      "pattern_family": "chart",
+      "glyphs": ["⟁K'in", "⟁Ch'en", "⟁Ajaw"],
+      "phase_path": ["Pop", "Wo", "Sek", "Ch'en", "Xul"],
+      "semantic_role": "Illuminate values, emit visualization state, and reuse chart templates.",
+      "lowering_target": "future_render_descriptor",
+      "abi_opcode": null,
+      "ggml_op": null,
+      "backend_status": "descriptor",
+      "examples": ["LinALG buffers may be emitted as chart-ready result metadata after Ch'en."]
+    },
+    {
+      "pattern_family": "field",
+      "glyphs": ["⟁Yax", "⟁Ch'en", "⟁Sek", "⟁Xul"],
+      "phase_path": ["Pop", "Wo", "Yax", "Sek", "Ch'en", "Xul"],
+      "semantic_role": "Synchronize, propagate, exchange, and stabilize tensor fields.",
+      "lowering_target": "native_glyph_engine_abi",
+      "abi_opcode": "WO_MATMUL",
+      "ggml_op": "MUL_MAT",
+      "backend_status": "partial",
+      "examples": ["Field transforms can use WO_MATMUL while future lanes add Laplacian and field_update."]
+    },
+    {
+      "pattern_family": "algebraic",
+      "glyphs": ["⟁K'ayab'", "⟁Kumk'u", "⟁Kan", "⟁Xul"],
+      "phase_path": ["Pop", "Wo", "Sek", "Ch'en", "Xul"],
+      "semantic_role": "Execute arithmetic, combination, guard, and comparison surfaces.",
+      "lowering_target": "native_glyph_engine_abi",
+      "abi_opcode": "WO_ADD",
+      "ggml_op": "ADD",
+      "backend_status": "full",
+      "examples": ["ADD/SUB/MUL/DIV are scalar algebraic lanes; WO_MATMUL is the tensor algebraic lane."]
+    },
+    {
+      "pattern_family": "map",
+      "glyphs": ["⟁Eb", "⟁Ben", "⟁Manik", "⟁Ajaw"],
+      "phase_path": ["Pop", "Wo", "Yax", "Sek", "Ch'en", "Xul"],
+      "semantic_role": "Route, link, move, and apply reusable mapping patterns.",
+      "lowering_target": "future_gather_scatter_lane",
+      "abi_opcode": null,
+      "ggml_op": null,
+      "backend_status": "descriptor",
+      "examples": ["Future gather/scatter/index lanes should bind here instead of overloading buffer movement."]
+    },
+    {
+      "pattern_family": "tensor",
+      "glyphs": ["⟁Wo", "⨀", "σ", "Φ", "⌁"],
+      "phase_path": ["Pop", "Wo", "Sek", "Ch'en", "Xul"],
+      "semantic_role": "Write/update tensors, multiply matrices, activate, and normalize.",
+      "lowering_target": "native_glyph_engine_abi",
+      "abi_opcode": "WO_MATMUL",
+      "ggml_op": "MUL_MAT",
+      "backend_status": "partial",
+      "examples": ["MathML matrixmultiply lowers to the tensor pattern and calls WO_MATMUL."]
+    },
+    {
+      "pattern_family": "attention",
+      "glyphs": ["⟐", "⌬", "✦", "⟁Ch'en"],
+      "phase_path": ["Pop", "Wo", "Yax", "Sek", "Ch'en", "Xul"],
+      "semantic_role": "Normalize scores, route rotary position, execute attention, and emit context.",
+      "lowering_target": "ggml_webgpu_reference",
+      "abi_opcode": null,
+      "ggml_op": "SOFT_MAX",
+      "backend_status": "descriptor",
+      "examples": ["SOFT_MAX/ROPE/FLASH_ATTN_EXT remain descriptor mappings until ABI lanes exist."]
+    },
+    {
+      "pattern_family": "phase",
+      "glyphs": ["⟁", "⟁Pop", "⟁Wo", "⟁Yax", "⟁Sek", "⟁Ch'en", "⟁Xul"],
+      "phase_path": ["Pop", "Wo", "Yax", "Sek", "Ch'en", "Xul"],
+      "semantic_role": "Gate execution lifecycle and preserve lawful movement through phases.",
+      "lowering_target": "xcfe_phase_controller",
+      "abi_opcode": null,
+      "ggml_op": null,
+      "backend_status": "descriptor",
+      "examples": ["MathML MATMUL records Pop -> Wo -> Sek -> Ch'en -> Xul in output JSON."]
+    }
+  ]
+}

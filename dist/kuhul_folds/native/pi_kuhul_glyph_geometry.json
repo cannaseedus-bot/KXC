@@ -1,0 +1,166 @@
+{
+  "@kind": "kuhul.pi_glyph_geometry.v1",
+  "@title": "π-KUHUL Eternal Glyph Geometry Unification",
+  "@axiom": "glyph ~= pi-tensor ~= atomic-operation ~= geometric-query",
+  "@identity": "Kuhul_XQuery == pi-Geometric_Calculus == Native_Atomic_Operations",
+  "@role": "Machine-readable glyph-to-charge and glyph-to-operation bridge for future native_glyph_engine pi lanes.",
+  "@status": "semantic_contract",
+  "charge_spectrum": ["-pi", "0", "pi/2", "pi", "2pi"],
+  "glyph_classes": {
+    "action": {
+      "charge": "pi",
+      "meaning": "Angular momentum / active native operation",
+      "glyphs": {
+        "Pop": {
+          "surface": "⟁Pop",
+          "atomic_operation": "load",
+          "geometry": "position_tensor",
+          "shape": "circular"
+        },
+        "Wo": {
+          "surface": "⟁Wo",
+          "atomic_operation": "store",
+          "geometry": "potential_field",
+          "shape": "hexagonal"
+        },
+        "Sek": {
+          "surface": "⟁Sek",
+          "atomic_operation": "exchange",
+          "geometry": "symmetry_operation",
+          "shape": "transform"
+        },
+        "Xul": {
+          "surface": "⟁Xul",
+          "atomic_operation": "compare_exchange",
+          "geometry": "pi_symmetry",
+          "shape": "double_arrow"
+        },
+        "K'ayab'": {
+          "surface": "⟁K'ayab'",
+          "atomic_operation": "add",
+          "geometry": "curvature_accumulation",
+          "shape": "spiral"
+        },
+        "Kumk'u": {
+          "surface": "⟁Kumk'u",
+          "atomic_operation": "sub",
+          "geometry": "curvature_reduction",
+          "shape": "inverse_spiral"
+        },
+        "Kan": {
+          "surface": "⟁Kan",
+          "atomic_operation": "and",
+          "geometry": "logical_intersection",
+          "shape": "intersection"
+        }
+      }
+    },
+    "config": {
+      "charge": "pi/2",
+      "meaning": "Stable potential / synchronization surface",
+      "glyphs": {
+        "Yax": {
+          "surface": "⟁Yax",
+          "atomic_operation": "wait",
+          "geometry": "temporal_geodesic",
+          "shape": "hourglass"
+        },
+        "Ch'en": {
+          "surface": "⟁Ch'en",
+          "atomic_operation": "notify",
+          "geometry": "wave_propagation",
+          "shape": "signal"
+        }
+      }
+    },
+    "data": {
+      "charge": "-pi",
+      "meaning": "Flowing information",
+      "glyphs": {
+        "K'at": {
+          "surface": "⟁K'at",
+          "atomic_operation": "token",
+          "geometry": "data_quantum",
+          "shape": "packet"
+        },
+        "K'in": {
+          "surface": "⟁K'in",
+          "atomic_operation": "illuminate",
+          "geometry": "semantic_radiance",
+          "shape": "sun"
+        },
+        "Manik": {
+          "surface": "⟁Manik",
+          "atomic_operation": "move",
+          "geometry": "data_motion",
+          "shape": "trajectory"
+        }
+      }
+    },
+    "reference": {
+      "charge": "0",
+      "meaning": "Neutral connection paths",
+      "glyphs": {
+        "Eb": {
+          "surface": "⟁Eb",
+          "atomic_operation": "connect",
+          "geometry": "path",
+          "shape": "road"
+        },
+        "Ben": {
+          "surface": "⟁Ben",
+          "atomic_operation": "link",
+          "geometry": "linking_structure",
+          "shape": "reed"
+        },
+        "Ix": {
+          "surface": "⟁Ix",
+          "atomic_operation": "bind",
+          "geometry": "semantic_connection",
+          "shape": "jaguar"
+        }
+      }
+    },
+    "pattern": {
+      "charge": "2pi",
+      "meaning": "Recursive structure / reusable geometric template",
+      "glyphs": {
+        "Ajaw": {
+          "surface": "⟁Ajaw",
+          "atomic_operation": "master_pattern",
+          "geometry": "fractal_authority",
+          "shape": "crown"
+        },
+        "K'ib'": {
+          "surface": "⟁K'ib'",
+          "atomic_operation": "template",
+          "geometry": "wisdom_pattern",
+          "shape": "owl"
+        },
+        "Etz'nab'": {
+          "surface": "⟁Etz'nab'",
+          "atomic_operation": "sharpen",
+          "geometry": "edge_pattern",
+          "shape": "flint"
+        }
+      }
+    }
+  },
+  "unification_table": [
+    {"concept": "load", "xquery": "$variable", "glyph": "⟁Pop", "pi_geometry": "position_tensor", "result": "zero_copy_access"},
+    {"concept": "store", "xquery": ":=", "glyph": "⟁Wo", "pi_geometry": "potential_field", "result": "atomic_update"},
+    {"concept": "exchange", "xquery": "fn:put()", "glyph": "⟁Sek", "pi_geometry": "symmetry_operation", "result": "thread_safe_swap"},
+    {"concept": "compare", "xquery": "if ($a eq $b)", "glyph": "⟁Xul", "pi_geometry": "pi_symmetry", "result": "conditional_execution"},
+    {"concept": "add", "xquery": "$a + $b", "glyph": "⟁K'ayab'", "pi_geometry": "curvature_accumulation", "result": "atomic_increment"},
+    {"concept": "notify", "xquery": "fn:notify()", "glyph": "⟁Ch'en", "pi_geometry": "wave_propagation", "result": "signal_emission"},
+    {"concept": "wait", "xquery": "fn:wait()", "glyph": "⟁Yax", "pi_geometry": "temporal_geodesic", "result": "synchronization"},
+    {"concept": "query", "xquery": "FLWOR", "glyph": "glyph_sequence", "pi_geometry": "tensor_field", "result": "unified_execution"}
+  ],
+  "lowering_targets": {
+    "xquery": "pi-geometric query surface",
+    "svg": "tensor field visualization",
+    "native_glyph_engine": "atomic glyph operation execution",
+    "shared_memory": "zero-copy eternal bridge",
+    "ggml_webgpu": "tensor backend shader projection"
+  }
+}

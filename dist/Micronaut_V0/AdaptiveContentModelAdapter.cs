@@ -7,24 +7,47 @@ using System.Threading.Tasks;
 
 namespace Micronaut.Streaming.Adapter
 {
-    // Minimal adapter stub showing how to map tile lanes to runtime frames and stream records without loading entire tiles into memory.
+    // Adapter that maps XSHARD/1 phase-fold tile lanes to runtime frame buffers.
+    // Fold names and phase angles are authoritative from gguf_to_xshard.py _FOLD_PATTERNS
+    // and xshard_adapt.cpp fold_id_for(). Tile .meta.json carries "fold": "<PhaseName>".
     public class AdaptiveContentModelAdapter
     {
         public string TilesRoot { get; }
         public string WeightFile { get; }
+
+        // Fold name → frame buffer tag. Keys are the six phase fold names used by
+        // gguf_to_xshard, xshard_adapt, and the XSHARD/1 manifest "fold" field.
         public Dictionary<string,string> LaneToFrame { get; } = new Dictionary<string,string>();
+
+        // Phase angle (radians) for each fold — matches _PHASE_ANGLES in gguf_to_xshard.py
+        // and fold_id_for() in xshard_adapt.cpp (Pop=0, Wo=π/3, Yax=2π/3, Sek=π, Chen=4π/3, Xul=5π/3)
+        public static readonly IReadOnlyDictionary<string,double> PhaseAngle =
+            new Dictionary<string,double> {
+                ["Pop"]  = 0.0,
+                ["Wo"]   = Math.PI / 3,
+                ["Yax"]  = 2 * Math.PI / 3,
+                ["Sek"]  = Math.PI,
+                ["Chen"] = 4 * Math.PI / 3,
+                ["Xul"]  = 5 * Math.PI / 3,
+            };
 
         public AdaptiveContentModelAdapter(string tilesRoot, string weightFile)
         {
             TilesRoot = tilesRoot ?? throw new ArgumentNullException(nameof(tilesRoot));
             WeightFile = weightFile;
-            // DDS fold lanes — matches Fold enum in unified_swarm_runtime + SCXQDDS tile format
-            LaneToFrame["COMPUTE"] = "COMPUTE_FOLD";
-            LaneToFrame["CONTROL"] = "CONTROL_FOLD";
-            LaneToFrame["STATE"]   = "STATE_FOLD";
-            LaneToFrame["UI"]      = "UI_FOLD";
-            LaneToFrame["META"]    = "META_FOLD";
-            LaneToFrame["DATA"]    = "DATA_FOLD";
+            // Phase fold → frame buffer. Fold names match xshard manifest "fold" field.
+            //   Pop  (0)       — token/pos embeddings   (wte/wpe/token_embd)
+            //   Wo   (π/3)     — FFN gate/up projection  (c_fc/ffn_up/ffn_gate)
+            //   Yax  (2π/3)    — FFN down projection     (c_proj/ffn_down/down_proj)
+            //   Sek  (π)       — attention Q/K/V/O       (attn_q/k/v/output)
+            //   Chen (4π/3)    — layer-norm / bias        (ln_f/layernorm/norm)
+            //   Xul  (5π/3)    — output/lm_head           (lm_head/output.weight)
+            LaneToFrame["Pop"]  = "EMBED_FRAME";
+            LaneToFrame["Wo"]   = "FFN_GATE_FRAME";
+            LaneToFrame["Yax"]  = "FFN_DOWN_FRAME";
+            LaneToFrame["Sek"]  = "ATTN_FRAME";
+            LaneToFrame["Chen"] = "NORM_FRAME";
+            LaneToFrame["Xul"]  = "LM_HEAD_FRAME";
         }
 
         public void MapLanes(Dictionary<string,string> mapping)

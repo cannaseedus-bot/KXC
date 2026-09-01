@@ -1,0 +1,203 @@
+{
+  "@kind": "kuhul.ggl_spec.v1",
+  "@id": "kuhul.geometric_glyph_language",
+  "@version": "1.0.0",
+  "name": "K'UHUL Geometric Glyph Language",
+  "short_name": "GGL",
+  "principle": "Glyphs are semantic math/control symbols that lower to deterministic opcodes, phase traces, and backend lanes.",
+  "phase_model": ["Pop", "Wo", "Yax", "Sek", "Ch'en", "Xul"],
+  "opcode_space": {
+    "base": "0x000-0x0FF",
+    "geometry": "0x100-0x1FF",
+    "arithmetic_algebra": "0x200-0x2FF",
+    "calculus": "0x300-0x3FF",
+    "number_systems": "0x400-0x4FF",
+    "matrix_tensor": "0x500-0x5FF",
+    "mayan_calendar": "0x600-0x6FF",
+    "sequences": "0x700-0x7FF",
+    "buffer_shader": "0x800-0x8FF",
+    "webgpu_bindings": "0x900-0x9FF",
+    "compute": "0xA00-0xAFF",
+    "graph": "0xB00-0xBFF",
+    "field": "0xC00-0xCFF",
+    "algebraic": "0xD00-0xDFF",
+    "map": "0xE00-0xEFF",
+    "reserved": "0xF00-0xFFFF"
+  },
+  "categories": {
+    "arithmetic": [
+      {"name": "addition", "glyph": "+", "unicode": "U+002B", "opcode": "0x200", "description": "Add"},
+      {"name": "subtraction", "glyph": "\u2212", "unicode": "U+2212", "opcode": "0x201", "description": "Subtract"},
+      {"name": "multiplication", "glyph": "\u00d7", "unicode": "U+00D7", "opcode": "0x202", "description": "Multiply"},
+      {"name": "division", "glyph": "\u00f7", "unicode": "U+00F7", "opcode": "0x203", "description": "Divide"},
+      {"name": "power", "glyph": "^", "unicode": "U+005E", "opcode": "0x204", "description": "Exponentiation"},
+      {"name": "root", "glyph": "\u221a", "unicode": "U+221A", "opcode": "0x205", "description": "Square root"},
+      {"name": "factorial", "glyph": "!", "unicode": "U+0021", "opcode": "0x206", "description": "Factorial"},
+      {"name": "modulo", "glyph": "%", "unicode": "U+0025", "opcode": "0x207", "description": "Modulo"}
+    ],
+    "algebra": [
+      {"name": "equation", "glyph": "=", "unicode": "U+003D", "opcode": "0x210", "description": "Equals"},
+      {"name": "inequality", "glyph": "\u2260", "unicode": "U+2260", "opcode": "0x211", "description": "Not equal"},
+      {"name": "less_than", "glyph": "<", "unicode": "U+003C", "opcode": "0x212", "description": "Less than"},
+      {"name": "greater_than", "glyph": ">", "unicode": "U+003E", "opcode": "0x213", "description": "Greater than"},
+      {"name": "less_equal", "glyph": "\u2264", "unicode": "U+2264", "opcode": "0x214", "description": "Less than or equal"},
+      {"name": "greater_equal", "glyph": "\u2265", "unicode": "U+2265", "opcode": "0x215", "description": "Greater than or equal"},
+      {"name": "summation", "glyph": "\u2211", "unicode": "U+2211", "opcode": "0x216", "description": "Summation"},
+      {"name": "product", "glyph": "\u220f", "unicode": "U+220F", "opcode": "0x217", "description": "Product"}
+    ],
+    "calculus": [
+      {"name": "derivative", "glyph": "d/dx", "opcode": "0x300", "description": "Derivative operator"},
+      {"name": "partial_derivative", "glyph": "\u2202", "unicode": "U+2202", "opcode": "0x301", "description": "Partial derivative"},
+      {"name": "gradient", "glyph": "\u2207", "unicode": "U+2207", "opcode": "0x302", "description": "Gradient operator"},
+      {"name": "laplacian", "glyph": "\u0394", "unicode": "U+0394", "opcode": "0x303", "description": "Laplacian operator"},
+      {"name": "divergence", "glyph": "\u2207\u00b7", "opcode": "0x304", "description": "Divergence"},
+      {"name": "curl", "glyph": "\u2207\u00d7", "opcode": "0x305", "description": "Curl operator"},
+      {"name": "integral", "glyph": "\u222b", "unicode": "U+222B", "opcode": "0x310", "description": "Integral"},
+      {"name": "double_integral", "glyph": "\u222c", "unicode": "U+222C", "opcode": "0x311", "description": "Double integral"},
+      {"name": "triple_integral", "glyph": "\u222d", "unicode": "U+222D", "opcode": "0x312", "description": "Triple integral"},
+      {"name": "contour_integral", "glyph": "\u222e", "unicode": "U+222E", "opcode": "0x313", "description": "Contour integral"},
+      {"name": "surface_integral", "glyph": "\u222f", "unicode": "U+222F", "opcode": "0x314", "description": "Surface integral"},
+      {"name": "ode", "glyph": "y'", "opcode": "0x320", "description": "Ordinary differential equation"},
+      {"name": "pde", "glyph": "\u2202u/\u2202t", "opcode": "0x321", "description": "Partial differential equation"},
+      {"name": "laplace_transform", "glyph": "\u2112", "unicode": "U+2112", "opcode": "0x322", "description": "Laplace transform"},
+      {"name": "fourier_transform", "glyph": "\u2131", "unicode": "U+2131", "opcode": "0x323", "description": "Fourier transform"}
+    ],
+    "numbers": [
+      {"name": "pi", "glyph": "\u03c0", "unicode": "U+03C0", "opcode": "0x400", "value": 3.141592653589793},
+      {"name": "euler", "glyph": "e", "unicode": "U+0065", "opcode": "0x401", "value": 2.718281828459045},
+      {"name": "golden_ratio", "glyph": "\u03c6", "unicode": "U+03C6", "opcode": "0x402", "value": 1.618033988749895},
+      {"name": "imaginary_unit", "glyph": "i", "unicode": "U+0069", "opcode": "0x403", "description": "sqrt(-1)"},
+      {"name": "infinity", "glyph": "\u221e", "unicode": "U+221E", "opcode": "0x404", "description": "Infinity"},
+      {"name": "binary", "glyph": "0b", "opcode": "0x410", "base": 2},
+      {"name": "octal", "glyph": "0o", "opcode": "0x411", "base": 8},
+      {"name": "decimal", "glyph": "0d", "opcode": "0x412", "base": 10},
+      {"name": "hexadecimal", "glyph": "0x", "opcode": "0x413", "base": 16},
+      {"name": "mayan", "glyph": "\u2372", "opcode": "0x414", "base": 20}
+    ],
+    "matrix_tensor": [
+      {"name": "matrix", "glyph": "[]", "unicode": "U+005B U+005D", "opcode": "0x500", "description": "Matrix notation"},
+      {"name": "determinant", "glyph": "det", "opcode": "0x501", "description": "Determinant"},
+      {"name": "transpose", "glyph": "\u22a4", "unicode": "U+22A4", "opcode": "0x502", "description": "Matrix transpose"},
+      {"name": "inverse", "glyph": "\u207b\u00b9", "unicode": "U+207B U+00B9", "opcode": "0x503", "description": "Matrix inverse"},
+      {"name": "trace", "glyph": "tr", "opcode": "0x504", "description": "Matrix trace"},
+      {"name": "eigenvalue", "glyph": "\u03bb", "unicode": "U+03BB", "opcode": "0x505", "description": "Eigenvalue"},
+      {"name": "eigenvector", "glyph": "v", "opcode": "0x506", "description": "Eigenvector"},
+      {"name": "matrix_multiply", "aliases": ["matmul", "mul_mat", "WO_MATMUL"], "glyph": "\u2a00", "opcode": "0x202", "description": "Matrix multiplication", "backend": {"abi": "WO_MATMUL", "ggml": "MUL_MAT"}},
+      {"name": "tensor_product", "glyph": "\u2297", "unicode": "U+2297", "opcode": "0x510", "description": "Tensor product"},
+      {"name": "contraction", "glyph": "\u27d0", "unicode": "U+27D0", "opcode": "0x511", "description": "Tensor contraction"},
+      {"name": "einstein_sum", "glyph": "\u2211", "unicode": "U+2211", "opcode": "0x512", "description": "Einstein summation"},
+      {"name": "covariant", "glyph": "T_\u03bc\u03bd", "opcode": "0x513", "description": "Covariant tensor"},
+      {"name": "contravariant", "glyph": "T^\u03bc\u03bd", "opcode": "0x514", "description": "Contravariant tensor"},
+      {"name": "mixed", "glyph": "T^\u03bc_\u03bd", "opcode": "0x515", "description": "Mixed tensor"}
+    ],
+    "mayan_calendar": [
+      {"name": "kin", "glyph": "K'", "unicode": "U+2FC0", "opcode": "0x600", "value": 1, "description": "Day"},
+      {"name": "uinal", "glyph": "W", "unicode": "U+2807", "opcode": "0x601", "value": 20, "description": "Month"},
+      {"name": "tun", "glyph": "Y", "unicode": "U+2819", "opcode": "0x602", "value": 360, "description": "Year"},
+      {"name": "katun", "glyph": "S", "unicode": "U+282D", "opcode": "0x603", "value": 7200, "description": "20-year cycle"},
+      {"name": "baktun", "glyph": "C", "unicode": "U+283F", "opcode": "0x604", "value": 144000, "description": "400-year cycle"},
+      {"name": "long_count", "glyph": "\u231b", "opcode": "0x605", "description": "Long Count calculation"},
+      {"name": "tzolkin", "glyph": "\u229c", "opcode": "0x606", "description": "260-day sacred calendar"},
+      {"name": "haab", "glyph": "\u2295", "opcode": "0x607", "description": "365-day solar calendar"}
+    ],
+    "sequences": [
+      {"name": "fibonacci", "glyph": "F", "opcode": "0x700", "description": "F(n)=F(n-1)+F(n-2)"},
+      {"name": "lucas", "glyph": "L", "opcode": "0x701", "description": "Lucas sequence"},
+      {"name": "prime", "glyph": "\u2119", "opcode": "0x702", "description": "Prime numbers"},
+      {"name": "catalan", "glyph": "C", "opcode": "0x703", "description": "Catalan numbers"},
+      {"name": "bell", "glyph": "B", "opcode": "0x704", "description": "Bell numbers"},
+      {"name": "stirling", "glyph": "S", "opcode": "0x705", "description": "Stirling numbers"}
+    ],
+    "buffer_shader": [
+      {"name": "buffer", "glyph": "\u235f", "unicode": "U+235F", "opcode": "0x800", "description": "Memory buffer"},
+      {"name": "vertex_buffer", "glyph": "\u235f\u1d65", "opcode": "0x801", "description": "Vertex data buffer"},
+      {"name": "index_buffer", "glyph": "\u235f\u1d62", "opcode": "0x802", "description": "Index buffer"},
+      {"name": "uniform_buffer", "glyph": "\u235f\u1d64", "opcode": "0x803", "description": "Uniform data buffer"},
+      {"name": "storage_buffer", "glyph": "\u235f\u209b", "opcode": "0x804", "description": "Storage buffer"},
+      {"name": "staging_buffer", "glyph": "\u235f\u209b\u209c", "opcode": "0x805", "description": "Staging buffer"},
+      {"name": "vertex_shader", "glyph": "\u235f\u1d65\u209b", "opcode": "0x810", "description": "Vertex shader"},
+      {"name": "fragment_shader", "glyph": "\u235f\u1da0\u209b", "opcode": "0x811", "description": "Fragment shader"},
+      {"name": "compute_shader", "glyph": "\u235f\u1d9c\u209b", "opcode": "0x812", "description": "Compute shader"},
+      {"name": "geometry_shader", "glyph": "\u235f\u1d4d\u209b", "opcode": "0x813", "description": "Geometry shader"},
+      {"name": "tessellation_shader", "glyph": "\u235f\u1d57\u209b", "opcode": "0x814", "description": "Tessellation shader"}
+    ],
+    "webgpu_compute": [
+      {"name": "bind_group", "glyph": "\u27d0", "opcode": "0x820", "description": "WebGPU bind group"},
+      {"name": "bind_group_layout", "glyph": "\u27d0\u2097", "opcode": "0x821", "description": "Bind group layout"},
+      {"name": "pipeline_layout", "glyph": "\u27d0\u209a", "opcode": "0x822", "description": "Pipeline layout"},
+      {"name": "shader_module", "glyph": "\u27d0\u209b", "opcode": "0x823", "description": "Shader module"},
+      {"name": "render_pipeline", "glyph": "\u27d0\u1d63", "opcode": "0x824", "description": "Render pipeline"},
+      {"name": "compute_pipeline", "glyph": "\u27d0\u1d9c", "opcode": "0x825", "description": "Compute pipeline"},
+      {"name": "dispatch", "glyph": "\u229c", "opcode": "0x830", "description": "Dispatch compute shader"},
+      {"name": "workgroup", "glyph": "\u2297", "opcode": "0x831", "description": "Workgroup size"},
+      {"name": "memory_barrier", "glyph": "\u27d0", "opcode": "0x832", "description": "Memory synchronization"},
+      {"name": "atomic", "glyph": "\u2295", "opcode": "0x833", "description": "Atomic operations"},
+      {"name": "reduction", "glyph": "\u2296", "opcode": "0x834", "description": "Reduction operations"}
+    ],
+    "graph": [
+      {"name": "node", "glyph": "N", "opcode": "0xB00", "description": "Graph node"},
+      {"name": "edge", "glyph": "E", "opcode": "0xB01", "description": "Graph edge"},
+      {"name": "traverse", "glyph": "\u2192", "opcode": "0xB02", "description": "Graph traversal"},
+      {"name": "search", "glyph": "\u2315", "opcode": "0xB03", "description": "Graph search"},
+      {"name": "route", "glyph": "\u27f6", "opcode": "0xB04", "description": "Graph routing"}
+    ],
+    "field": [
+      {"name": "field", "glyph": "F", "opcode": "0xC00", "description": "Field state"},
+      {"name": "gradient", "glyph": "\u2207", "opcode": "0xC01", "description": "Field gradient"},
+      {"name": "flow", "glyph": "\u27f9", "opcode": "0xC02", "description": "Field flow"},
+      {"name": "collapse", "glyph": "\u27c2", "opcode": "0xC03", "description": "Field collapse"},
+      {"name": "geodesic", "glyph": "\u03b3", "opcode": "0xC04", "description": "Geodesic path"}
+    ],
+    "map": [
+      {"name": "map", "glyph": "M", "opcode": "0xE00", "description": "Map transform"},
+      {"name": "lookup", "glyph": "L", "opcode": "0xE01", "description": "Lookup"},
+      {"name": "project", "glyph": "P", "opcode": "0xE02", "description": "Project"},
+      {"name": "merge", "glyph": "\u2295", "opcode": "0xE03", "description": "Merge maps"},
+      {"name": "scatter", "glyph": "S", "opcode": "0xE04", "description": "Scatter"}
+    ],
+    "kblocks": [
+      {"name": "input", "glyph": "I", "opcode": "0xD00", "description": "KBLOCK input"},
+      {"name": "transform", "glyph": "T", "opcode": "0xD01", "description": "KBLOCK transform"},
+      {"name": "mix", "glyph": "M", "opcode": "0xD02", "description": "KBLOCK mix"},
+      {"name": "output", "glyph": "O", "opcode": "0xD03", "description": "KBLOCK output"},
+      {"name": "control_flow", "glyph": "C", "opcode": "0xD04", "description": "KBLOCK control flow"}
+    ],
+    "mathml": [
+      {"name": "identifier", "element": "mi", "opcode": "0xA00"},
+      {"name": "number", "element": "mn", "opcode": "0xA01"},
+      {"name": "operator", "element": "mo", "opcode": "0x200"},
+      {"name": "fraction", "element": "mfrac", "opcode": "0xA02"},
+      {"name": "sqrt", "element": "msqrt", "opcode": "0x205"},
+      {"name": "root", "element": "mroot", "opcode": "0xA03"},
+      {"name": "subscript", "element": "msub", "opcode": "0xA04"},
+      {"name": "superscript", "element": "msup", "opcode": "0xA05"},
+      {"name": "subscript_superscript", "element": "msubsup", "opcode": "0xA06"},
+      {"name": "matrix", "element": "mtable", "opcode": "0x500"}
+    ]
+  },
+  "examples": [
+    {
+      "name": "fibonacci_mayan_day",
+      "source": "F(13) \u2295 \u2372(K'IN)",
+      "opcodes": ["0x700", "0x0D", "0x200", "0x414", "0x00"],
+      "result": "234 Mayan days"
+    },
+    {
+      "name": "matrix_multiplication_compute",
+      "source": "[A] \u00d7 [B] -> [C] \u27d0\u209b",
+      "lowering": "MathML matrix -> row_major f32 LinALG buffers -> WO_MATMUL -> GGML MUL_MAT"
+    },
+    {
+      "name": "field_collapse_gradient",
+      "source": "\u2207f(x,y) = 0",
+      "phase_flow": ["Yax", "Ch'en", "Xul"],
+      "result": "stationary point found"
+    }
+  ],
+  "backend_links": {
+    "pattern_map": "glyph_pattern_map.json",
+    "abi_dll": "native_glyph_engine_abi.dll",
+    "mathml_matmul": "mathml_matmul_linalg.py",
+    "ggml_alignment": "ggml_ops_alignment.py"
+  }
+}
