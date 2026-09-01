@@ -1,0 +1,399 @@
+<!DOCTYPE html><html data-theme="atomic"><head><meta charset="utf-8"><title>KHANARY sandbox — Birdsong Geometry</title><link rel="stylesheet" href="style.css"></head><body><header><h1>KHΛNARY developer sandbox</h1><span class="tag">grammar reference &amp; try-it</span><label>theme</label><select id="themeSel" onchange="setTheme(this.value)"><option value="atomic">Atomic</option><option value="cyan">Cyan</option><option value="matrix">Matrix</option></select></header><div class="wrap"><nav><h2>Grammars</h2><a class="" href="index.html">Overview</a><a class="" href="kuhul-3d.html">K&#x27;UHUL-3D</a><a class="active" href="birdsong.html">Birdsong Geometry</a><a class="" href="xcfe.html">XCFE</a></nav><main><h1 style="color:var(--grn)">Birdsong Geometry</h1><p class="tag">Bird-song as executable geometry</p><p>Formalizes <code>audio &rarr; spectrogram &rarr; ridges &rarr; mesh &rarr; graph &rarr; experts</code> onto the Pop&rarr;Xul fold cycle. Grounded in the real <code>birdsong_mesh.stb</code>: <b>30,628 nodes / 91,863 edges / 183,726 neighbours</b>.</p><div class="ex-bar">Syntax (EBNF)</div><pre>(* ============================================================
+   Birdsong Geometry Grammar — the structural language of
+   bird-song as GEOMETRY + TENSORS (not audio playback).
+
+   Pipeline:  audio -&gt; spectrogram -&gt; ridges -&gt; mesh -&gt; graph -&gt; experts
+   Fold cycle: Pop(load) Wo(spectrum) Yax(ridges) Sek(graph)
+               Ch&#x27;en(experts) Xul(inference)
+
+   Grounded in the real data: models/khanary-geometry-v0.3.0/data/
+   birdsong_mesh.stb  (STB0, 7 tensors, 30628 nodes, 91863 Delaunay
+   edges, 183726 CSR neighbours, geometric-MoE expert id per node).
+   Ridges are OPTIONAL (upstream of the .stb, which stores the graph).
+   ============================================================ *)
+
+BirdSong        = Header Spectrogram [ Ridges ] Graph Experts [ Inference ] ;
+
+Header          = &quot;BIRDSONG&quot; Identifier Meta ;
+Meta            = &quot;(&quot; SampleRate &quot;,&quot; Channels &quot;,&quot; Duration &quot;)&quot; ;
+Identifier      = string ;
+
+Spectrogram     = &quot;SPECTRUM&quot; &quot;(&quot; Width &quot;,&quot; Height &quot;)&quot; ;
+Width           = integer ;
+Height          = integer ;
+SampleRate      = integer ;
+Channels        = integer ;
+Duration        = float ;
+
+(* ---------- Ridges (signal geometry: harmonics, chirps, trills) ---------- *)
+Ridges          = &quot;RIDGES&quot; &quot;{&quot; { Ridge } &quot;}&quot; ;
+Ridge           = &quot;RIDGE&quot; RidgeID &quot;:&quot; PointSeq RidgeAttr ;
+RidgeID         = integer ;
+PointSeq        = &quot;[&quot; Point { &quot;,&quot; Point } &quot;]&quot; ;
+Point           = &quot;(&quot; Time &quot;,&quot; Frequency &quot;)&quot; ;
+Time            = float ;
+Frequency       = float ;
+RidgeAttr       = &quot;(&quot; &quot;len&quot; &quot;=&quot; integer &quot;,&quot; &quot;energy&quot; &quot;=&quot; float &quot;)&quot; ;
+
+(* ---------- Graph (the tensor graph: nodes + edges) ---------- *)
+Graph           = &quot;GRAPH&quot; [ GraphMeta ] &quot;{&quot; Nodes Edges &quot;}&quot; ;
+GraphMeta       = &quot;(&quot; &quot;layout&quot; &quot;=&quot; Layout &quot;,&quot; &quot;nodes&quot; &quot;=&quot; integer &quot;,&quot;
+                      &quot;edges&quot; &quot;=&quot; integer &quot;,&quot; &quot;neighbors&quot; &quot;=&quot; integer &quot;)&quot; ;
+Layout          = &quot;csr&quot; | &quot;coo&quot; | identifier ;
+
+Nodes           = &quot;NODES&quot; &quot;{&quot; { Node } &quot;}&quot; ;
+Node            = &quot;N&quot; NodeID &quot;:&quot; &quot;(&quot; Time &quot;,&quot; Frequency &quot;,&quot; Energy &quot;)&quot; NodeAttr ;
+NodeID          = integer ;
+Energy          = float ;
+NodeAttr        = [ &quot;(&quot; &quot;deg&quot; &quot;=&quot; integer &quot;,&quot; &quot;exp&quot; &quot;=&quot; ExpertID &quot;)&quot; ] ;
+
+Edges           = &quot;EDGES&quot; &quot;{&quot; { Edge } &quot;}&quot; ;
+Edge            = &quot;(&quot; NodeID &quot;,&quot; NodeID &quot;)&quot; ;
+
+(* ---------- Experts (geometric MoE: local reasoning regions) ---------- *)
+Experts         = &quot;EXPERTS&quot; &quot;{&quot; { Expert } &quot;}&quot; ;
+Expert          = &quot;E&quot; ExpertID &quot;:&quot; NodeList ExpertAttr ;
+ExpertID        = integer ;
+NodeList        = &quot;[&quot; NodeID { &quot;,&quot; NodeID } &quot;]&quot; ;
+ExpertAttr      = &quot;(&quot; &quot;centroid&quot; &quot;=&quot; Point &quot;,&quot; &quot;energy&quot; &quot;=&quot; float &quot;)&quot; ;
+
+(* ---------- Inference (optional: turns the spec into execution) ---------- *)
+Inference       = &quot;INFERENCE&quot; &quot;{&quot; { Rule } &quot;}&quot; ;
+Rule            = Activate | Propagate | Route | Update ;
+Activate        = &quot;ACTIVATE&quot; NodeID ;
+Propagate       = &quot;PROPAGATE&quot; &quot;(&quot; &quot;radius&quot; &quot;=&quot; integer &quot;)&quot; ;
+Route           = &quot;ROUTE&quot; ExpertID ;
+Update          = &quot;UPDATE&quot; ExpertID ;
+
+(* ---------- Lexical ---------- *)
+identifier      = letter , { letter | digit | &quot;_&quot; } ;
+integer         = digit , { digit } ;
+float           = [ &quot;-&quot; ] , digit , { digit } , [ &quot;.&quot; , digit , { digit } ] ;
+string          = &#x27;&quot;&#x27; , { character } , &#x27;&quot;&#x27; ;
+character       = ? any Unicode character except an unescaped quote ? ;
+letter          = ? A-Z | a-z ? ;
+digit           = ? 0-9 ? ;
+</pre><div class="ex-bar">Dataset schema</div><pre>{
+  &quot;$schema&quot;: &quot;https://json-schema.org/draft/2020-12/schema&quot;,
+  &quot;$id&quot;: &quot;https://khanary.dev/schema/birdsong-brain.json&quot;,
+  &quot;title&quot;: &quot;BirdSong Geometric Brain (dataset)&quot;,
+  &quot;description&quot;: &quot;A bird song as temporal-frequency energy GEOMETRY: ridges -&gt; nodes -&gt; edges -&gt; experts. The human-readable twin of the runtime .brain / .stb (models/khanary-geometry-v0.3.0/data/birdsong_mesh.stb). Ridges are optional (upstream of the graph .stb).&quot;,
+  &quot;type&quot;: &quot;object&quot;,
+  &quot;required&quot;: [&quot;id&quot;, &quot;nodes&quot;, &quot;edges&quot;],
+  &quot;properties&quot;: {
+    &quot;id&quot;: { &quot;type&quot;: &quot;string&quot; },
+    &quot;source&quot;: { &quot;type&quot;: &quot;string&quot; },
+    &quot;audio&quot;: {
+      &quot;type&quot;: &quot;object&quot;,
+      &quot;properties&quot;: {
+        &quot;sample_rate&quot;: { &quot;type&quot;: &quot;number&quot; },
+        &quot;channels&quot;: { &quot;type&quot;: &quot;number&quot; },
+        &quot;duration&quot;: { &quot;type&quot;: &quot;number&quot; }
+      },
+      &quot;additionalProperties&quot;: false
+    },
+    &quot;spectrogram&quot;: {
+      &quot;type&quot;: &quot;object&quot;,
+      &quot;properties&quot;: { &quot;width&quot;: { &quot;type&quot;: &quot;number&quot; }, &quot;height&quot;: { &quot;type&quot;: &quot;number&quot; } },
+      &quot;additionalProperties&quot;: false
+    },
+    &quot;graph&quot;: {
+      &quot;type&quot;: &quot;object&quot;,
+      &quot;properties&quot;: {
+        &quot;layout&quot;: { &quot;type&quot;: &quot;string&quot;, &quot;enum&quot;: [&quot;csr&quot;, &quot;coo&quot;] },
+        &quot;nodes&quot;: { &quot;type&quot;: &quot;integer&quot;, &quot;minimum&quot;: 0 },
+        &quot;edges&quot;: { &quot;type&quot;: &quot;integer&quot;, &quot;minimum&quot;: 0 },
+        &quot;neighbors&quot;: { &quot;type&quot;: &quot;integer&quot;, &quot;minimum&quot;: 0 }
+      },
+      &quot;additionalProperties&quot;: false
+    },
+    &quot;tensor&quot;: {
+      &quot;type&quot;: &quot;object&quot;,
+      &quot;properties&quot;: {
+        &quot;features&quot;: { &quot;type&quot;: &quot;array&quot;, &quot;items&quot;: { &quot;type&quot;: &quot;string&quot; } },
+        &quot;layout&quot;: { &quot;type&quot;: &quot;string&quot;, &quot;enum&quot;: [&quot;SoA&quot;, &quot;AoS&quot;] },
+        &quot;dtype&quot;: { &quot;type&quot;: &quot;string&quot; }
+      },
+      &quot;additionalProperties&quot;: false
+    },
+    &quot;ridges&quot;: { &quot;type&quot;: &quot;array&quot;, &quot;items&quot;: { &quot;$ref&quot;: &quot;#/$defs/Ridge&quot; } },
+    &quot;nodes&quot;: { &quot;type&quot;: &quot;array&quot;, &quot;items&quot;: { &quot;$ref&quot;: &quot;#/$defs/Node&quot; } },
+    &quot;edges&quot;: { &quot;type&quot;: &quot;array&quot;, &quot;items&quot;: { &quot;$ref&quot;: &quot;#/$defs/Edge&quot; } },
+    &quot;experts&quot;: { &quot;type&quot;: &quot;array&quot;, &quot;items&quot;: { &quot;$ref&quot;: &quot;#/$defs/Expert&quot; } },
+    &quot;_note&quot;: { &quot;type&quot;: &quot;string&quot; }
+  },
+  &quot;additionalProperties&quot;: false,
+
+  &quot;$defs&quot;: {
+    &quot;Ridge&quot;: {
+      &quot;type&quot;: &quot;object&quot;,
+      &quot;required&quot;: [&quot;id&quot;, &quot;points&quot;],
+      &quot;properties&quot;: {
+        &quot;id&quot;: { &quot;type&quot;: &quot;number&quot; },
+        &quot;points&quot;: {
+          &quot;type&quot;: &quot;array&quot;,
+          &quot;items&quot;: { &quot;type&quot;: &quot;array&quot;, &quot;items&quot;: { &quot;type&quot;: &quot;number&quot; }, &quot;minItems&quot;: 2, &quot;maxItems&quot;: 2 }
+        },
+        &quot;length&quot;: { &quot;type&quot;: &quot;number&quot; },
+        &quot;energy_mean&quot;: { &quot;type&quot;: &quot;number&quot; }
+      },
+      &quot;additionalProperties&quot;: false
+    },
+    &quot;Node&quot;: {
+      &quot;description&quot;: &quot;A tensor-core unit: (time, freq, energy) with a geometric-MoE expert id.&quot;,
+      &quot;type&quot;: &quot;object&quot;,
+      &quot;required&quot;: [&quot;id&quot;, &quot;time&quot;, &quot;freq&quot;, &quot;energy&quot;],
+      &quot;properties&quot;: {
+        &quot;id&quot;: { &quot;type&quot;: &quot;integer&quot;, &quot;minimum&quot;: 0 },
+        &quot;time&quot;: { &quot;type&quot;: &quot;number&quot; },
+        &quot;freq&quot;: { &quot;type&quot;: &quot;number&quot; },
+        &quot;energy&quot;: { &quot;type&quot;: &quot;number&quot; },
+        &quot;degree&quot;: { &quot;type&quot;: &quot;integer&quot;, &quot;minimum&quot;: 0 },
+        &quot;expert&quot;: { &quot;type&quot;: &quot;integer&quot;, &quot;minimum&quot;: 0 }
+      },
+      &quot;additionalProperties&quot;: false
+    },
+    &quot;Edge&quot;: {
+      &quot;type&quot;: &quot;object&quot;,
+      &quot;required&quot;: [&quot;a&quot;, &quot;b&quot;],
+      &quot;properties&quot;: {
+        &quot;a&quot;: { &quot;type&quot;: &quot;integer&quot;, &quot;minimum&quot;: 0 },
+        &quot;b&quot;: { &quot;type&quot;: &quot;integer&quot;, &quot;minimum&quot;: 0 }
+      },
+      &quot;additionalProperties&quot;: false
+    },
+    &quot;Expert&quot;: {
+      &quot;description&quot;: &quot;A geometric-MoE cluster: local reasoning region over member nodes.&quot;,
+      &quot;type&quot;: &quot;object&quot;,
+      &quot;required&quot;: [&quot;id&quot;, &quot;node_ids&quot;],
+      &quot;properties&quot;: {
+        &quot;id&quot;: { &quot;type&quot;: &quot;integer&quot;, &quot;minimum&quot;: 0 },
+        &quot;node_ids&quot;: { &quot;type&quot;: &quot;array&quot;, &quot;items&quot;: { &quot;type&quot;: &quot;integer&quot;, &quot;minimum&quot;: 0 } },
+        &quot;centroid&quot;: {
+          &quot;type&quot;: &quot;object&quot;,
+          &quot;properties&quot;: { &quot;time&quot;: { &quot;type&quot;: &quot;number&quot; }, &quot;freq&quot;: { &quot;type&quot;: &quot;number&quot; } },
+          &quot;additionalProperties&quot;: false
+        },
+        &quot;energy_mean&quot;: { &quot;type&quot;: &quot;number&quot; }
+      },
+      &quot;additionalProperties&quot;: false
+    }
+  }
+}
+</pre><div class="ex-bar">Example (real subgraph from the .stb)</div><pre>{
+  &quot;id&quot;: &quot;canary_birdsong_mesh&quot;,
+  &quot;source&quot;: &quot;brain2 canary-song spectrogram graph (models/khanary-geometry-v0.3.0/data/birdsong_mesh.stb)&quot;,
+  &quot;audio&quot;: {
+    &quot;sample_rate&quot;: 44100,
+    &quot;channels&quot;: 1,
+    &quot;duration&quot;: 47.95
+  },
+  &quot;spectrogram&quot;: {
+    &quot;width&quot;: 2048,
+    &quot;height&quot;: 1024
+  },
+  &quot;graph&quot;: {
+    &quot;layout&quot;: &quot;csr&quot;,
+    &quot;nodes&quot;: 30628,
+    &quot;edges&quot;: 91863,
+    &quot;neighbors&quot;: 183726
+  },
+  &quot;tensor&quot;: {
+    &quot;features&quot;: [
+      &quot;time&quot;,
+      &quot;freq&quot;,
+      &quot;energy&quot;
+    ],
+    &quot;layout&quot;: &quot;SoA&quot;,
+    &quot;dtype&quot;: &quot;float32&quot;
+  },
+  &quot;nodes&quot;: [
+    {
+      &quot;id&quot;: 0,
+      &quot;time&quot;: 142.0,
+      &quot;freq&quot;: 145.669,
+      &quot;energy&quot;: 0.0,
+      &quot;expert&quot;: 34
+    },
+    {
+      &quot;id&quot;: 1,
+      &quot;time&quot;: 140.6037,
+      &quot;freq&quot;: 69.676,
+      &quot;energy&quot;: 0.0,
+      &quot;expert&quot;: 34
+    },
+    {
+      &quot;id&quot;: 2,
+      &quot;time&quot;: 140.0,
+      &quot;freq&quot;: 40.7273,
+      &quot;energy&quot;: 0.0,
+      &quot;expert&quot;: 34
+    },
+    {
+      &quot;id&quot;: 3,
+      &quot;time&quot;: 124.0,
+      &quot;freq&quot;: 271.9767,
+      &quot;energy&quot;: 0.0,
+      &quot;expert&quot;: 34
+    },
+    {
+      &quot;id&quot;: 4,
+      &quot;time&quot;: 127.0,
+      &quot;freq&quot;: 279.352,
+      &quot;energy&quot;: 0.0,
+      &quot;expert&quot;: 34
+    },
+    {
+      &quot;id&quot;: 5,
+      &quot;time&quot;: 140.0,
+      &quot;freq&quot;: 283.7739,
+      &quot;energy&quot;: 0.0,
+      &quot;expert&quot;: 34
+    }
+  ],
+  &quot;edges&quot;: [
+    {
+      &quot;a&quot;: 3,
+      &quot;b&quot;: 4
+    },
+    {
+      &quot;a&quot;: 4,
+      &quot;b&quot;: 5
+    },
+    {
+      &quot;a&quot;: 2,
+      &quot;b&quot;: 1
+    },
+    {
+      &quot;a&quot;: 1,
+      &quot;b&quot;: 0
+    }
+  ],
+  &quot;experts&quot;: [
+    {
+      &quot;id&quot;: 34,
+      &quot;node_ids&quot;: [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      &quot;centroid&quot;: {
+        &quot;time&quot;: 135.6006,
+        &quot;freq&quot;: 181.8625
+      },
+      &quot;energy_mean&quot;: 0.0
+    }
+  ],
+  &quot;_note&quot;: &quot;REAL subgraph: first 6 of 30628 nodes; edges among them of 91863 total; experts computed over the sample. Whole-graph totals in `graph`.&quot;
+}</pre><h2 class="sec">Try it</h2><div class="tryit"><textarea spellcheck="false">{
+  &quot;id&quot;: &quot;canary_birdsong_mesh&quot;,
+  &quot;source&quot;: &quot;brain2 canary-song spectrogram graph (models/khanary-geometry-v0.3.0/data/birdsong_mesh.stb)&quot;,
+  &quot;audio&quot;: {
+    &quot;sample_rate&quot;: 44100,
+    &quot;channels&quot;: 1,
+    &quot;duration&quot;: 47.95
+  },
+  &quot;spectrogram&quot;: {
+    &quot;width&quot;: 2048,
+    &quot;height&quot;: 1024
+  },
+  &quot;graph&quot;: {
+    &quot;layout&quot;: &quot;csr&quot;,
+    &quot;nodes&quot;: 30628,
+    &quot;edges&quot;: 91863,
+    &quot;neighbors&quot;: 183726
+  },
+  &quot;tensor&quot;: {
+    &quot;features&quot;: [
+      &quot;time&quot;,
+      &quot;freq&quot;,
+      &quot;energy&quot;
+    ],
+    &quot;layout&quot;: &quot;SoA&quot;,
+    &quot;dtype&quot;: &quot;float32&quot;
+  },
+  &quot;nodes&quot;: [
+    {
+      &quot;id&quot;: 0,
+      &quot;time&quot;: 142.0,
+      &quot;freq&quot;: 145.669,
+      &quot;energy&quot;: 0.0,
+      &quot;expert&quot;: 34
+    },
+    {
+      &quot;id&quot;: 1,
+      &quot;time&quot;: 140.6037,
+      &quot;freq&quot;: 69.676,
+      &quot;energy&quot;: 0.0,
+      &quot;expert&quot;: 34
+    },
+    {
+      &quot;id&quot;: 2,
+      &quot;time&quot;: 140.0,
+      &quot;freq&quot;: 40.7273,
+      &quot;energy&quot;: 0.0,
+      &quot;expert&quot;: 34
+    },
+    {
+      &quot;id&quot;: 3,
+      &quot;time&quot;: 124.0,
+      &quot;freq&quot;: 271.9767,
+      &quot;energy&quot;: 0.0,
+      &quot;expert&quot;: 34
+    },
+    {
+      &quot;id&quot;: 4,
+      &quot;time&quot;: 127.0,
+      &quot;freq&quot;: 279.352,
+      &quot;energy&quot;: 0.0,
+      &quot;expert&quot;: 34
+    },
+    {
+      &quot;id&quot;: 5,
+      &quot;time&quot;: 140.0,
+      &quot;freq&quot;: 283.7739,
+      &quot;energy&quot;: 0.0,
+      &quot;expert&quot;: 34
+    }
+  ],
+  &quot;edges&quot;: [
+    {
+      &quot;a&quot;: 3,
+      &quot;b&quot;: 4
+    },
+    {
+      &quot;a&quot;: 4,
+      &quot;b&quot;: 5
+    },
+    {
+      &quot;a&quot;: 2,
+      &quot;b&quot;: 1
+    },
+    {
+      &quot;a&quot;: 1,
+      &quot;b&quot;: 0
+    }
+  ],
+  &quot;experts&quot;: [
+    {
+      &quot;id&quot;: 34,
+      &quot;node_ids&quot;: [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      &quot;centroid&quot;: {
+        &quot;time&quot;: 135.6006,
+        &quot;freq&quot;: 181.8625
+      },
+      &quot;energy_mean&quot;: 0.0
+    }
+  ],
+  &quot;_note&quot;: &quot;REAL subgraph: first 6 of 30628 nodes; edges among them of 91863 total; experts computed over the sample. Whole-graph totals in `graph`.&quot;
+}</textarea></div><p class="tag">Edit above, then validate locally:</p><div class="validate">$ python tools/check_birdsong.py</div></main></div><footer>Generated from the grammar docs by <code>tools/build_grammar_pages.py</code> — the pages read the specs, they do not redefine them.</footer><script>function setTheme(t){document.documentElement.dataset.theme=t;try{localStorage.setItem('khTheme',t)}catch(e){}var s=document.getElementById('themeSel');if(s)s.value=t;}setTheme((function(){try{return localStorage.getItem('khTheme')}catch(e){}})()||'atomic');</script></body></html>

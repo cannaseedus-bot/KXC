@@ -1,0 +1,46 @@
+<!DOCTYPE html><html data-theme="atomic"><head><meta charset="utf-8"><title>KHANARY sandbox — XCFE</title><link rel="stylesheet" href="style.css"></head><body><header><h1>KHΛNARY developer sandbox</h1><span class="tag">grammar reference &amp; try-it</span><label>theme</label><select id="themeSel" onchange="setTheme(this.value)"><option value="atomic">Atomic</option><option value="cyan">Cyan</option><option value="matrix">Matrix</option></select></header><div class="wrap"><nav><h2>Grammars</h2><a class="" href="index.html">Overview</a><a class="" href="kuhul-3d.html">K&#x27;UHUL-3D</a><a class="" href="birdsong.html">Birdsong Geometry</a><a class="active" href="xcfe.html">XCFE</a></nav><main><h1 style="color:var(--grn)">XCFE</h1><p class="tag">The legal-move / routing layer</p><p>XCFE is the control layer over the phase graph — it decides which <b>moves are legal</b> and which <b>backend</b> a compute node routes to (chess moves over phase topology). It <b>routes</b>; it never redefines the phases.</p><h3>Legal phase transitions</h3><table class=ref><tr><th>from</th><th>to</th><th>guard</th></tr><tr><td>Pop</td><td>Wo</td><td>all inputs bound</td></tr><tr><td>Wo</td><td>Sek</td><td>intent declared</td></tr><tr><td>Wo</td><td>Yax</td><td>route selected</td></tr><tr><td>Yax</td><td>Sek</td><td>fit confirmed</td></tr><tr><td>Sek</td><td>Ch'en</td><td>execution complete</td></tr><tr><td>Ch'en</td><td>Xul</td><td>output emitted</td></tr><tr><td>Xul</td><td>Pop</td><td>reset (cycle)</td></tr></table><div class="ex-bar">Routing productions (EBNF)</div><pre>xcfe            = &quot;[XCFE]&quot;, { xcfe_rule }, &quot;[/XCFE]&quot; ;
+xcfe_rule       = condition_rule | route_rule | reward_rule | mutation_rule | capability_rule ;
+route_rule      = &quot;@route&quot;, expression, &quot;-&gt;&quot;, identifier ;
+reward_rule     = &quot;@reward&quot;, expression ;
+capability_rule = &quot;@requires&quot;, capability ;</pre><div class="ex-bar">Route (best legal backend by cost)</div><pre>{
+  &quot;xcfe&quot;: {
+    &quot;route&quot;: {
+      &quot;candidates&quot;: [
+        {
+          &quot;backend&quot;: &quot;cache&quot;,
+          &quot;requires&quot;: [
+            &quot;memory&quot;
+          ],
+          &quot;cost&quot;: 0.01
+        },
+        {
+          &quot;backend&quot;: &quot;d3d11&quot;,
+          &quot;requires&quot;: [
+            &quot;d3d11&quot;
+          ],
+          &quot;cost&quot;: 0.2
+        },
+        {
+          &quot;backend&quot;: &quot;webgpu&quot;,
+          &quot;requires&quot;: [
+            &quot;webgpu&quot;
+          ],
+          &quot;cost&quot;: 0.25
+        },
+        {
+          &quot;backend&quot;: &quot;llama&quot;,
+          &quot;requires&quot;: [
+            &quot;llama&quot;
+          ],
+          &quot;cost&quot;: 0.4
+        }
+      ],
+      &quot;policy&quot;: &quot;semantic_best_legal_path&quot;
+    }
+  }
+}</pre><div class="ex-bar">The 5 admission gates</div><pre>1. STRUCTURE     valid phases / nodes / edges
+2. SEMANTICS     references resolve; context preserved
+3. XCFE          the transition / route is legal      &lt;-- this layer
+4. CAPABILITY    every requested backend is registered
+5. COMPUTE       buffer shapes / dtypes / kernel contract valid
+-&gt; ADMIT</pre><div class="validate">$ python tools/check_kuhul_ast_v3.py   # XCFE routes are part of the v3 contract</div></main></div><footer>Generated from the grammar docs by <code>tools/build_grammar_pages.py</code> — the pages read the specs, they do not redefine them.</footer><script>function setTheme(t){document.documentElement.dataset.theme=t;try{localStorage.setItem('khTheme',t)}catch(e){}var s=document.getElementById('themeSel');if(s)s.value=t;}setTheme((function(){try{return localStorage.getItem('khTheme')}catch(e){}})()||'atomic');</script></body></html>

@@ -1,0 +1,678 @@
+<!DOCTYPE html><html data-theme="atomic"><head><meta charset="utf-8"><title>KHANARY sandbox — K&#x27;UHUL-3D</title><link rel="stylesheet" href="style.css"></head><body><header><h1>KHΛNARY developer sandbox</h1><span class="tag">grammar reference &amp; try-it</span><label>theme</label><select id="themeSel" onchange="setTheme(this.value)"><option value="atomic">Atomic</option><option value="cyan">Cyan</option><option value="matrix">Matrix</option></select></header><div class="wrap"><nav><h2>Grammars</h2><a class="" href="index.html">Overview</a><a class="active" href="kuhul-3d.html">K&#x27;UHUL-3D</a><a class="" href="birdsong.html">Birdsong Geometry</a><a class="" href="xcfe.html">XCFE</a></nav><main><h1 style="color:var(--grn)">K&#x27;UHUL-3D</h1><p class="tag">Recursive semantic + compute execution contract</p><p><b>The rule:</b> the AST preserves the prompt/context; K'UHUL traverses it (phase lanes); XCFE routes legal graph moves; opcodes perform work; compute nodes lower to CPU / llama.cpp / WebGPU-WGSL / D3D11-HLSL.</p><p><b>Laws (machine-enforced):</b> <code>P1</code> Phase &cap; Opcode = &empty; · <code>R1</code> Node&rarr;PhaseTick&rarr;PhaseStep&rarr;Node (a node <i>is</i> a tick) · <code>G1</code> the glyph <i>is</i> the token.</p><div class="ex-bar">Syntax (EBNF)</div><pre>(* ============================================================
+   K&#x27;UHUL-3D vNext — Recursive Semantic + Compute Grammar
+   ------------------------------------------------------------
+   THE RULE:
+     The AST preserves the prompt/context; K&#x27;UHUL traverses it;
+     XCFE chooses legal graph moves; opcodes perform work;
+     compute nodes may lower to CPU, llama.cpp, WebGPU/WGSL, or
+     D3D11/HLSL.
+
+   Pop/Wo/Yax/Sek/Ch&#x27;en/Xul are SEMANTIC / TICK LANES, not GPU
+   opcodes. Opcodes execute INSIDE them. Every node may contain
+   another tick (recursion == thinking at every level).
+
+   Reconciled from the authored vNext intent to pass the
+   grammar-validator (defined-refs + reachability). Completions
+   over the source draft, so it is well-formed:
+     - `declaration` defined  -&gt; wires `xcfe` + `compute` reachable
+     - `node` body admits `xcfe`, `compute`, `tick` (the JSON AST
+        shows kind:&quot;xcfe&quot;/&quot;compute&quot; nodes + per-node recursion)
+     - `body`, `string`, `character`, `xml_attribute`, `xml_content`
+        given definitions
+   ============================================================ *)
+
+document        = { declaration | fold | tick | graph } ;
+
+(* declaration wires the semantic, routing, and compute lanes in
+   at top level so xcfe/compute are reachable from `document`. *)
+declaration     = phase | xcfe | compute ;
+
+(* ---------- Core recursive lifecycle ---------- *)
+
+phase           = pop | wo | yax | sek | chen | xul ;
+
+pop             = &quot;[Pop&quot;, [identifier], &quot;]&quot;, body ;
+wo              = &quot;[Wo&quot;, expression, &quot;]&quot;, [transition] ;
+yax             = &quot;[Yax&quot;, expression, &quot;]&quot;, [transition] ;
+sek             = &quot;[Sek&quot;, operation, &quot;]&quot;, [transition] ;
+chen            = &quot;[Ch&#x27;en&quot;, expression, &quot;]&quot;, [transition] ;
+xul             = &quot;[Xul]&quot; ;
+
+body            = { phase | node | graph | fold | opcode_call } ;
+operation       = opcode | identifier ;
+
+transition      = &quot;-&gt;&quot;, phase_ref ;
+phase_ref       = &quot;[Pop&quot;, [identifier], &quot;]&quot;
+                | &quot;[Wo&quot;, [identifier], &quot;]&quot;
+                | &quot;[Yax&quot;, [identifier], &quot;]&quot;
+                | &quot;[Sek&quot;, [identifier], &quot;]&quot;
+                | &quot;[Ch&#x27;en&quot;, [identifier], &quot;]&quot;
+                | &quot;[Xul]&quot; ;
+
+tick            = &quot;[Tick&quot;, identifier, &quot;]&quot;,
+                    { phase | fold | node | graph },
+                  &quot;[/Tick]&quot; ;
+
+(* ---------- Recursive folds ---------- *)
+
+fold            = &quot;[&quot;, fold_begin, identifier, [iterator], &quot;]&quot;,
+                    { phase | node | graph | fold },
+                  &quot;[&quot;, fold_end, &quot;]&quot; ;
+
+fold_begin      = &quot;K&#x27;ayab&quot; ;
+fold_end        = &quot;Kumk&#x27;u&quot; ;
+
+iterator        = identifier, &quot;in&quot;, expression ;
+
+(* ---------- Semantic graph ---------- *)
+
+graph           = &quot;[Graph&quot;, identifier, &quot;]&quot;,
+                    { node | edge },
+                  &quot;[/Graph]&quot; ;
+
+(* node body admits xcfe / compute / tick: the AST has kind:&quot;xcfe&quot;
+   and kind:&quot;compute&quot; nodes, and every node may nest a tick. *)
+node            = &quot;[Node&quot;, identifier, &quot;]&quot;,
+                    { property | phase | opcode_call | tool_call
+                    | math | xcfe | compute | tick },
+                  &quot;[/Node]&quot; ;
+
+edge            = &quot;[Edge&quot;, identifier, &quot;-&gt;&quot;, identifier,
+                    [edge_condition], &quot;]&quot; ;
+
+edge_condition  = &quot;when&quot;, expression ;
+
+(* ---------- Opcodes (work, INSIDE a phase lane) ---------- *)
+
+opcode_call     = &quot;[Op&quot;, opcode, { argument }, &quot;]&quot; ;
+
+opcode          = semantic_opcode
+                | control_opcode
+                | matrix_opcode
+                | memory_opcode
+                | tool_opcode ;
+
+semantic_opcode = &quot;OBSERVE&quot; | &quot;REPRESENT&quot; | &quot;REASON&quot;
+                | &quot;DECIDE&quot; | &quot;REFLECT&quot; | &quot;EMIT&quot; ;
+
+control_opcode  = &quot;ROUTE&quot; | &quot;BRANCH&quot; | &quot;FORK&quot; | &quot;JOIN&quot; | &quot;LOOP&quot;
+                | &quot;REWARD&quot; | &quot;MUTATE&quot; | &quot;EVOLVE&quot; | &quot;VERIFY&quot; ;
+
+matrix_opcode   = &quot;MAT&quot; | &quot;MATMUL&quot; | &quot;FMA&quot; | &quot;SOFTMAX&quot; | &quot;REDUCE&quot;
+                | &quot;PROPAGATE&quot; | &quot;ATTENTION&quot; | &quot;GEMM&quot; ;
+
+memory_opcode   = &quot;LOAD&quot; | &quot;STORE&quot; | &quot;CACHE&quot; | &quot;RECALL&quot; | &quot;COMMIT&quot; ;
+
+tool_opcode     = &quot;CALL&quot; | &quot;DISPATCH&quot; ;
+
+(* ---------- XCFE (routes; does NOT redefine the phases) ------- *)
+
+xcfe            = &quot;[XCFE]&quot;, { xcfe_rule }, &quot;[/XCFE]&quot; ;
+
+xcfe_rule       = condition_rule | route_rule | reward_rule
+                | mutation_rule | capability_rule ;
+
+condition_rule  = &quot;@if&quot;, expression,
+                    { node | opcode_call | tool_call },
+                  [ &quot;@else&quot;, { node | opcode_call | tool_call } ] ;
+
+route_rule      = &quot;@route&quot;, expression, &quot;-&gt;&quot;, identifier ;
+reward_rule     = &quot;@reward&quot;, expression ;
+mutation_rule   = &quot;@mutate&quot;, identifier, [expression] ;
+capability_rule = &quot;@requires&quot;, capability ;
+
+(* ---------- Capability-aware tools ---------- *)
+
+tool_call       = &quot;[Call&quot;, tool_id, &quot;]&quot;, { argument }, &quot;[/Call]&quot; ;
+tool_id         = identifier, { &quot;.&quot;, identifier } ;
+
+(* GENERAL capability set — backends REGISTER; keep the contract
+   portable. Rig-truth (e.g. webgpu blocklisted on HD 4600) lives
+   in the AST `capabilities` instance data, not in the grammar. *)
+capability      = &quot;CPU&quot; | &quot;LLAMA&quot; | &quot;WGPU&quot; | &quot;WEBGPU&quot;
+                | &quot;D3D11&quot; | &quot;D3D12&quot; | &quot;HLSL&quot; | &quot;WGSL&quot;
+                | &quot;NUMPY&quot; | &quot;WGPU_PY&quot; | identifier ;
+
+(* ---------- Compute (lowers to a registered backend) --------- *)
+
+compute         = &quot;[Compute&quot;, backend, &quot;]&quot;,
+                    { buffer | opcode_call | dispatch },
+                  &quot;[/Compute]&quot; ;
+
+backend         = &quot;cpu&quot; | &quot;llama&quot; | &quot;webgpu&quot; | &quot;d3d11&quot; | identifier ;
+
+buffer          = &quot;[Buffer&quot;, identifier, &quot;:&quot;, tensor_type,
+                    tensor_shape, &quot;]&quot; ;
+
+dispatch        = &quot;[Dispatch&quot;, identifier, [workgroups], &quot;]&quot; ;
+workgroups      = integer, &quot;,&quot;, integer, &quot;,&quot;, integer ;
+
+tensor_type     = &quot;f32&quot; | &quot;f16&quot; | &quot;i32&quot; | &quot;u32&quot; | &quot;i8&quot; | &quot;u8&quot; | &quot;int4&quot; ;
+tensor_shape    = &quot;[&quot;, integer, { &quot;,&quot;, integer }, &quot;]&quot; ;
+
+(* ---------- MathML bridge ---------- *)
+
+math            = &quot;&lt;math&quot;, { xml_attribute }, &quot;&gt;&quot;, xml_content, &quot;&lt;/math&gt;&quot; ;
+xml_attribute   = identifier, &quot;=&quot;, string ;
+xml_content     = { character } ;
+
+(* ---------- Data ---------- *)
+
+argument        = identifier, &quot;=&quot;, expression ;
+property        = identifier, &quot;:&quot;, expression ;
+
+expression      = identifier | string | number | boolean
+                | array | object | reference ;
+
+reference       = &quot;@&quot;, identifier, { &quot;.&quot;, identifier } ;
+
+array           = &quot;[&quot;, [ expression, { &quot;,&quot;, expression } ], &quot;]&quot; ;
+object          = &quot;{&quot;, [ property, { &quot;,&quot;, property } ], &quot;}&quot; ;
+
+identifier      = letter, { letter | digit | &quot;_&quot; | &quot;-&quot; | &quot;.&quot; } ;
+integer         = digit, { digit } ;
+number          = [ &quot;-&quot; ], integer, [ &quot;.&quot;, integer ] ;
+boolean         = &quot;true&quot; | &quot;false&quot; ;
+string          = &#x27;&quot;&#x27;, { character }, &#x27;&quot;&#x27; ;
+character       = ? any Unicode character except an unescaped quote ? ;
+letter          = ? A-Z | a-z ? ;
+digit           = ? 0-9 ? ;
+</pre><div class="ex-bar">AST schema (JSON Schema 2020-12)</div><pre>{
+  &quot;$schema&quot;: &quot;https://json-schema.org/draft/2020-12/schema&quot;,
+  &quot;$id&quot;: &quot;https://khanary.dev/schema/kuhul-ast-v3.json&quot;,
+  &quot;title&quot;: &quot;K&#x27;UHUL-3D AST vNext (kuhul.ast.v3)&quot;,
+  &quot;description&quot;: &quot;The AST preserves the prompt/context; K&#x27;UHUL traverses it (phase lanes); XCFE routes legal graph moves; opcodes perform work; compute nodes lower to a registered backend. Pop/Wo/Yax/Sek/Ch&#x27;en/Xul are lanes, NOT opcodes. Every node may nest a tick (recursion).&quot;,
+  &quot;type&quot;: &quot;object&quot;,
+  &quot;required&quot;: [&quot;$schema&quot;, &quot;version&quot;, &quot;source&quot;, &quot;phases&quot;, &quot;nodes&quot;],
+  &quot;properties&quot;: {
+    &quot;$schema&quot;: { &quot;const&quot;: &quot;kuhul.ast.v3&quot; },
+    &quot;version&quot;: { &quot;type&quot;: &quot;string&quot; },
+    &quot;source&quot;: { &quot;$ref&quot;: &quot;#/$defs/Source&quot; },
+    &quot;context&quot;: { &quot;$ref&quot;: &quot;#/$defs/Context&quot; },
+    &quot;capabilities&quot;: { &quot;$ref&quot;: &quot;#/$defs/Capabilities&quot; },
+    &quot;tick&quot;: { &quot;$ref&quot;: &quot;#/$defs/TickMeta&quot; },
+    &quot;phases&quot;: { &quot;type&quot;: &quot;array&quot;, &quot;items&quot;: { &quot;$ref&quot;: &quot;#/$defs/PhaseGroup&quot; } },
+    &quot;nodes&quot;: {
+      &quot;type&quot;: &quot;object&quot;,
+      &quot;additionalProperties&quot;: { &quot;$ref&quot;: &quot;#/$defs/Node&quot; }
+    },
+    &quot;edges&quot;: { &quot;type&quot;: &quot;array&quot;, &quot;items&quot;: { &quot;$ref&quot;: &quot;#/$defs/Edge&quot; } },
+    &quot;xcfe&quot;: { &quot;$ref&quot;: &quot;#/$defs/Xcfe&quot; },
+    &quot;validation&quot;: { &quot;$ref&quot;: &quot;#/$defs/Validation&quot; }
+  },
+  &quot;additionalProperties&quot;: false,
+
+  &quot;$defs&quot;: {
+    &quot;PhaseName&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;enum&quot;: [&quot;Pop&quot;, &quot;Wo&quot;, &quot;Yax&quot;, &quot;Sek&quot;, &quot;Ch&#x27;en&quot;, &quot;Xul&quot;]
+    },
+    &quot;Capability&quot;: {
+      &quot;description&quot;: &quot;General, portable capability id — backends REGISTER these. Rig-truth is instance data, not a closed set.&quot;,
+      &quot;type&quot;: &quot;string&quot;
+    },
+
+    &quot;Source&quot;: {
+      &quot;type&quot;: &quot;object&quot;,
+      &quot;required&quot;: [&quot;type&quot;, &quot;raw&quot;],
+      &quot;properties&quot;: {
+        &quot;type&quot;: { &quot;type&quot;: &quot;string&quot; },
+        &quot;raw&quot;: { &quot;type&quot;: &quot;string&quot; },
+        &quot;preserve&quot;: { &quot;type&quot;: &quot;boolean&quot; }
+      },
+      &quot;additionalProperties&quot;: false
+    },
+
+    &quot;Context&quot;: {
+      &quot;type&quot;: &quot;object&quot;,
+      &quot;properties&quot;: {
+        &quot;tokens&quot;: { &quot;type&quot;: &quot;array&quot; },
+        &quot;ngrams&quot;: { &quot;type&quot;: &quot;array&quot; },
+        &quot;entities&quot;: { &quot;type&quot;: &quot;array&quot; },
+        &quot;math&quot;: { &quot;type&quot;: &quot;array&quot; },
+        &quot;history&quot;: { &quot;type&quot;: &quot;array&quot; },
+        &quot;attachments&quot;: { &quot;type&quot;: &quot;array&quot; },
+        &quot;capabilities&quot;: { &quot;type&quot;: &quot;array&quot; },
+        &quot;atoms&quot;: { &quot;type&quot;: &quot;array&quot;, &quot;items&quot;: { &quot;$ref&quot;: &quot;#/$defs/GlyphAtom&quot; } }
+      },
+      &quot;additionalProperties&quot;: false
+    },
+
+    &quot;GlyphAtom&quot;: {
+      &quot;description&quot;: &quot;K&#x27;UHUL Glyph Nativity: the glyph IS the token. SourceAtom &lt;-&gt; UnicodeSequence &lt;-&gt; LexicalToken &lt;-&gt; AST_GlyphAtom (rendering is a SEPARATE projection, not identity). Source notation is preserved; Unicode gives representation; the AST preserves semantic identity.&quot;,
+      &quot;type&quot;: &quot;object&quot;,
+      &quot;required&quot;: [&quot;kind&quot;, &quot;source&quot;, &quot;unicode&quot;, &quot;identity&quot;],
+      &quot;properties&quot;: {
+        &quot;kind&quot;: { &quot;const&quot;: &quot;glyph_atom&quot; },
+        &quot;source&quot;: { &quot;type&quot;: &quot;string&quot; },
+        &quot;unicode&quot;: {
+          &quot;type&quot;: &quot;object&quot;,
+          &quot;required&quot;: [&quot;codepoints&quot;],
+          &quot;properties&quot;: {
+            &quot;normalization&quot;: { &quot;type&quot;: &quot;string&quot;, &quot;enum&quot;: [&quot;NFC&quot;, &quot;NFD&quot;, &quot;NFKC&quot;, &quot;NFKD&quot;, &quot;none&quot;] },
+            &quot;codepoints&quot;: {
+              &quot;type&quot;: &quot;array&quot;,
+              &quot;items&quot;: { &quot;type&quot;: &quot;string&quot;, &quot;pattern&quot;: &quot;^U\\+[0-9A-Fa-f]{4,6}$&quot; }
+            }
+          },
+          &quot;additionalProperties&quot;: false
+        },
+        &quot;semantic&quot;: {
+          &quot;type&quot;: &quot;object&quot;,
+          &quot;properties&quot;: {
+            &quot;phase&quot;: { &quot;type&quot;: &quot;string&quot; },
+            &quot;class&quot;: { &quot;type&quot;: &quot;string&quot; },
+            &quot;opcode&quot;: { &quot;type&quot;: &quot;string&quot; }
+          },
+          &quot;additionalProperties&quot;: false
+        },
+        &quot;identity&quot;: {
+          &quot;type&quot;: &quot;object&quot;,
+          &quot;required&quot;: [&quot;canonical&quot;],
+          &quot;properties&quot;: {
+            &quot;canonical&quot;: { &quot;type&quot;: &quot;string&quot; },
+            &quot;preserve_source&quot;: { &quot;type&quot;: &quot;boolean&quot; }
+          },
+          &quot;additionalProperties&quot;: false
+        }
+      },
+      &quot;additionalProperties&quot;: false
+    },
+
+    &quot;Capabilities&quot;: {
+      &quot;description&quot;: &quot;capability id -&gt; available? (instance ground truth for this host/backend registry).&quot;,
+      &quot;type&quot;: &quot;object&quot;,
+      &quot;additionalProperties&quot;: { &quot;type&quot;: &quot;boolean&quot; }
+    },
+
+    &quot;TickMeta&quot;: {
+      &quot;type&quot;: &quot;object&quot;,
+      &quot;properties&quot;: {
+        &quot;id&quot;: { &quot;type&quot;: &quot;integer&quot; },
+        &quot;parent&quot;: { &quot;type&quot;: [&quot;integer&quot;, &quot;null&quot;] },
+        &quot;depth&quot;: { &quot;type&quot;: &quot;integer&quot;, &quot;minimum&quot;: 0 },
+        &quot;reward&quot;: { &quot;type&quot;: &quot;number&quot; },
+        &quot;state&quot;: { &quot;type&quot;: &quot;string&quot; }
+      },
+      &quot;additionalProperties&quot;: false
+    },
+
+    &quot;PhaseGroup&quot;: {
+      &quot;type&quot;: &quot;object&quot;,
+      &quot;required&quot;: [&quot;phase&quot;, &quot;nodes&quot;],
+      &quot;properties&quot;: {
+        &quot;phase&quot;: { &quot;$ref&quot;: &quot;#/$defs/PhaseName&quot; },
+        &quot;role&quot;: { &quot;type&quot;: &quot;string&quot; },
+        &quot;nodes&quot;: { &quot;type&quot;: &quot;array&quot;, &quot;items&quot;: { &quot;type&quot;: &quot;string&quot; } }
+      },
+      &quot;additionalProperties&quot;: false
+    },
+
+    &quot;StrOrArray&quot;: {
+      &quot;oneOf&quot;: [
+        { &quot;type&quot;: &quot;string&quot; },
+        { &quot;type&quot;: &quot;array&quot;, &quot;items&quot;: { &quot;type&quot;: &quot;string&quot; } }
+      ]
+    },
+
+    &quot;Node&quot;: {
+      &quot;type&quot;: &quot;object&quot;,
+      &quot;required&quot;: [&quot;kind&quot;, &quot;opcode&quot;],
+      &quot;properties&quot;: {
+        &quot;kind&quot;: {
+          &quot;type&quot;: &quot;string&quot;,
+          &quot;enum&quot;: [&quot;semantic&quot;, &quot;xcfe&quot;, &quot;compute&quot;, &quot;validation&quot;, &quot;memory&quot;, &quot;control&quot;]
+        },
+        &quot;opcode&quot;: { &quot;type&quot;: &quot;string&quot; },
+        &quot;role&quot;: { &quot;type&quot;: &quot;string&quot; },
+        &quot;input&quot;: { &quot;$ref&quot;: &quot;#/$defs/StrOrArray&quot; },
+        &quot;inputs&quot;: { &quot;$ref&quot;: &quot;#/$defs/StrOrArray&quot; },
+        &quot;output&quot;: { &quot;$ref&quot;: &quot;#/$defs/StrOrArray&quot; },
+        &quot;outputs&quot;: { &quot;$ref&quot;: &quot;#/$defs/StrOrArray&quot; },
+        &quot;requires&quot;: { &quot;type&quot;: &quot;array&quot;, &quot;items&quot;: { &quot;$ref&quot;: &quot;#/$defs/Capability&quot; } },
+        &quot;preferred&quot;: { &quot;type&quot;: &quot;array&quot;, &quot;items&quot;: { &quot;$ref&quot;: &quot;#/$defs/Capability&quot; } },
+        &quot;backend&quot;: {
+          &quot;description&quot;: &quot;A concrete registered backend, or the literal \&quot;resolved_at_runtime\&quot; (capability resolution picks among `preferred` that satisfy `requires`).&quot;,
+          &quot;type&quot;: &quot;string&quot;
+        },
+        &quot;kernel&quot;: { &quot;type&quot;: &quot;string&quot; },
+        &quot;reward&quot;: { &quot;$ref&quot;: &quot;#/$defs/Reward&quot; },
+        &quot;preserve&quot;: { &quot;type&quot;: &quot;boolean&quot; },
+        &quot;tick&quot;: { &quot;$ref&quot;: &quot;#/$defs/PhaseTick&quot; }
+      },
+      &quot;additionalProperties&quot;: false
+    },
+
+    &quot;Reward&quot;: {
+      &quot;type&quot;: &quot;object&quot;,
+      &quot;properties&quot;: {
+        &quot;metric&quot;: { &quot;type&quot;: &quot;string&quot; },
+        &quot;threshold&quot;: { &quot;type&quot;: &quot;number&quot; }
+      },
+      &quot;additionalProperties&quot;: false
+    },
+
+    &quot;PhaseTick&quot;: {
+      &quot;description&quot;: &quot;Per-node recursion: phase-lane -&gt; step. A step may carry an opcode and/or nest its own nodes + tick (thinking at every level).&quot;,
+      &quot;type&quot;: &quot;object&quot;,
+      &quot;propertyNames&quot;: { &quot;$ref&quot;: &quot;#/$defs/PhaseName&quot; },
+      &quot;additionalProperties&quot;: { &quot;$ref&quot;: &quot;#/$defs/PhaseStep&quot; }
+    },
+
+    &quot;PhaseStep&quot;: {
+      &quot;type&quot;: &quot;object&quot;,
+      &quot;properties&quot;: {
+        &quot;opcode&quot;: { &quot;type&quot;: &quot;string&quot; },
+        &quot;nodes&quot;: {
+          &quot;type&quot;: &quot;object&quot;,
+          &quot;additionalProperties&quot;: { &quot;$ref&quot;: &quot;#/$defs/Node&quot; }
+        },
+        &quot;tick&quot;: { &quot;$ref&quot;: &quot;#/$defs/PhaseTick&quot; }
+      },
+      &quot;additionalProperties&quot;: false
+    },
+
+    &quot;Edge&quot;: {
+      &quot;oneOf&quot;: [
+        {
+          &quot;type&quot;: &quot;array&quot;,
+          &quot;items&quot;: { &quot;type&quot;: &quot;string&quot; },
+          &quot;minItems&quot;: 2,
+          &quot;maxItems&quot;: 2
+        },
+        {
+          &quot;type&quot;: &quot;object&quot;,
+          &quot;required&quot;: [&quot;from&quot;, &quot;to&quot;],
+          &quot;properties&quot;: {
+            &quot;from&quot;: { &quot;type&quot;: &quot;string&quot; },
+            &quot;to&quot;: { &quot;type&quot;: &quot;string&quot; },
+            &quot;when&quot;: { &quot;type&quot;: &quot;string&quot; }
+          },
+          &quot;additionalProperties&quot;: false
+        }
+      ]
+    },
+
+    &quot;Xcfe&quot;: {
+      &quot;type&quot;: &quot;object&quot;,
+      &quot;properties&quot;: { &quot;route&quot;: { &quot;$ref&quot;: &quot;#/$defs/Route&quot; } },
+      &quot;additionalProperties&quot;: false
+    },
+
+    &quot;Route&quot;: {
+      &quot;type&quot;: &quot;object&quot;,
+      &quot;required&quot;: [&quot;candidates&quot;],
+      &quot;properties&quot;: {
+        &quot;candidates&quot;: { &quot;type&quot;: &quot;array&quot;, &quot;items&quot;: { &quot;$ref&quot;: &quot;#/$defs/RouteCandidate&quot; } },
+        &quot;policy&quot;: { &quot;type&quot;: &quot;string&quot; }
+      },
+      &quot;additionalProperties&quot;: false
+    },
+
+    &quot;RouteCandidate&quot;: {
+      &quot;type&quot;: &quot;object&quot;,
+      &quot;required&quot;: [&quot;backend&quot;],
+      &quot;properties&quot;: {
+        &quot;backend&quot;: { &quot;type&quot;: &quot;string&quot; },
+        &quot;requires&quot;: { &quot;type&quot;: &quot;array&quot;, &quot;items&quot;: { &quot;$ref&quot;: &quot;#/$defs/Capability&quot; } },
+        &quot;cost&quot;: { &quot;type&quot;: &quot;number&quot; }
+      },
+      &quot;additionalProperties&quot;: false
+    },
+
+    &quot;Gate&quot;: { &quot;type&quot;: &quot;string&quot;, &quot;enum&quot;: [&quot;pass&quot;, &quot;fail&quot;, &quot;skip&quot;] },
+
+    &quot;Validation&quot;: {
+      &quot;type&quot;: &quot;object&quot;,
+      &quot;properties&quot;: {
+        &quot;structure&quot;: { &quot;$ref&quot;: &quot;#/$defs/Gate&quot; },
+        &quot;semantics&quot;: { &quot;$ref&quot;: &quot;#/$defs/Gate&quot; },
+        &quot;xcfe&quot;: { &quot;$ref&quot;: &quot;#/$defs/Gate&quot; },
+        &quot;capabilities&quot;: { &quot;$ref&quot;: &quot;#/$defs/Gate&quot; },
+        &quot;compute&quot;: { &quot;$ref&quot;: &quot;#/$defs/Gate&quot; },
+        &quot;admitted&quot;: { &quot;type&quot;: &quot;boolean&quot; },
+        &quot;proof&quot;: {
+          &quot;type&quot;: &quot;object&quot;,
+          &quot;properties&quot;: {
+            &quot;tick&quot;: { &quot;type&quot;: &quot;integer&quot; },
+            &quot;route&quot;: { &quot;type&quot;: &quot;array&quot;, &quot;items&quot;: { &quot;type&quot;: &quot;string&quot; } }
+          },
+          &quot;additionalProperties&quot;: false
+        }
+      },
+      &quot;additionalProperties&quot;: false
+    }
+  }
+}
+</pre><div class="ex-bar">Example — attention + verify</div><pre>{
+  &quot;$schema&quot;: &quot;kuhul.ast.v3&quot;,
+  &quot;version&quot;: &quot;3.0.0&quot;,
+  &quot;source&quot;: {
+    &quot;type&quot;: &quot;prompt&quot;,
+    &quot;raw&quot;: &quot;Calculate attention and verify the result.&quot;,
+    &quot;preserve&quot;: true
+  },
+  &quot;context&quot;: {
+    &quot;tokens&quot;: [],
+    &quot;ngrams&quot;: [],
+    &quot;entities&quot;: [],
+    &quot;math&quot;: [],
+    &quot;history&quot;: [],
+    &quot;attachments&quot;: [],
+    &quot;capabilities&quot;: []
+  },
+  &quot;capabilities&quot;: {
+    &quot;cpu&quot;: true,
+    &quot;llama&quot;: true,
+    &quot;webgpu&quot;: true,
+    &quot;wgsl&quot;: true,
+    &quot;d3d11&quot;: true,
+    &quot;hlsl&quot;: true,
+    &quot;numpy&quot;: true,
+    &quot;wgpu_py&quot;: true
+  },
+  &quot;tick&quot;: {
+    &quot;id&quot;: 42,
+    &quot;parent&quot;: null,
+    &quot;depth&quot;: 0,
+    &quot;reward&quot;: 0.0,
+    &quot;state&quot;: &quot;active&quot;
+  },
+  &quot;phases&quot;: [
+    { &quot;phase&quot;: &quot;Pop&quot;,   &quot;role&quot;: &quot;perception&quot;,             &quot;nodes&quot;: [&quot;N0&quot;] },
+    { &quot;phase&quot;: &quot;Wo&quot;,    &quot;role&quot;: &quot;representation&quot;,          &quot;nodes&quot;: [&quot;N1&quot;] },
+    { &quot;phase&quot;: &quot;Yax&quot;,   &quot;role&quot;: &quot;branch&quot;,                  &quot;nodes&quot;: [&quot;N2&quot;] },
+    { &quot;phase&quot;: &quot;Sek&quot;,   &quot;role&quot;: &quot;execution&quot;,               &quot;nodes&quot;: [&quot;N3&quot;, &quot;N4&quot;] },
+    { &quot;phase&quot;: &quot;Ch&#x27;en&quot;, &quot;role&quot;: &quot;verification_evolution&quot;,  &quot;nodes&quot;: [&quot;N5&quot;] },
+    { &quot;phase&quot;: &quot;Xul&quot;,   &quot;role&quot;: &quot;commit&quot;,                  &quot;nodes&quot;: [&quot;N6&quot;] }
+  ],
+  &quot;nodes&quot;: {
+    &quot;N0&quot;: { &quot;kind&quot;: &quot;semantic&quot;,   &quot;opcode&quot;: &quot;OBSERVE&quot;,   &quot;input&quot;: [&quot;source.raw&quot;], &quot;output&quot;: [&quot;context&quot;] },
+    &quot;N1&quot;: { &quot;kind&quot;: &quot;semantic&quot;,   &quot;opcode&quot;: &quot;REPRESENT&quot;, &quot;input&quot;: [&quot;context&quot;],    &quot;output&quot;: [&quot;attention.graph&quot;] },
+    &quot;N2&quot;: { &quot;kind&quot;: &quot;xcfe&quot;,       &quot;opcode&quot;: &quot;ROUTE&quot;,     &quot;requires&quot;: [&quot;webgpu&quot;],  &quot;output&quot;: [&quot;N3&quot;] },
+    &quot;N3&quot;: { &quot;kind&quot;: &quot;compute&quot;,    &quot;opcode&quot;: &quot;MATMUL&quot;,    &quot;backend&quot;: &quot;webgpu&quot;, &quot;kernel&quot;: &quot;attention_qk&quot;, &quot;inputs&quot;: [&quot;Q&quot;, &quot;K&quot;], &quot;output&quot;: &quot;scores&quot; },
+    &quot;N4&quot;: { &quot;kind&quot;: &quot;compute&quot;,    &quot;opcode&quot;: &quot;SOFTMAX&quot;,   &quot;backend&quot;: &quot;webgpu&quot;, &quot;inputs&quot;: [&quot;scores&quot;], &quot;output&quot;: &quot;attention&quot; },
+    &quot;N5&quot;: { &quot;kind&quot;: &quot;validation&quot;, &quot;opcode&quot;: &quot;VERIFY&quot;,    &quot;input&quot;: [&quot;attention&quot;], &quot;reward&quot;: { &quot;metric&quot;: &quot;validity&quot;, &quot;threshold&quot;: 0.95 } },
+    &quot;N6&quot;: { &quot;kind&quot;: &quot;memory&quot;,     &quot;opcode&quot;: &quot;COMMIT&quot;,    &quot;input&quot;: [&quot;attention&quot;, &quot;context&quot;], &quot;preserve&quot;: true }
+  },
+  &quot;edges&quot;: [
+    [&quot;N0&quot;, &quot;N1&quot;],
+    [&quot;N1&quot;, &quot;N2&quot;],
+    [&quot;N2&quot;, &quot;N3&quot;],
+    [&quot;N3&quot;, &quot;N4&quot;],
+    [&quot;N4&quot;, &quot;N5&quot;],
+    [&quot;N5&quot;, &quot;N6&quot;]
+  ],
+  &quot;xcfe&quot;: {
+    &quot;route&quot;: {
+      &quot;candidates&quot;: [
+        { &quot;backend&quot;: &quot;cache&quot;,  &quot;requires&quot;: [&quot;memory&quot;], &quot;cost&quot;: 0.01 },
+        { &quot;backend&quot;: &quot;ngram&quot;,  &quot;requires&quot;: [&quot;gram&quot;],   &quot;cost&quot;: 0.05 },
+        { &quot;backend&quot;: &quot;llama&quot;,  &quot;requires&quot;: [&quot;llama&quot;],  &quot;cost&quot;: 0.40 },
+        { &quot;backend&quot;: &quot;webgpu&quot;, &quot;requires&quot;: [&quot;webgpu&quot;], &quot;cost&quot;: 0.25 },
+        { &quot;backend&quot;: &quot;d3d11&quot;,  &quot;requires&quot;: [&quot;d3d11&quot;],  &quot;cost&quot;: 0.20 }
+      ],
+      &quot;policy&quot;: &quot;semantic_best_legal_path&quot;
+    }
+  },
+  &quot;validation&quot;: {
+    &quot;structure&quot;: &quot;pass&quot;,
+    &quot;semantics&quot;: &quot;pass&quot;,
+    &quot;xcfe&quot;: &quot;pass&quot;,
+    &quot;capabilities&quot;: &quot;pass&quot;,
+    &quot;compute&quot;: &quot;pass&quot;,
+    &quot;admitted&quot;: true,
+    &quot;proof&quot;: {
+      &quot;tick&quot;: 42,
+      &quot;route&quot;: [&quot;Pop:N0&quot;, &quot;Wo:N1&quot;, &quot;Yax:N2&quot;, &quot;Sek:N3&quot;, &quot;Sek:N4&quot;, &quot;Ch&#x27;en:N5&quot;, &quot;Xul:N6&quot;]
+    }
+  }
+}
+</pre><div class="ex-bar">Example — recursion (a node&#x27;s own tick)</div><pre>{
+  &quot;$schema&quot;: &quot;kuhul.ast.v3&quot;,
+  &quot;version&quot;: &quot;3.0.0&quot;,
+  &quot;source&quot;: { &quot;type&quot;: &quot;prompt&quot;, &quot;raw&quot;: &quot;matmul, thought about at every level&quot;, &quot;preserve&quot;: true },
+  &quot;phases&quot;: [
+    { &quot;phase&quot;: &quot;Sek&quot;, &quot;role&quot;: &quot;execution&quot;, &quot;nodes&quot;: [&quot;N3&quot;] }
+  ],
+  &quot;nodes&quot;: {
+    &quot;N3&quot;: {
+      &quot;kind&quot;: &quot;compute&quot;,
+      &quot;opcode&quot;: &quot;MATMUL&quot;,
+      &quot;backend&quot;: &quot;d3d11&quot;,
+      &quot;inputs&quot;: [&quot;Q&quot;, &quot;K&quot;],
+      &quot;output&quot;: &quot;scores&quot;,
+      &quot;tick&quot;: {
+        &quot;Pop&quot;:   { &quot;opcode&quot;: &quot;LOAD&quot; },
+        &quot;Wo&quot;:    { &quot;opcode&quot;: &quot;BIND&quot; },
+        &quot;Yax&quot;:   { &quot;opcode&quot;: &quot;TILE&quot; },
+        &quot;Sek&quot;:   {
+          &quot;opcode&quot;: &quot;MATMUL&quot;,
+          &quot;nodes&quot;: {
+            &quot;N3a&quot;: {
+              &quot;kind&quot;: &quot;compute&quot;,
+              &quot;opcode&quot;: &quot;GEMM&quot;,
+              &quot;backend&quot;: &quot;d3d11&quot;,
+              &quot;tick&quot;: {
+                &quot;Sek&quot;: { &quot;opcode&quot;: &quot;FMA&quot; },
+                &quot;Xul&quot;: { &quot;opcode&quot;: &quot;COMMIT&quot; }
+              }
+            }
+          }
+        },
+        &quot;Ch&#x27;en&quot;: { &quot;opcode&quot;: &quot;VERIFY&quot; },
+        &quot;Xul&quot;:   { &quot;opcode&quot;: &quot;COMMIT&quot; }
+      }
+    }
+  }
+}
+</pre><div class="ex-bar">Example — glyph atom (nativity)</div><pre>{
+  &quot;$schema&quot;: &quot;kuhul.ast.v3&quot;,
+  &quot;version&quot;: &quot;3.0.0&quot;,
+  &quot;source&quot;: { &quot;type&quot;: &quot;prompt&quot;, &quot;raw&quot;: &quot;⟁Sek⟁&quot;, &quot;preserve&quot;: true },
+  &quot;context&quot;: {
+    &quot;atoms&quot;: [
+      {
+        &quot;kind&quot;: &quot;glyph_atom&quot;,
+        &quot;source&quot;: &quot;⟁Sek⟁&quot;,
+        &quot;unicode&quot;: {
+          &quot;normalization&quot;: &quot;NFC&quot;,
+          &quot;codepoints&quot;: [&quot;U+27C1&quot;, &quot;U+0053&quot;, &quot;U+0065&quot;, &quot;U+006B&quot;, &quot;U+27C1&quot;]
+        },
+        &quot;semantic&quot;: { &quot;phase&quot;: &quot;Sek&quot;, &quot;class&quot;: &quot;execution&quot;, &quot;opcode&quot;: &quot;EXECUTE&quot; },
+        &quot;identity&quot;: { &quot;canonical&quot;: &quot;kuhul.phase.sek&quot;, &quot;preserve_source&quot;: true }
+      }
+    ]
+  },
+  &quot;phases&quot;: [
+    { &quot;phase&quot;: &quot;Sek&quot;, &quot;role&quot;: &quot;execution&quot;, &quot;nodes&quot;: [&quot;N0&quot;] }
+  ],
+  &quot;nodes&quot;: {
+    &quot;N0&quot;: { &quot;kind&quot;: &quot;semantic&quot;, &quot;opcode&quot;: &quot;EMIT&quot;, &quot;input&quot;: [&quot;source.raw&quot;], &quot;output&quot;: [&quot;glyph_run&quot;] }
+  }
+}
+</pre><h2 class="sec">Try it</h2><div class="tryit"><textarea spellcheck="false">{
+  &quot;$schema&quot;: &quot;kuhul.ast.v3&quot;,
+  &quot;version&quot;: &quot;3.0.0&quot;,
+  &quot;source&quot;: {
+    &quot;type&quot;: &quot;prompt&quot;,
+    &quot;raw&quot;: &quot;Calculate attention and verify the result.&quot;,
+    &quot;preserve&quot;: true
+  },
+  &quot;context&quot;: {
+    &quot;tokens&quot;: [],
+    &quot;ngrams&quot;: [],
+    &quot;entities&quot;: [],
+    &quot;math&quot;: [],
+    &quot;history&quot;: [],
+    &quot;attachments&quot;: [],
+    &quot;capabilities&quot;: []
+  },
+  &quot;capabilities&quot;: {
+    &quot;cpu&quot;: true,
+    &quot;llama&quot;: true,
+    &quot;webgpu&quot;: true,
+    &quot;wgsl&quot;: true,
+    &quot;d3d11&quot;: true,
+    &quot;hlsl&quot;: true,
+    &quot;numpy&quot;: true,
+    &quot;wgpu_py&quot;: true
+  },
+  &quot;tick&quot;: {
+    &quot;id&quot;: 42,
+    &quot;parent&quot;: null,
+    &quot;depth&quot;: 0,
+    &quot;reward&quot;: 0.0,
+    &quot;state&quot;: &quot;active&quot;
+  },
+  &quot;phases&quot;: [
+    { &quot;phase&quot;: &quot;Pop&quot;,   &quot;role&quot;: &quot;perception&quot;,             &quot;nodes&quot;: [&quot;N0&quot;] },
+    { &quot;phase&quot;: &quot;Wo&quot;,    &quot;role&quot;: &quot;representation&quot;,          &quot;nodes&quot;: [&quot;N1&quot;] },
+    { &quot;phase&quot;: &quot;Yax&quot;,   &quot;role&quot;: &quot;branch&quot;,                  &quot;nodes&quot;: [&quot;N2&quot;] },
+    { &quot;phase&quot;: &quot;Sek&quot;,   &quot;role&quot;: &quot;execution&quot;,               &quot;nodes&quot;: [&quot;N3&quot;, &quot;N4&quot;] },
+    { &quot;phase&quot;: &quot;Ch&#x27;en&quot;, &quot;role&quot;: &quot;verification_evolution&quot;,  &quot;nodes&quot;: [&quot;N5&quot;] },
+    { &quot;phase&quot;: &quot;Xul&quot;,   &quot;role&quot;: &quot;commit&quot;,                  &quot;nodes&quot;: [&quot;N6&quot;] }
+  ],
+  &quot;nodes&quot;: {
+    &quot;N0&quot;: { &quot;kind&quot;: &quot;semantic&quot;,   &quot;opcode&quot;: &quot;OBSERVE&quot;,   &quot;input&quot;: [&quot;source.raw&quot;], &quot;output&quot;: [&quot;context&quot;] },
+    &quot;N1&quot;: { &quot;kind&quot;: &quot;semantic&quot;,   &quot;opcode&quot;: &quot;REPRESENT&quot;, &quot;input&quot;: [&quot;context&quot;],    &quot;output&quot;: [&quot;attention.graph&quot;] },
+    &quot;N2&quot;: { &quot;kind&quot;: &quot;xcfe&quot;,       &quot;opcode&quot;: &quot;ROUTE&quot;,     &quot;requires&quot;: [&quot;webgpu&quot;],  &quot;output&quot;: [&quot;N3&quot;] },
+    &quot;N3&quot;: { &quot;kind&quot;: &quot;compute&quot;,    &quot;opcode&quot;: &quot;MATMUL&quot;,    &quot;backend&quot;: &quot;webgpu&quot;, &quot;kernel&quot;: &quot;attention_qk&quot;, &quot;inputs&quot;: [&quot;Q&quot;, &quot;K&quot;], &quot;output&quot;: &quot;scores&quot; },
+    &quot;N4&quot;: { &quot;kind&quot;: &quot;compute&quot;,    &quot;opcode&quot;: &quot;SOFTMAX&quot;,   &quot;backend&quot;: &quot;webgpu&quot;, &quot;inputs&quot;: [&quot;scores&quot;], &quot;output&quot;: &quot;attention&quot; },
+    &quot;N5&quot;: { &quot;kind&quot;: &quot;validation&quot;, &quot;opcode&quot;: &quot;VERIFY&quot;,    &quot;input&quot;: [&quot;attention&quot;], &quot;reward&quot;: { &quot;metric&quot;: &quot;validity&quot;, &quot;threshold&quot;: 0.95 } },
+    &quot;N6&quot;: { &quot;kind&quot;: &quot;memory&quot;,     &quot;opcode&quot;: &quot;COMMIT&quot;,    &quot;input&quot;: [&quot;attention&quot;, &quot;context&quot;], &quot;preserve&quot;: true }
+  },
+  &quot;edges&quot;: [
+    [&quot;N0&quot;, &quot;N1&quot;],
+    [&quot;N1&quot;, &quot;N2&quot;],
+    [&quot;N2&quot;, &quot;N3&quot;],
+    [&quot;N3&quot;, &quot;N4&quot;],
+    [&quot;N4&quot;, &quot;N5&quot;],
+    [&quot;N5&quot;, &quot;N6&quot;]
+  ],
+  &quot;xcfe&quot;: {
+    &quot;route&quot;: {
+      &quot;candidates&quot;: [
+        { &quot;backend&quot;: &quot;cache&quot;,  &quot;requires&quot;: [&quot;memory&quot;], &quot;cost&quot;: 0.01 },
+        { &quot;backend&quot;: &quot;ngram&quot;,  &quot;requires&quot;: [&quot;gram&quot;],   &quot;cost&quot;: 0.05 },
+        { &quot;backend&quot;: &quot;llama&quot;,  &quot;requires&quot;: [&quot;llama&quot;],  &quot;cost&quot;: 0.40 },
+        { &quot;backend&quot;: &quot;webgpu&quot;, &quot;requires&quot;: [&quot;webgpu&quot;], &quot;cost&quot;: 0.25 },
+        { &quot;backend&quot;: &quot;d3d11&quot;,  &quot;requires&quot;: [&quot;d3d11&quot;],  &quot;cost&quot;: 0.20 }
+      ],
+      &quot;policy&quot;: &quot;semantic_best_legal_path&quot;
+    }
+  },
+  &quot;validation&quot;: {
+    &quot;structure&quot;: &quot;pass&quot;,
+    &quot;semantics&quot;: &quot;pass&quot;,
+    &quot;xcfe&quot;: &quot;pass&quot;,
+    &quot;capabilities&quot;: &quot;pass&quot;,
+    &quot;compute&quot;: &quot;pass&quot;,
+    &quot;admitted&quot;: true,
+    &quot;proof&quot;: {
+      &quot;tick&quot;: 42,
+      &quot;route&quot;: [&quot;Pop:N0&quot;, &quot;Wo:N1&quot;, &quot;Yax:N2&quot;, &quot;Sek:N3&quot;, &quot;Sek:N4&quot;, &quot;Ch&#x27;en:N5&quot;, &quot;Xul:N6&quot;]
+    }
+  }
+}
+</textarea></div><p class="tag">Edit above, then validate locally:</p><div class="validate">$ python tools/check_kuhul_ast_v3.py</div></main></div><footer>Generated from the grammar docs by <code>tools/build_grammar_pages.py</code> — the pages read the specs, they do not redefine them.</footer><script>function setTheme(t){document.documentElement.dataset.theme=t;try{localStorage.setItem('khTheme',t)}catch(e){}var s=document.getElementById('themeSel');if(s)s.value=t;}setTheme((function(){try{return localStorage.getItem('khTheme')}catch(e){}})()||'atomic');</script></body></html>

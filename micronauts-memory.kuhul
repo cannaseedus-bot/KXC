@@ -1,0 +1,196 @@
+[MetA SemanticMemory]
+  name: "Semantic Memory Program"
+  version: "1.0.0"
+  description: "Transforms semantic artifacts into usable working memory"
+
+  required_micronauts: [
+    "MEM-µ",
+    "REASON-µ",
+    "VERIFY-µ",
+    "PLAN-µ",
+    "NET-µ"
+  ]
+
+  persistence_level: "high"
+  conformance_version: "2.0.0"
+[MetX]
+
+[Pop SemanticMemory]
+  [Wo memory = {
+    role: "semantic_memory",
+    persistence: true,
+    executable: true,
+    mutable: true,
+    append_only_history: true
+  }]
+
+  [Wo workspace_authority = {
+    roots: input.workspace_folders,
+    selected_root: input.workspace_folder,
+    allow_file_write: input.allow_file_write,
+    allow_process_tools: input.enable_tools,
+    path_policy: "roots_only",
+    audit_writes: true
+  }]
+
+  [Wo mixture = {
+    MEM-µ:    0.40,
+    REASON-µ: 0.20,
+    VERIFY-µ: 0.20,
+    PLAN-µ:   0.10,
+    NET-µ:    0.10
+  }]
+
+  [Wo admission = {
+    minimum_confidence: 0.55,
+    canonical_confidence: 0.85,
+    preserve_corrections: true,
+    preserve_provenance: true,
+    allow_refold: true,
+    confidence_drives_routing: true,
+    model_role: "intent_and_arguments_only",
+    route_authority: "semantic_cube_micronauts"
+  }]
+
+  [Wo semantic_cube = {
+    router: "programs/semantic_cube.tool-router.json",
+    correction_manifest: "micronauts/semantic/tool-routing-corrections.manifest.json",
+    confidence_signals: [
+      "explicit_user_verb",
+      "approved_folder_match",
+      "tool_history_success",
+      "phase_compatibility",
+      "chen_verification"
+    ],
+    route_owners: {
+      "tool://coder": "code-micronaut",
+      "think://reason": "REASON-µ",
+      "tool://verb": "AtomicDOM",
+      "openai://completions": "model_adapter",
+      "lmstudio://tools": "lmstudio_adapter",
+      "micronaut://factory": "micronaut_factory",
+      "micronaut://evolution": "evolution_micronaut",
+      "expert://semantic-cube-shader": "semantic_cube_shader_expert"
+    },
+    escalation: "mayan://orchestrate -> micronaut://factory|micronaut://evolution|expert://semantic-cube-shader"
+  }]
+
+  [Wo state = {
+    subject: input.subject,
+    query: input.query,
+    notation: [],
+    notes: [],
+    evidence: [],
+    relations: [],
+    contradictions: [],
+    corrections: [],
+    related_micronauts: []
+  }]
+
+  [Yax state.subject]
+    [Sek MEM-µ retrieve_notation state.subject -> notation]
+    [Sek MEM-µ retrieve_notes state.subject -> notes]
+    [Sek MEM-µ retrieve_related state.subject -> related_micronauts]
+
+  [Yax workspace_authority.allow_file_write == true]
+    [Sek MEM-µ record_permission workspace_authority -> permission_event]
+
+  [Yax notation]
+    [Sek expand_notation notation -> semantic_terms]
+    [Sek merge semantic_terms state -> state]
+
+  [Yax notes]
+    [Sek classify notes -> classified_notes]
+    [Sek score_confidence classified_notes -> scored_notes]
+
+  [Yax input.query]
+    [Sek semantic_cube classify_route {
+      query: state.query,
+      workspace: workspace_authority,
+      history: memory.append_only_history
+    } -> route_decision]
+    [Sek MEM-µ record_route route_decision -> route_event]
+
+  [Yax route_decision.confidence < admission.minimum_confidence]
+    [Sek PLAN-µ request_clarification route_decision -> clarification]
+
+  [Yax route_decision.confidence >= admission.minimum_confidence]
+    [Sek semantic_cube select_owner route_decision -> route_owner]
+
+  [Yax route_decision.route in ["micronaut://factory", "micronaut://evolution", "expert://semantic-cube-shader"]]
+    [Sek VERIFY-µ require_escalation route_decision -> escalation_check]
+
+  [Yax scored_notes]
+    [Sek REASON-µ resolve_relations scored_notes -> relations]
+    [Sek REASON-µ detect_contradictions scored_notes -> contradictions]
+
+  [Yax contradictions.count > 0]
+    [Sek VERIFY-µ compare contradictions -> verification]
+
+    [Yax verification.correctable == true]
+      [Sek derive_correction verification -> correction]
+      [Sek MEM-µ write_correction correction -> corrections]
+
+  [Yax relations]
+    [Sek VERIFY-µ verify relations -> verified_relations]
+
+  [Yax verified_relations.confidence >= admission.minimum_confidence]
+    [Sek MEM-µ admit verified_relations -> working_memory]
+
+  [Yax verified_relations.confidence >= admission.canonical_confidence]
+    [Sek MEM-µ promote verified_relations -> canonical_memory]
+
+  [Yax state.query]
+    [Sek REASON-µ apply working_memory state.query -> memory_context]
+
+  [Ch'en {
+    subject: state.subject,
+    context: memory_context,
+    notation: notation,
+    relations: verified_relations,
+    contradictions: contradictions,
+    corrections: corrections,
+    related_micronauts: related_micronauts,
+    route_decision: route_decision,
+    route_owner: route_owner,
+    escalation_check: escalation_check
+  }]
+
+  [Yax route_decision.confidence >= admission.canonical_confidence]
+    [Sek MEM-µ promote_route route_decision -> canonical_route]
+
+  [Yax route_decision.corrected == true]
+    [Sek MEM-µ write_correction {
+      type: "TOOL_ROUTE_CORRECTION",
+      route: route_decision,
+      verified_by: "VERIFY-µ",
+      phase: "Ch'en"
+    } -> corrections]
+
+  [Yax memory_context.improvement_detected == true]
+    [Sek PLAN-µ derive_improvement memory_context -> improvement]
+    [Sek MEM-µ write_note {
+      subject: state.subject,
+      type: "improvement",
+      content: improvement,
+      confidence: memory_context.confidence
+    }]
+
+  [Yax memory_context.research_needed == true]
+    [Sek NET-µ research state.subject -> research]
+
+    [Yax research.confidence >= admission.minimum_confidence]
+      [Sek MEM-µ write_note {
+        subject: state.subject,
+        type: "research",
+        content: research,
+        confidence: research.confidence
+      }]
+
+  [Xul memory_context.complete == true]
+    [Yax true]
+      [Sek collapse SemanticMemory]
+
+    [Yax false]
+      [Sek fold SemanticMemory]
+[Xul]
