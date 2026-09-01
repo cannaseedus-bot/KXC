@@ -89,11 +89,11 @@ DMLOperatorDesc DirectMLLowering::BuildDMLDesc(IRNode* node) {
         desc.type = DMLOperatorDesc::Type::Conv2D;
         auto& params = desc.specific_params.emplace<DMLOperatorDesc::Conv2DParams>();
         
-        if (auto strides = node->get_attribute<std::vector<Value>>("strides")) {
-            params.strides = ExtractSizeVector(*strides);
+        if (auto strides = node->get_attribute<std::shared_ptr<ValueList>>("strides")) {
+            params.strides = ExtractSizeVector((*strides)->items);
         }
-        if (auto dilations = node->get_attribute<std::vector<Value>>("dilations")) {
-            params.dilations = ExtractSizeVector(*dilations);
+        if (auto dilations = node->get_attribute<std::shared_ptr<ValueList>>("dilations")) {
+            params.dilations = ExtractSizeVector((*dilations)->items);
         }
         if (auto groups = node->get_attribute<int64_t>("groups")) {
             params.groups = *groups;
@@ -130,19 +130,20 @@ DMLOperatorDesc DirectMLLowering::BuildDMLDesc(IRNode* node) {
         
     } else if (node->op_code == "constant") {
         desc.type = DMLOperatorDesc::Type::Constant;
-        if (auto value = node->get_attribute<Value>("value")) {
-            desc.parameters["value"] = *value;
+        {
+            auto it = node->attrs.find("value");
+            if (it != node->attrs.end()) desc.parameters["value"] = it->second;
         }
         
     } else if (node->op_code == "pooling") {
         desc.type = DMLOperatorDesc::Type::Pooling;
         auto& params = desc.specific_params.emplace<DMLOperatorDesc::PoolingParams>();
         
-        if (auto kernel = node->get_attribute<std::vector<Value>>("kernel_size")) {
-            params.kernel_size = ExtractSizeVector(*kernel);
+        if (auto kernel = node->get_attribute<std::shared_ptr<ValueList>>("kernel_size")) {
+            params.kernel_size = ExtractSizeVector((*kernel)->items);
         }
-        if (auto strides = node->get_attribute<std::vector<Value>>("strides")) {
-            params.strides = ExtractSizeVector(*strides);
+        if (auto strides = node->get_attribute<std::shared_ptr<ValueList>>("strides")) {
+            params.strides = ExtractSizeVector((*strides)->items);
         }
         if (auto mode = node->get_attribute<std::string>("mode")) {
             params.mode = (*mode == "max") ? 
@@ -301,7 +302,8 @@ IDMLCompiledOperator* DirectMLLowering::BuildExecutionPlan(
     const std::vector<IRNode*>& sorted_nodes,
     const std::unordered_map<IRNode*, IDMLCompiledOperator*>& node_to_dml,
     const std::unordered_map<IRNode*, ID3D12Resource*>& node_to_resource) {
-    
+    (void)node_to_dml;
+    (void)node_to_resource;
     LogInfo("Building execution plan for " + std::to_string(sorted_nodes.size()) + " nodes");
     
     // Stub - would create command list and binding tables

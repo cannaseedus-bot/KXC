@@ -40,18 +40,29 @@ enum class ValueType : uint8_t {
     Error
 };
 
+// Forward-declare recursive containers so shared_ptr breaks the variant circularity.
+struct ValueList;
+struct ValueMap;
+
 // ===== Base Value Variant =====
 using Value = std::variant<
-    int64_t,                      // Int
-    double,                       // Float
-    bool,                         // Bool
-    std::string,                  // String
-    std::vector<Value>,          // List
-    std::unordered_map<std::string, Value>, // Map
-    IRNode*,                      // NodeRef
-    IRFunction*,                  // CallRef
-    std::monostate                // Void/Error
+    int64_t,                              // Int
+    double,                               // Float
+    bool,                                 // Bool
+    std::string,                          // String
+    std::shared_ptr<ValueList>,           // List  (recursive via shared_ptr)
+    std::shared_ptr<ValueMap>,            // Map   (recursive via shared_ptr)
+    IRNode*,                              // NodeRef
+    IRFunction*,                          // CallRef
+    std::monostate                        // Void/Error
 >;
+
+struct ValueList { std::vector<Value> items; };
+struct ValueMap  { std::unordered_map<std::string, Value> items; };
+
+inline std::shared_ptr<ValueList> make_value_list(std::initializer_list<Value> items) {
+    return std::make_shared<ValueList>(ValueList{std::vector<Value>(items)});
+}
 
 // ===== Tensor Type =====
 struct TensorType {
@@ -163,6 +174,13 @@ struct IREdge {
 
 // ===== IR Block (Graph scope) =====
 struct IRBlock {
+    // unique_ptr members make copy ill-formed; declare move-only explicitly.
+    IRBlock() = default;
+    IRBlock(IRBlock&&) = default;
+    IRBlock& operator=(IRBlock&&) = default;
+    IRBlock(const IRBlock&) = delete;
+    IRBlock& operator=(const IRBlock&) = delete;
+
     std::string name;
     IRNode* entry_node = nullptr;                 // Block root
     std::vector<std::unique_ptr<IRNode>> nodes;   // Owned nodes
@@ -197,6 +215,12 @@ struct IRBlock {
 
 // ===== Function Definition =====
 struct IRFunction {
+    IRFunction() = default;
+    IRFunction(IRFunction&&) = default;
+    IRFunction& operator=(IRFunction&&) = default;
+    IRFunction(const IRFunction&) = delete;
+    IRFunction& operator=(const IRFunction&) = delete;
+
     std::string name;
     std::vector<std::string> params;              // Parameter names
     std::vector<ValueType> param_types;           // Parameter types
@@ -209,8 +233,8 @@ struct IRFunction {
     bool is_inline = false;
     
     // Methods
-    void add_parameter(const std::string& name, ValueType type) {
-        params.push_back(name);
+    void add_parameter(const std::string& param_name, ValueType type) {
+        params.push_back(param_name);
         param_types.push_back(type);
     }
 };
@@ -241,9 +265,9 @@ struct IRProgram {
     std::unordered_map<std::string, ValueType> global_types;
     
     // Methods
-    IRFunction* get_function(const std::string& name) {
+    IRFunction* get_function(const std::string& func_name) {
         for (auto& func : functions) {
-            if (func.name == name) return &func;
+            if (func.name == func_name) return &func;
         }
         return nullptr;
     }

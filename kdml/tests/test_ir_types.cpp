@@ -20,13 +20,13 @@ int main() {
     Value v_float = 3.14159;
     Value v_bool = true;
     Value v_string = std::string("hello");
-    Value v_list = std::vector<Value>{int64_t(1), int64_t(2), int64_t(3)};
-    
+    Value v_list = make_value_list({int64_t(1), int64_t(2), int64_t(3)});
+
     assert(std::holds_alternative<int64_t>(v_int));
     assert(std::holds_alternative<double>(v_float));
     assert(std::holds_alternative<bool>(v_bool));
     assert(std::holds_alternative<std::string>(v_string));
-    assert(std::holds_alternative<std::vector<Value>>(v_list));
+    assert(std::holds_alternative<std::shared_ptr<ValueList>>(v_list));
     
     std::cout << "  ✓ All value types created successfully" << std::endl;
     std::cout << std::endl;
@@ -59,7 +59,7 @@ int main() {
     node->output_tensor_shape = tensor;
     node->is_pure = true;
     
-    node->set_attribute("strides", std::vector<Value>{int64_t(2), int64_t(2)});
+    node->set_attribute("strides", make_value_list({int64_t(2), int64_t(2)}));
     node->set_attribute("groups", int64_t(1));
     
     assert(node->has_attribute("strides"));

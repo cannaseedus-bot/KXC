@@ -31,9 +31,9 @@ IRProgram BuildExampleProgram() {
     conv_node->id = "@conv";
     conv_node->op_code = "conv2d";
     conv_node->source_loc = {"example.kuhul", 4, 8, "my_conv"};
-    conv_node->set_attribute("strides", std::vector<Value>{int64_t(2), int64_t(2)});
-    conv_node->set_attribute("dilations", std::vector<Value>{int64_t(1), int64_t(1)});
-    conv_node->set_attribute("pads", std::vector<Value>{int64_t(1), int64_t(1)});
+    conv_node->set_attribute("strides",   make_value_list({int64_t(2), int64_t(2)}));
+    conv_node->set_attribute("dilations", make_value_list({int64_t(1), int64_t(1)}));
+    conv_node->set_attribute("pads",      make_value_list({int64_t(1), int64_t(1)}));
     conv_node->set_attribute("groups", int64_t(1));
     conv_node->set_attribute("use_bias", true);
     conv_node->output_type = ValueType::Float;
@@ -60,8 +60,8 @@ IRProgram BuildExampleProgram() {
     pool_node->id = "@pool";
     pool_node->op_code = "pooling";
     pool_node->source_loc = {"example.kuhul", 16, 8, "my_conv"};
-    pool_node->set_attribute("kernel_size", std::vector<Value>{int64_t(2), int64_t(2)});
-    pool_node->set_attribute("strides", std::vector<Value>{int64_t(2), int64_t(2)});
+    pool_node->set_attribute("kernel_size", make_value_list({int64_t(2), int64_t(2)}));
+    pool_node->set_attribute("strides",     make_value_list({int64_t(2), int64_t(2)}));
     pool_node->set_attribute("mode", std::string("max"));
     pool_node->output_type = ValueType::Float;
     pool_node->output_tensor_shape.shape = {1, 32, 56, 56};
@@ -197,7 +197,7 @@ int main() {
     graph.output = fn.return_node;
     
     // Lower the graph
-    auto* compiled_graph = lowering->LowerGraph(&graph);
+    [[maybe_unused]] auto* compiled_graph = lowering->LowerGraph(&graph);
     std::cout << "   ✓ Lowering complete!" << std::endl;
     
     // 5. Output summary
