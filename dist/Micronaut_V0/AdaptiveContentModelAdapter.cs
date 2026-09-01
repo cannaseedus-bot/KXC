@@ -403,6 +403,43 @@ namespace Micronaut.Streaming.Adapter
             return pending.Count;
         }
 
+        // Canonical fold sequence — phase order Pop(0) → Xul(5π/3).
+        // Embeddings first, lm_head last; attention and FFN in the middle.
+        public static readonly string[] FoldSequence =
+            { "Pop", "Wo", "Yax", "Sek", "Chen", "Xul" };
+
+        // Train every fold in phase order, one fold at a time.
+        // Skips folds with no pending shards (already trained or no tensors in that lane).
+        // progress callback receives (fold, pendingCount) before each fold step.
+        public static async Task<int> TrainAllFoldsAsync(
+            string toolchainDir, XShardSession session,
+            string xshardPath,
+            float learningRate = 1e-4f,
+            Action<string, int> progress = null,
+            CancellationToken ct = default)
+        {
+            int totalTrained = 0;
+
+            foreach (var fold in FoldSequence)
+            {
+                ct.ThrowIfCancellationRequested();
+
+                var pending = QueryShardInfo(toolchainDir, xshardPath, fold)
+                              .FindAll(s => s.State == "pending");
+
+                if (pending.Count == 0) continue;
+
+                progress?.Invoke(fold, pending.Count);
+
+                int trained = await TrainFoldStepAsync(
+                    toolchainDir, session, xshardPath, fold, learningRate, ct);
+
+                totalTrained += trained;
+            }
+
+            return totalTrained;
+        }
+
         // Low-level: run an EXE with args, return stdout. Throws on non-zero exit.
         private static string RunExe(string exePath, string args)
         {
