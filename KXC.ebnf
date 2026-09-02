@@ -185,6 +185,48 @@ khlc-val    = "css-c" | "wgsl" | "hlsl" | "node" | "sw.js" | "html"
  *   Same targets as kxc's --emit flag, but driven through the CSS-C pipeline.
  *)
 
+(* ── CSS is already a cascading math engine — nothing invented ──────────────── *)
+(*
+ * CSS-C is a bridge, not an invention.  The structural equivalences between CSS
+ * and the khanary fold/SHM/dispatch system were already present in both languages.
+ * CSS-C makes those equivalences explicit and lets each reader parse its own half:
+ * kxc reads [brackets], klslc reads $declarations, the browser reads CSS.
+ *
+ * CSS already provides:
+ *   calc() min() max() clamp()     — arithmetic over the full property space
+ *   --custom-property              — typed variable/state system that cascades
+ *   the cascade itself             — weighted priority resolution = constraint solver
+ *   @layer ordering                — explicitly named priority stacks
+ *   !important                     — inverts the cascade (second pass, reversed)
+ *   @keyframes + timing-function   — time-series state machine with bezier math
+ *   :has() / container queries     — relational graph queries over the DOM tree
+ *   CSS Grid                       — linear constraint solver (solves equations)
+ *   inherit / revert / initial     — dataflow propagation and state reset
+ *   color-mix() oklch()            — color-space matrix transforms
+ *
+ * Structural identity with the khanary fold system:
+ *
+ *   CSS                           | Khanary
+ *   ------------------------------|----------------------------------------
+ *   @layer ordering               | fold phase order (Pop=0 → Xul=5π/3)
+ *   !important (reverse cascade)  | backward pass — gradient overrides fwd
+ *   --custom-property             | SHM lane (persists, cascades down tree)
+ *   inherit                       | tensor broadcast down K-CUBE face
+ *   revert                        | pop to previous fold state
+ *   initial                       | reset weight to base checkpoint
+ *   specificity score             | [Sek] flag priority in classify()
+ *   cascade resolution            | lower.cpp classify() — first match wins
+ *   @keyframes Pop↔Xul            | phase oscillation π/3 per step
+ *   !important (low-spec wins)    | xshard_backward: error signal overrides
+ *
+ * @layer IS explicit fold ordering.
+ * !important IS the backward pass — two cascades running simultaneously,
+ *   one forward (normal declarations = forward fold), one reverse
+ *   (!important declarations = gradient / xshard_backward).
+ * The cascade IS classify().  The selector IS the kernel class.
+ * The custom property IS the [Sek] flag.  The layer stack IS the fold stack.
+ *)
+
 (* ── Skipped lines ─────────────────────────────────────────────────────────── *)
 (*
  * Three forms are silently skipped:
