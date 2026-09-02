@@ -72,6 +72,119 @@ sek-property = "needsSoftmax"       | "needsMatMul"      | "needsDecompress"
              | "needsGradClip"     | "needsShmRead"      | "needsValueClamp"
              | identifier ;         (* unknown properties silently accepted *)
 
+(* ── Capability header declarations ($-prefixed) ───────────────────────────── *)
+(*
+ * $-declarations annotate the host, runtime, API surface, sandbox, training
+ * pipeline, chat mode, and KHLC output target for a .kuhul file.
+ *
+ * They appear BEFORE or ALONGSIDE the kernel bracket block.  Because they
+ * contain no "[" character, kxc's parse_kuhul() silently skips them — they
+ * match the no-bracket-line / skipped-line rule below.
+ *
+ * They are normative for klslc (the KHLC / CSS-C compiler) and for
+ * kuhul-server routing decisions; they are NOT parsed by kxc.
+ *
+ * Syntax:  "$" cap-key "=" cap-value line-end
+ * Example:
+ *   $Host    = PRIMEOS
+ *   $Runtime = D3D11
+ *   $KHLC    = psm1
+ *)
+
+cap-decl    = "$" , cap-key , ws , "=" , ws , cap-value , line-end ;
+
+cap-key     = "Host" | "Runtime" | "API" | "Sandbox" | "Trainer" | "Chat" | "KHLC" ;
+
+cap-value   = host-val | runtime-val | api-val | sandbox-val
+            | trainer-val | chat-val | khlc-val
+            | token ;                    (* unknown values silently accepted by klslc *)
+
+host-val    = "PRIMEOS" | "Windows" | "Node" | "Browser" | "PowerShell" ;
+(*
+ * $Host = PRIMEOS      — K'UHUL shell / GHOST Emerald glassmorphic surface
+ * $Host = PowerShell   — .psm1 module output (chat UI, BOSS, SHM bridge)
+ * $Host = Node         — Node.js process (kuhul-server, WebX service mesh)
+ * $Host = Browser      — sw.js / PWA runtime (WebGPU, IndexedDB)
+ * $Host = Windows      — bare Win32 / DML / D3D11 surface (default)
+ *)
+
+runtime-val = "DML" | "D3D11" | "D3D12" | "WGSL" | "CPU" | "OpenCL" ;
+(*
+ * $Runtime = DML    — DirectML (Intel HD 4600 primary path)
+ * $Runtime = D3D11  — D3D11 compute (XCFE executor default)
+ * $Runtime = D3D12  — D3D12 compute (MoE / mesh kernels)
+ * $Runtime = WGSL   — WebGPU shading language (Browser host)
+ * $Runtime = CPU    — scalar CPU fallback
+ * $Runtime = OpenCL — OpenCL fallback (legacy)
+ *)
+
+api-val     = "MCP" | "REST" | "kuhul-server" | "WebX" ;
+(*
+ * $API = MCP           — Model Context Protocol (10 tools, port 17474)
+ * $API = REST          — raw REST surface (ports 8787/8090/9080/7430/8764)
+ * $API = kuhul-server  — kuhul-server MCP gateway (default)
+ * $API = WebX          — WebX server (browser-facing REST + WS)
+ *)
+
+sandbox-val = "kast" | "driver-only" | "scxq2" ;
+(*
+ * $Sandbox = kast        — KAST admission surface (Ed25519-signed dispatch)
+ * $Sandbox = driver-only — driver-only KAST; toDriverOnly gate enforced
+ * $Sandbox = scxq2       — SCXQ2 executor context (XCFE, mode bits)
+ *)
+
+trainer-val = "xshard_adapt" | "xshard_backward" | "fold" ;
+(*
+ * $Trainer = xshard_adapt    — Adam weight update via xshard_adapt.exe
+ * $Trainer = xshard_backward — gradient production via xshard_backward.exe
+ * $Trainer = fold            — DDS/SCXQDDS fold/tile GPU training loop
+ *)
+
+chat-val    = "completion" | "tool" | "stream" ;
+(*
+ * $Chat = completion — single-turn completion (kuhul-server /v1/completions)
+ * $Chat = tool       — tool-call mode (MCP tool_call micronaut)
+ * $Chat = stream     — streaming SSE output
+ *)
+
+khlc-val    = "css-c" | "wgsl" | "hlsl" | "node" | "sw.js" | "html"
+            | "psm1" | "markup" | "animation" | "projection" ;
+(*
+ * KHLC = K'UHUL Shader Language + CSS-C bridge.
+ * CSS-C is the bridge from KLSL compute kernels to browser/host surfaces.
+ *
+ * $KHLC = psm1
+ *   klslc emits a PowerShell module (.psm1) — the CSS-C bridge to the
+ *   PowerShell chat surface (see micronaut-v4/Chat/Chat.psm1).
+ *   Exported functions: Invoke-KuhulCompletion, Send-FoldMessage, Watch-Stream.
+ *   Used by PRIMEOS shell, BOSS PS1 apps, and the kuhul-runtime.psm1 layer.
+ *
+ * $KHLC = node
+ *   CSS-C bridge target: Node.js module (kuhul-server, WebX, MCP gateway).
+ *
+ * $KHLC = sw.js
+ *   CSS-C bridge target: Service Worker (PWA, Browser host, IndexedDB cache).
+ *
+ * $KHLC = html | markup
+ *   CSS-C emits HTML markup with embedded KLSL compute dispatches.
+ *   Markup is HTML; CSS-C can produce layout, components, and glyph surfaces.
+ *
+ * $KHLC = animation
+ *   CSS-C geometric output: animated glyph rendering via DirectWrite / WebGPU.
+ *   Driven by K-CUBE SH projection (Pop↔Xul phase oscillation, π/3 steps).
+ *
+ * $KHLC = projection
+ *   CSS-C geometric output: K-CUBE SH projection → dominant_micronaut routing.
+ *   6-face tensor [6,1024,1024,4]; face angles Pop=0, Wo=π/3, Yax=2π/3, …
+ *
+ * $KHLC = css-c
+ *   Raw CSS-C pass-through; klslc chooses output format from $Host.
+ *
+ * $KHLC = wgsl | hlsl
+ *   Low-level shader output (WGSL for Browser/WebGPU, HLSL for D3D11/DML).
+ *   Same targets as kxc's --emit flag, but driven through the CSS-C pipeline.
+ *)
+
 (* ── Skipped lines ─────────────────────────────────────────────────────────── *)
 (*
  * Three forms are silently skipped:
@@ -131,6 +244,24 @@ line-end         = [ "\r" ] , "\n" | ? end of file ? ;
  *   [Xul]
  *)
 
+(* ── Minimal file with capability declarations ──────────────────────────────── *)
+(*
+ * $-declarations are silently skipped by kxc (no "[") but consumed by klslc.
+ *
+ *   $Host    = PRIMEOS
+ *   $Runtime = D3D11
+ *   $Trainer = xshard_adapt
+ *   $KHLC    = psm1
+ *   [Pop adam_kernel]
+ *     [Muwan dispatch 64 1 1]
+ *     [Sek needsAdam true]
+ *   [Xul]
+ *
+ * klslc reads the four $-lines, routes the kernel to xshard_adapt, and
+ * emits Chat.psm1 (PowerShell chat UI module) for the PRIMEOS host.
+ * kxc sees only the bracket block and classifies kernelClass=adam_optimizer.
+ *)
+
 (* ── Full-form K'UHUL (non-normative for kxc) ──────────────────────────────── *)
 (*
  * The files in drivers/klsl/ (e.g. adam.kuhul, cssc_gemm.kuhul) use an extended
@@ -149,4 +280,20 @@ line-end         = [ "\r" ] , "\n" | ? end of file ? ;
  * it does not recognise (e.g. [Wo …] → "unsupported syntax 'Wo'").
  * The kxc-compilable "descriptor stub" in versions/kxc-v1.0.0/drivers/klsl/
  * uses only Pop/Muwan/Sek/Xul with bool property flags.
+ *
+ * $-capability declarations (defined in the cap-decl rule above) also appear in
+ * full-form .kuhul files.  kxc silently skips them (no "[").  klslc / KHLC reads
+ * them to determine:
+ *   — $Host     → which shell/runtime receives the compiled output
+ *   — $Runtime  → which GPU/CPU backend to target
+ *   — $API      → which service mesh the kernel is registered on
+ *   — $Sandbox  → KAST / driver-only / SCXQ2 admission gate
+ *   — $Trainer  → which xshard exe drives the training fold
+ *   — $Chat     → completion / tool / stream output mode
+ *   — $KHLC     → CSS-C output target (psm1, node, sw.js, html, animation, …)
+ *
+ * The CSS-C bridge ($KHLC) is what gives .kuhul files reach into Node.js,
+ * sw.js, HTML markup, graphics, animation, and PowerShell chat UI — markup is
+ * HTML, so CSS-C provides layout, projection, and glyph rendering on the same
+ * D3D11 / DirectWrite hardware lineage used by kuhul inference.
  *)
