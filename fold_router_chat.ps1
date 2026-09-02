@@ -53,14 +53,55 @@ $script:ModelLabels = @{
     Qwen      = "Qwen 0.5B"
 }
 
-# Candidate endpoints: @(base_url, kind, health_path)
-$script:EndpointCandidates = @(
-    @{ Url = "http://127.0.0.1:17474"; Kind = "kuhul";  Health = "/v1/models" }
-    @{ Url = "http://127.0.0.1:8787";  Kind = "json_runtime"; Health = "/api/health" }
-    @{ Url = "http://127.0.0.1:9010";  Kind = "llama";  Health = "/v1/models" }
-    @{ Url = "http://127.0.0.1:9003";  Kind = "llama";  Health = "/v1/models" }
-    @{ Url = "http://127.0.0.1:8085";  Kind = "llama";  Health = "/v1/models" }
-)
+# Read live endpoint from active-model.json / chat.manifest.json written by START-SERVERS.bat
+function Read-LiveEndpoints {
+    $root = $PSScriptRoot
+    $cmPath = Join-Path $root 'chat.manifest.json'
+    $amPath = Join-Path $root 'active-model.json'
+
+    $candidates = [System.Collections.ArrayList]::new()
+
+    if (Test-Path $cmPath) {
+        try {
+            $cm = Get-Content $cmPath -Raw | ConvertFrom-Json
+            # gateway first, then active model, then fallback chain
+            if ($cm.gateway.chat) {
+                $base = $cm.gateway.chat -replace '/v1/chat/completions',''
+                $null = $candidates.Add(@{ Url = $base; Kind = "kuhul-gateway"; Health = "/v1/models" })
+            }
+            foreach ($url in $cm.fallback_chain) {
+                $base = $url -replace '/v1/chat/completions',''
+                if ($candidates | Where-Object { $_.Url -eq $base }) { continue }
+                $null = $candidates.Add(@{ Url = $base; Kind = "llama"; Health = "/v1/models" })
+            }
+        } catch {}
+    } elseif (Test-Path $amPath) {
+        try {
+            $am  = Get-Content $amPath -Raw | ConvertFrom-Json
+            $base = $am.endpoint -replace '/v1/chat/completions',''
+            $null = $candidates.Add(@{ Url = $base; Kind = "llama"; Health = "/v1/models" })
+        } catch {}
+    }
+
+    # Hard-coded fallbacks (matches START-SERVERS.bat port layout)
+    foreach ($entry in @(
+        @{ Url = "http://127.0.0.1:8764";  Kind = "kuhul-gateway"; Health = "/v1/models" }
+        @{ Url = "http://127.0.0.1:9000";  Kind = "llama";         Health = "/v1/models" }
+        @{ Url = "http://127.0.0.1:25110"; Kind = "gc-1";          Health = "/v1/models" }
+        @{ Url = "http://127.0.0.1:17480"; Kind = "kuhul-engine";  Health = "/health" }
+        @{ Url = "http://127.0.0.1:8787";  Kind = "json_runtime";  Health = "/api/health" }
+        @{ Url = "http://127.0.0.1:25501"; Kind = "mm-gemma-env";  Health = "/v1/models" }
+        @{ Url = "http://127.0.0.1:9003";  Kind = "dolphin";       Health = "/v1/models" }
+    )) {
+        if (-not ($candidates | Where-Object { $_.Url -eq $entry.Url })) {
+            $null = $candidates.Add($entry)
+        }
+    }
+
+    return $candidates
+}
+
+$script:EndpointCandidates = Read-LiveEndpoints
 
 # ---------------------------------------------------------------------------
 #  XAML
@@ -141,17 +182,22 @@ $script:EndpointCandidates = @(
           <ColumnDefinition Width="*"/>
           <ColumnDefinition Width="Auto"/>
           <ColumnDefinition Width="Auto"/>
+          <ColumnDefinition Width="Auto"/>
         </Grid.ColumnDefinitions>
         <TextBox x:Name="InputBox"
                  Background="#0D1117" Foreground="#E6EDF3" CaretBrush="#58A6FF"
                  BorderBrush="#30363D" BorderThickness="1"
                  FontSize="13" Padding="10,6" Height="40" VerticalContentAlignment="Center"
                  ToolTip="Type a message -- fold phase and model are detected automatically"/>
-        <Button x:Name="ClearBtn" Grid.Column="1" Content="Clear"
+        <Button x:Name="ReconnectBtn" Grid.Column="1" Content="Reconnect"
+                Background="#21262D" Foreground="#58A6FF" BorderThickness="0"
+                FontSize="11" Height="40" Padding="10,0" Margin="8,0,0,0" Cursor="Hand"
+                ToolTip="Re-probe endpoints (run START-SERVERS.bat first)"/>
+        <Button x:Name="ClearBtn" Grid.Column="2" Content="Clear"
                 Background="#21262D" Foreground="#8B949E" BorderThickness="0"
                 FontSize="11" Height="40" Padding="10,0" Margin="8,0,0,0" Cursor="Hand"
                 ToolTip="Clear chat feed"/>
-        <Button x:Name="SendBtn" Grid.Column="2" Content="  Send  "
+        <Button x:Name="SendBtn" Grid.Column="3" Content="  Send  "
                 Background="#238636" Foreground="White" BorderThickness="0"
                 FontSize="13" FontWeight="SemiBold" Height="40"
                 Margin="8,0,0,0" Cursor="Hand"/>
@@ -169,6 +215,7 @@ $scroll         = $window.FindName('FeedScroll')
 $inputBox       = $window.FindName('InputBox')
 $sendBtn        = $window.FindName('SendBtn')
 $clearBtn       = $window.FindName('ClearBtn')
+$reconnectBtn   = $window.FindName('ReconnectBtn')
 $statusDot      = $window.FindName('StatusDot')
 $endpointText   = $window.FindName('EndpointText')
 $foldBadge      = $window.FindName('FoldBadge')
@@ -354,18 +401,23 @@ function Add-SysMessage([string]$text) {
 #  Endpoint probing
 # ---------------------------------------------------------------------------
 function Find-Endpoint {
+    # Rebuild candidate list each call so chat.manifest.json is picked up if
+    # START-SERVERS.bat was run after the UI launched.
+    $script:EndpointCandidates = Read-LiveEndpoints
+
     foreach ($c in $script:EndpointCandidates) {
         try {
-            $resp = Invoke-RestMethod -Uri "$($c.Url)$($c.Health)" -Method Get -TimeoutSec 2 -ErrorAction Stop
+            $null = Invoke-RestMethod -Uri "$($c.Url)$($c.Health)" -Method Get -TimeoutSec 2 -ErrorAction Stop
             $script:Endpoint     = $c.Url
             $script:EndpointKind = $c.Kind
-            Set-Status '#3FB950' "$($c.Kind) $($c.Url)"
+            $port = ([Uri]$c.Url).Port
+            Set-Status '#3FB950' "$($c.Kind) :$port"
             Add-SysMessage "Connected: $($c.Kind) at $($c.Url)"
             return $true
         } catch { }
     }
-    Set-Status '#F0883E' "offline -- responses will be simulated"
-    Add-SysMessage "No live endpoint found. Responses will echo fold routing metadata only."
+    Set-Status '#F0883E' "offline -- responses simulated"
+    Add-SysMessage "No live endpoint found. Run START-SERVERS.bat then click Reconnect."
     return $false
 }
 
@@ -375,11 +427,11 @@ function Find-Endpoint {
 function Invoke-FoldInference([string]$prompt, [string]$fold, [string]$model) {
     if (-not $script:Endpoint) { return $null }
 
-    $msgs = @($script:Conversation | ForEach-Object { $_ })
-    $msgs += @{ role = "user"; content = $prompt }
+    $msgs = [System.Collections.ArrayList]::new()
+    foreach ($m in $script:Conversation) { $null = $msgs.Add($m) }
+    $null = $msgs.Add(@{ role = "user"; content = $prompt })
 
     if ($script:EndpointKind -eq "json_runtime") {
-        # JSON runtime: POST to /api/run
         $body = @{
             "@program" = "fold_router.kuhul"
             "request"  = @{
@@ -388,7 +440,7 @@ function Invoke-FoldInference([string]$prompt, [string]$fold, [string]$model) {
                 "model"       = $model
                 "max_tokens"  = $script:MaxTokens
                 "temperature" = $script:Temperature
-                "messages"    = $msgs
+                "messages"    = @($msgs)
             }
         }
         try {
@@ -399,35 +451,29 @@ function Invoke-FoldInference([string]$prompt, [string]$fold, [string]$model) {
                 -TimeoutSec 120
             if ($resp.response) { return [string]$resp.response }
             if ($resp.content)  { return [string]$resp.content  }
-        } catch {
-            return $null
-        }
-    } else {
-        # OpenAI-compatible: POST to /v1/chat/completions
-        $body = @{
-            model       = switch ($model) {
-                            "Gpt2Large" { "gpt2-large" }
-                            "Qwen"      { "qwen" }
-                            default     { "gemma-3-1b-it" }
-                          }
-            messages    = $msgs
-            max_tokens  = $script:MaxTokens
-            temperature = $script:Temperature
-            stream      = $false
-            # Non-standard: hint to the server which fold/xshard to prefer
-            metadata    = @{ fold = $fold; xshard_model = $model }
-        }
-        try {
-            $resp = Invoke-RestMethod -Uri "$($script:Endpoint)/v1/chat/completions" `
-                -Method Post `
-                -Body ($body | ConvertTo-Json -Depth 8 -Compress) `
-                -ContentType "application/json" `
-                -TimeoutSec 120
-            return [string]$resp.choices[0].message.content
-        } catch {
-            return $null
-        }
+        } catch { return $null }
+        return $null
     }
+
+    # OpenAI-compatible (/v1/chat/completions) — covers khanary-server, kuhul-gateway,
+    # kuhul-engine, gc-1, mm-* hive, dolphin.  The model name is advisory only;
+    # the server serves whatever GGUF is loaded.
+    $body = @{
+        model       = "gemma-3-1b-it-q8_0"
+        messages    = @($msgs)
+        max_tokens  = $script:MaxTokens
+        temperature = $script:Temperature
+        stream      = $false
+    }
+    try {
+        $resp = Invoke-RestMethod -Uri "$($script:Endpoint)/v1/chat/completions" `
+            -Method Post `
+            -Body ($body | ConvertTo-Json -Depth 8 -Compress) `
+            -ContentType "application/json" `
+            -TimeoutSec 120
+        $content = $resp.choices[0].message.content
+        if ($content) { return [string]$content }
+    } catch { return $null }
     return $null
 }
 
@@ -493,6 +539,15 @@ $inputBox.Add_KeyDown({
         Send-Message $msg
         $_.Handled = $true
     }
+})
+
+$reconnectBtn.Add_Click({
+    $script:Endpoint     = $null
+    $script:EndpointKind = $null
+    Set-Status '#F0883E' "probing..."
+    Add-SysMessage "Probing endpoints..."
+    [System.Windows.Forms.Application]::DoEvents()
+    $null = Find-Endpoint
 })
 
 $clearBtn.Add_Click({
