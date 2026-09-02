@@ -76,6 +76,7 @@ function Read-LiveEndpoints {
     }
 
     foreach ($entry in @(
+        @{ Url = "http://127.0.0.1:9100";  Kind = "xshard";        Health = "/v1/models"   }
         @{ Url = "http://127.0.0.1:8764";  Kind = "kuhul-gateway"; Health = "/v1/models"   }
         @{ Url = "http://127.0.0.1:9000";  Kind = "llama";         Health = "/v1/models"   }
         @{ Url = "http://127.0.0.1:25110"; Kind = "gc-1";          Health = "/v1/models"   }
