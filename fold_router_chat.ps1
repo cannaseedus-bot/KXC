@@ -20,7 +20,7 @@
 #
 # Launch: pwsh -STA -File .\fold_router_chat.ps1
 
-Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase
+Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase, System.Windows.Forms
 
 # ---------------------------------------------------------------------------
 #  Config
@@ -455,34 +455,26 @@ function Send-Message([string]$msg) {
 
     Set-Status '#F0883E' "$($script:EndpointKind) thinking..."
 
-    $job = [System.Threading.Tasks.Task]::Run({
-        $response = Invoke-FoldInference $msg $fold $model
-        if (-not $response) {
-            $response = Get-SimulatedResponse $msg $fold $model
-        }
-        return $response
-    }.GetNewClosure())
+    # Pump dispatcher so status/badge updates render before the blocking HTTP call
+    [System.Windows.Forms.Application]::DoEvents()
 
-    $job.ContinueWith({
-        param($t)
-        $response = $t.Result
-        if ([string]::IsNullOrWhiteSpace($response)) {
-            $response = "(empty response)"
-        }
-        Add-AIBubble $response $fold $model $script:EndpointKind
+    $response = Invoke-FoldInference $msg $fold $model
+    if (-not $response) {
+        $response = Get-SimulatedResponse $msg $fold $model
+    }
+    if ([string]::IsNullOrWhiteSpace($response)) { $response = "(empty response)" }
 
-        # Save to conversation history
-        $script:Conversation.Add(@{ role = "user";      content = $msg      }) | Out-Null
-        $script:Conversation.Add(@{ role = "assistant"; content = $response }) | Out-Null
-        # Keep last 20 turns
-        while ($script:Conversation.Count -gt 40) { $script:Conversation.RemoveAt(0) }
+    Add-AIBubble $response $fold $model $script:EndpointKind
 
-        if ($script:Endpoint) {
-            Set-Status '#3FB950' "$($script:EndpointKind) $($script:Endpoint)"
-        } else {
-            Set-Status '#F0883E' "offline"
-        }
-    }, [System.Threading.Tasks.TaskScheduler]::Default) | Out-Null
+    $script:Conversation.Add(@{ role = "user";      content = $msg      }) | Out-Null
+    $script:Conversation.Add(@{ role = "assistant"; content = $response }) | Out-Null
+    while ($script:Conversation.Count -gt 40) { $script:Conversation.RemoveAt(0) }
+
+    if ($script:Endpoint) {
+        Set-Status '#3FB950' "$($script:EndpointKind) $($script:Endpoint)"
+    } else {
+        Set-Status '#F0883E' "offline"
+    }
 }
 
 # ---------------------------------------------------------------------------
@@ -527,7 +519,7 @@ Add-SysMessage "FoldRouter Chat -- three-model routing demo"
 Add-SysMessage "Default routing: Pop/Wo/Xul -> Gemma | Yax/Sek/Chen -> GPT-2 Large | AST toggle -> Qwen"
 Add-SysMessage "Probing endpoints..."
 
-$null = [System.Threading.Tasks.Task]::Run({ Find-Endpoint })
+$null = Find-Endpoint
 
 $window.Add_Loaded({
     Add-SysMessage "Routing table active. Type a message to test fold detection."
