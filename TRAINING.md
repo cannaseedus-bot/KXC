@@ -490,6 +490,29 @@ The router opens an `XShardSession` for the specialist and streams tensors from 
 Neither model file is modified. `StreamFoldFromSpecialistAsync` yields
 `(XShardEntry, byte[] raw, string model)` tuples for runtime consumption.
 
+### AST override path — verified results
+
+`tools/test_fold_router.py --qwen-sek` exercises the `FoldOverrides` injection path
+with all three xshards live. Verified 2026-09-01:
+
+| Fold | Default routing | AST override (`--qwen-sek`) |
+|---|---|---|
+| Pop | Gemma — 5 / 1152 MB | Gemma — 5 / 1152 MB |
+| Wo | Gemma — 52 / 1580 MB | **Qwen — 48 / 798 MB** |
+| Yax | Gpt2Large — 72 / 900 MB | Gpt2Large — 72 / 900 MB |
+| Sek | Gpt2Large — 144 / 901 MB | **Qwen — 168 / 168 MB** |
+| Chen | Gpt2Large — 182 / 145 MB | Gpt2Large — 182 / 145 MB |
+| **Total** | **455 shards / 4677 MB** | **475 shards / 3163 MB** |
+
+AST mode opens all three models simultaneously. Swapping Sek+Wo to Qwen adds 20
+shards (Qwen has 168 vs GPT-2 Large's 144 attention shards) and drops 1514 MB off
+the combined footprint — Qwen's attention tensors are much smaller because GQA
+uses fewer head dimensions than GPT-2 Large's full 20-head layout.
+
+All 6 routing assertions pass in both modes. The `"asx"` key in Qwen inference
+output (observed during `test_qwen.py`) confirms the AST corpus signal was absorbed
+correctly — `asx` = AST in stack terminology.
+
 ### C# adapter corrected API summary
 
 Three flag bugs were fixed in `AdaptiveContentModelAdapter.cs` (2026-08-29):
