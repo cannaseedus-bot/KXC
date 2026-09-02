@@ -1,0 +1,152 @@
+(* KXC.ebnf — formal grammar for K'UHUL kernel descriptor files (.kuhul)
+ *
+ * Normative for: versions/kxc-v1.0.0/src/parser.cpp  parse_kuhul()
+ * File extension: .kuhul
+ * Notation: ISO/IEC 14977 EBNF
+ *
+ * A .kuhul file encodes exactly ONE kernel block.
+ * The parser stops after the first complete [Pop]…[Xul] block.
+ *)
+
+(* ── Top level ─────────────────────────────────────────────────────────────── *)
+
+file   = { skipped-line } kernel { skipped-line } ;
+
+kernel = pop-stmt { body-stmt } xul-stmt ;
+
+(* ── Statements ────────────────────────────────────────────────────────────── *)
+
+pop-stmt   = bracket-expr( "Pop"   , identifier ) ;
+xul-stmt   = bracket-expr( "Xul"   ) ;
+muwan-stmt = bracket-expr( "Muwan" , "dispatch" , uint , uint , uint ) ;
+sek-stmt   = bracket-expr( "Sek"   , identifier , sek-value ) ;
+yax-stmt   = bracket-expr( "Yax"   , { token } ) ;
+
+body-stmt  = muwan-stmt
+           | sek-stmt
+           | yax-stmt
+           | skipped-line ;
+
+(* ── Bracket expression (the fundamental unit) ─────────────────────────────── *)
+(*
+ * tokenise_bracket() scans each trimmed line for "[" … "]" (last "]" on line),
+ * then splits the interior by ASCII whitespace.
+ * Lines with no "[" → silently skipped regardless of content.
+ *)
+
+bracket-expr(keyword, args...) = "[" , keyword , { ws , token } , "]" ;
+
+(* ── [Sek] value ───────────────────────────────────────────────────────────── *)
+(*
+ * parse_bool(): "true" | "1" | "yes" → true; anything else → false.
+ * Unknown property names are silently accepted (no KernelDesc field set).
+ *)
+
+sek-value  = bool-literal | token ;
+bool-literal = "true" | "false" | "1" | "yes" ;
+
+(* ── Known [Sek] property names (classifier dispatch) ─────────────────────── *)
+(*
+ * Inference / attention
+ *   needsSoftmax  needsMatMul  needsDecompress  kvInt4  needsPhaseMatch
+ *
+ * MoE routing
+ *   needsMoERoute  needsMoEExpertFFN  needsMoECombine
+ *
+ * Mesh / vertex (WebGPU patterns)
+ *   needsNormalCompute  needsTangentFrame  needsMeshlet  needsVertexProcess
+ *
+ * Training (xshard_adapt / xshard_backward pipeline)
+ *   needsAdam         needsGradAccum    needsSiluGrad
+ *   needsGradClip     needsShmRead      needsValueClamp
+ *
+ * Full dispatch table: see lower.cpp classify() and VERSION.json active_classes.
+ *)
+
+sek-property = "needsSoftmax"       | "needsMatMul"      | "needsDecompress"
+             | "kvInt4"             | "needsPhaseMatch"
+             | "needsMoERoute"      | "needsMoEExpertFFN" | "needsMoECombine"
+             | "needsNormalCompute" | "needsTangentFrame" | "needsMeshlet"
+             | "needsVertexProcess"
+             | "needsAdam"         | "needsGradAccum"    | "needsSiluGrad"
+             | "needsGradClip"     | "needsShmRead"      | "needsValueClamp"
+             | identifier ;         (* unknown properties silently accepted *)
+
+(* ── Skipped lines ─────────────────────────────────────────────────────────── *)
+(*
+ * Three forms are silently skipped:
+ *   1. Empty / blank lines (only whitespace after trim)
+ *   2. Lines whose first non-whitespace char is '#'
+ *   3. Lines that contain no '[' character
+ *      (This is how (* ... *) block comment lines work — they have no '[',
+ *       so tokenise_bracket returns empty and the line is ignored.)
+ *)
+
+skipped-line = blank-line | hash-comment | no-bracket-line ;
+
+blank-line      = { ws-char } , line-end ;
+hash-comment    = { ws-char } , "#" , { any-char } , line-end ;
+no-bracket-line = { non-bracket-char } , line-end ;  (* no "[" present *)
+
+(* Informal block comment (works only if body contains no "[" or "]") *)
+block-comment   = "(*" , { any-char } , "*)" ;
+
+(* ── Lexical primitives ────────────────────────────────────────────────────── *)
+
+identifier = letter , { letter | digit | "-" | "_" | "'" } ;
+uint       = digit , { digit } ;
+token      = non-ws-char , { non-ws-char } ;   (* any non-whitespace sequence *)
+
+letter     = "A" | … | "Z" | "a" | … | "z" ;
+digit      = "0" | … | "9" ;
+ws-char    = " " | "\t" ;
+ws         = ws-char , { ws-char } ;
+
+any-char         = ? any Unicode scalar value ? ;
+non-ws-char      = ? any char except SP, HT, CR, LF ? ;
+non-bracket-char = ? any char except "[" ? ;
+line-end         = [ "\r" ] , "\n" | ? end of file ? ;
+
+(* ── Constraints (not expressible in EBNF) ─────────────────────────────────── *)
+(*
+ * C1. Exactly one kernel block per file. The parser returns after the first [Xul].
+ * C2. [Pop] must precede all other statements. [Muwan], [Sek], [Yax] outside a
+ *     block are parse errors.
+ * C3. [Xul] without a preceding [Pop] is a parse error.
+ * C4. Nested [Pop] (inside an open block) is a parse error.
+ * C5. [Muwan] must have exactly "dispatch" + 3 unsigned integers; other Muwan
+ *     forms are silently ignored (no error, thread dims not updated).
+ * C6. [Sek] requires at least 2 tokens after the keyword (property + value);
+ *     fewer tokens is a parse error.
+ * C7. Any bracket keyword other than Pop/Muwan/Sek/Yax/Xul is a parse error:
+ *     "unsupported syntax '<kw>'".
+ * C8. Thread dimensions are uint32; values > 2^32-1 are implementation-defined.
+ *)
+
+(* ── Minimal valid file ─────────────────────────────────────────────────────── *)
+(*
+ *   [Pop my_kernel]
+ *     [Muwan dispatch 64 1 1]
+ *     [Sek needsAdam true]
+ *   [Xul]
+ *)
+
+(* ── Full-form K'UHUL (non-normative for kxc) ──────────────────────────────── *)
+(*
+ * The files in drivers/klsl/ (e.g. adam.kuhul, cssc_gemm.kuhul) use an extended
+ * K'UHUL surface that is NOT compiled by kxc. They target klslc / the semantic
+ * layer and include additional tokens:
+ *
+ *   [Wo  <name> <type>]         — input / parameter declarations
+ *   [K'ayab']                   — loop start  (KLSL K'AYAB glyph)
+ *   [Kumk'u]                    — loop end    (KLSL KUMK'U glyph)
+ *   [Ch'en <expr>]              — collect / output binding
+ *   [Sek  <expr> -> <binding>]  — expression with result binding
+ *   [Pop  <name> = <call>]      — named read (shm_read, etc.)
+ *   [Xul  <call>]               — write / emit (shm_write, xshard_write)
+ *
+ * kxc's parse_kuhul() will reject any of these forms that use bracket keywords
+ * it does not recognise (e.g. [Wo …] → "unsupported syntax 'Wo'").
+ * The kxc-compilable "descriptor stub" in versions/kxc-v1.0.0/drivers/klsl/
+ * uses only Pop/Muwan/Sek/Xul with bool property flags.
+ *)
