@@ -1,0 +1,29 @@
+{
+  "stackId": "asx-xcfe-stack/v1",
+  "stackManifest": "C:/public_html/MX2LM/codex/AS-XCFE/native/xvm-d3d12/asx_manifest.json",
+  "stackCid": "fnv1a64:1c36e0cc928a7591",
+  "sourceKind": "kuhul",
+  "sourcePath": "C:\\Users\\canna\\_khanary_inspect\\versions\\kxc-v1.0.0\\programs\\fused_attention.kuhul",
+  "sourceCid": "fnv1a64:d19a994bee963f2a",
+  "sourceSchema": "",
+  "originSourceKind": "",
+  "originSourcePath": "",
+  "originSourceCid": "",
+  "entries": [
+    {
+      "kernel": "FusedAttention",
+      "lawful": true,
+      "registryMatched": false,
+      "artifacts": [
+        {"name": "FusedAttention.cpp", "cid": "fnv1a64:378feebb018bb0a2"},
+        {"name": "FusedAttention.hlsl", "cid": "fnv1a64:150bc6e1c558351a"},
+        {"name": "FusedAttention.wgsl", "cid": "fnv1a64:436173f82b179ab6"},
+        {"name": "FusedAttention.cpu.cpp", "cid": "fnv1a64:5e9a7ad6f0f9277b"},
+        {"name": "FusedAttention.cl", "cid": "fnv1a64:651e1722bdf4e689"},
+        {"name": "FusedAttention.frag", "cid": "fnv1a64:d76e0c28b59c6fad"},
+        {"name": "FusedAttention.dml.json", "cid": "fnv1a64:dcc84d86e51e8e98"},
+        {"name": "FusedAttention.smca.json", "cid": "fnv1a64:dd34f1c6003ed86d"}
+      ]
+    }
+  ]
+}

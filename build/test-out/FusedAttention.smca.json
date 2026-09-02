@@ -1,0 +1,28 @@
+{
+  "kernel": "FusedAttention",
+  "target": "all",
+  "threads": [64, 1, 1],
+  "caps": {
+    "waveOps": false,
+    "heapTier": 1,
+    "bindingTier": 1,
+    "uma": true
+  },
+  "smca": {
+    "kernelClass": "tensor_attention_fused",
+    "collapseClass": "attention.fused",
+    "lawful": true,
+    "registryMatched": false,
+    "layers": ["MATRIX", "SCXQ2", "SCXQ7", "SCO/1", "IDB"],
+    "requires": ["deterministic_join", "bounded_reduction"],
+    "forbids": ["side_effects", "order_dependence"],
+    "notes": [
+      "Kernel class resolved via SMCA registry.",
+      "MATRIX: source K'uhul parsed into AST.",
+      "SCXQ2: semantic ops lowered into backend-neutral IR.",
+      "SCXQ7: legality and caps-aware optimization applied.",
+      "SCO/1: backend emitters produce executable artifacts.",
+      "IDB: sidecar metadata emitted for external verification."
+    ]
+  }
+}

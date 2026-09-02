@@ -42,6 +42,12 @@ XSHARD_PATHS = {
     "qwen":      Path("E:/models/GPT2/qwen/qwen-f32.xshard"),
 }
 
+# Clean HF safetensors — preferred over xshard when available (xshard GGUF conversion artifacts)
+SAFETENSORS_PATHS = {
+    "gemma": Path("E:/models/gemma-3-1b-it-hf/model.safetensors"),
+    "qwen":  Path("E:/models/GPT2/qwen/model.safetensors"),
+}
+
 XSHARD_MAGIC = b'XSHD'
 
 DEFAULT_ROUTING = {
@@ -81,11 +87,52 @@ def load_xshard(path: Path) -> dict[str, np.ndarray]:
             for s in shards:
                 f.seek(data_start + s["offset"])
                 raw = f.read(s["nbytes"])
-                chunks.append(_decode_raw(raw, s.get("dtype", "F32")))
-            weights[tname] = chunks[0] if len(chunks) == 1 else np.concatenate(chunks, axis=0)
+                arr = _decode_raw(raw, s.get("dtype", "F32"))
+                if s.get("shape"):
+                    arr = arr.reshape(s["shape"])
+                chunks.append(arr)
+            if len(chunks) == 1:
+                weights[tname] = chunks[0]
+            else:
+                # sub-shards split along axis 0 — concatenate
+                weights[tname] = np.concatenate(chunks, axis=0)
 
     print(f"  {len(weights)} tensors", flush=True)
+
+    # Sanitise NaN/Inf values left by gradient explosions during fold adapt
+    bad = 0
+    for k in weights:
+        t = weights[k]
+        if np.isnan(t).any() or np.isinf(t).any():
+            weights[k] = np.nan_to_num(t, nan=0.0, posinf=0.0, neginf=0.0)
+            bad += 1
+    if bad:
+        print(f"  [warn] {bad} tensors had NaN/Inf (zeroed — fold adapt overflow)", flush=True)
+
     return weights
+
+
+def load_safetensors(path: Path) -> dict[str, np.ndarray]:
+    path = Path(path)
+    print(f"[safetensors] loading {path.name}  ({path.stat().st_size/1024/1024:.0f} MB)", flush=True)
+    try:
+        from safetensors import safe_open
+    except ImportError:
+        raise ImportError("pip install safetensors")
+    weights = {}
+    with safe_open(str(path), framework="numpy") as f:
+        for key in f.keys():
+            weights[key] = f.get_tensor(key).astype(np.float32)
+    print(f"  {len(weights)} tensors", flush=True)
+    return weights
+
+
+def load_model(model_name: str) -> dict[str, np.ndarray]:
+    """Load weights — prefers clean safetensors over xshard."""
+    st_path = SAFETENSORS_PATHS.get(model_name)
+    if st_path and st_path.exists():
+        return load_safetensors(st_path)
+    return load_xshard(XSHARD_PATHS[model_name])
 
 
 def _decode_raw(raw: bytes, dtype_str: str) -> np.ndarray:
@@ -122,10 +169,13 @@ def softmax(x: np.ndarray) -> np.ndarray:
     return e / e.sum(axis=-1, keepdims=True)
 
 
-def causal_attn(Q: np.ndarray, K: np.ndarray, V: np.ndarray) -> np.ndarray:
+def causal_attn(Q: np.ndarray, K: np.ndarray, V: np.ndarray,
+                attn_softcap: float = 0.0) -> np.ndarray:
     # Q/K/V: [n_heads, seq, head_dim]
     seq, d_k = Q.shape[1], Q.shape[2]
     scores = (Q @ K.transpose(0, 2, 1)) / math.sqrt(d_k)
+    if attn_softcap > 0.0:
+        scores = attn_softcap * np.tanh(scores / attn_softcap)
     mask = np.triu(np.full((seq, seq), -1e10), k=1)
     return softmax(scores + mask) @ V
 
@@ -158,6 +208,15 @@ def layernorm(x: np.ndarray, w: np.ndarray, b: np.ndarray, eps: float = 1e-5) ->
     return w * (x - mean) / np.sqrt(var + eps) + b
 
 
+def _layer_ok(w: dict, prefix: str, keys: list[str]) -> bool:
+    """Return False if any of the key tensors in this layer are all-zero (zeroed NaN)."""
+    for k in keys:
+        t = w.get(prefix + k)
+        if t is not None and np.all(t == 0) and t.size > 1:
+            return False
+    return True
+
+
 def gpt2_forward(tokens: list[int], w: dict, n_head: int, n_layer: int) -> np.ndarray:
     seq    = len(tokens)
     n_embd = w["transformer.wte.weight"].shape[1]
@@ -166,6 +225,9 @@ def gpt2_forward(tokens: list[int], w: dict, n_head: int, n_layer: int) -> np.nd
 
     for i in range(n_layer):
         p = f"transformer.h.{i}."
+        # Skip layers whose primary weights were zeroed out by nan_to_num
+        if not _layer_ok(w, p, ["ln_1.weight", "attn.c_attn.weight"]):
+            continue
         a = layernorm(x, w[p+"ln_1.weight"], w[p+"ln_1.bias"])
         qkv = a @ w[p+"attn.c_attn.weight"] + w[p+"attn.c_attn.bias"]
         Q, K, V = np.split(qkv, 3, axis=-1)
@@ -174,6 +236,8 @@ def gpt2_forward(tokens: list[int], w: dict, n_head: int, n_layer: int) -> np.nd
         V = V.reshape(seq, n_head, d_head).transpose(1, 0, 2)
         attn = causal_attn(Q, K, V).transpose(1, 0, 2).reshape(seq, n_embd)
         x = x + attn @ w[p+"attn.c_proj.weight"] + w[p+"attn.c_proj.bias"]
+        if not _layer_ok(w, p, ["ln_2.weight", "mlp.c_fc.weight"]):
+            continue
         b2 = layernorm(x, w[p+"ln_2.weight"], w[p+"ln_2.bias"])
         h = b2 @ w[p+"mlp.c_fc.weight"] + w[p+"mlp.c_fc.bias"]
         x = x + gelu(h) @ w[p+"mlp.c_proj.weight"] + w[p+"mlp.c_proj.bias"]
@@ -201,8 +265,8 @@ def gemma3_forward(tokens: list[int], w: dict) -> np.ndarray:
     n_embd   = w["model.embed_tokens.weight"].shape[1]
     n_groups = GEMMA_N_Q_HEADS // GEMMA_N_KV_HEADS
 
-    # Gemma scale factor on embeddings
-    x = w["model.embed_tokens.weight"][tokens] * math.sqrt(n_embd)
+    emb = w["model.embed_tokens.weight"]
+    x = emb[tokens] * math.sqrt(n_embd)
 
     cos, sin = rope_cos_sin(seq, GEMMA_HEAD_DIM, GEMMA_ROPE_BASE)
 
@@ -220,18 +284,18 @@ def gemma3_forward(tokens: list[int], w: dict) -> np.ndarray:
         K = K.reshape(seq, GEMMA_N_KV_HEADS, GEMMA_HEAD_DIM).transpose(1, 0, 2)
         V = V.reshape(seq, GEMMA_N_KV_HEADS, GEMMA_HEAD_DIM).transpose(1, 0, 2)
 
-        Q = apply_rope(Q, cos, sin)
-        K = apply_rope(K, cos, sin)
-
-        # Per-head QK-norm (Gemma 3 specific)
+        # Per-head QK-norm BEFORE RoPE (Gemma 3: norm → rope, not rope → norm)
         Q = rms_norm(Q, w[p+"self_attn.q_norm.weight"])
         K = rms_norm(K, w[p+"self_attn.k_norm.weight"])
+
+        Q = apply_rope(Q, cos, sin)
+        K = apply_rope(K, cos, sin)
 
         # GQA: expand KV to match Q head count
         K = np.repeat(K, n_groups, axis=0)
         V = np.repeat(V, n_groups, axis=0)
 
-        attn = causal_attn(Q, K, V).transpose(1, 0, 2).reshape(seq, GEMMA_N_Q_HEADS * GEMMA_HEAD_DIM)
+        attn = causal_attn(Q, K, V, attn_softcap=30.0).transpose(1, 0, 2).reshape(seq, GEMMA_N_Q_HEADS * GEMMA_HEAD_DIM)
         attn_out = attn @ w[p+"self_attn.o_proj.weight"].T
 
         x = x + rms_norm(attn_out, w[p+"post_attention_layernorm.weight"])
@@ -245,7 +309,8 @@ def gemma3_forward(tokens: list[int], w: dict) -> np.ndarray:
         x = x + rms_norm(mlp_out, w[p+"post_feedforward_layernorm.weight"])
 
     x = rms_norm(x, w["model.norm.weight"])
-    return x[-1] @ w["model.embed_tokens.weight"].T  # tied lm_head
+    logits = x[-1] @ w["model.embed_tokens.weight"].T  # tied lm_head
+    return 50.0 * np.tanh(logits / 50.0)  # Gemma 3 final logit soft-cap
 
 # ---------------------------------------------------------------------------
 #  Qwen 2 0.5B forward
@@ -355,8 +420,14 @@ def get_tokenizer(model_name: str):
         tok_path = XSHARD_PATHS["qwen"].parent / "tokenizer.json"
         if tok_path.exists():
             try:
-                from tokenizers import Tokenizer
+                from tokenizers import Tokenizer, AddedToken
+                import json as _json
                 enc = Tokenizer.from_file(str(tok_path))
+                enc.no_padding()
+                added_path = tok_path.parent / "added_tokens.json"
+                if added_path.exists():
+                    added = _json.loads(added_path.read_text())
+                    enc.add_special_tokens([AddedToken(t, special=True) for t in added])
                 eos = enc.token_to_id("<|im_end|>") or enc.token_to_id("</s>") or 0
                 _tok_cache[model_name] = ("hf", enc, eos)
                 return _tok_cache[model_name]
@@ -364,12 +435,27 @@ def get_tokenizer(model_name: str):
                 print("[warn] tokenizers not installed: pip install tokenizers")
 
     if model_name == "gemma":
-        gguf_path = XSHARD_PATHS["gemma"].parent / "gemma-3-1b-it-q8_0.gguf"
-        if gguf_path.exists():
-            enc = _load_gemma_tokenizer(gguf_path)
-            if enc:
-                _tok_cache[model_name] = enc
-                return enc
+        # Prefer direct tokenizer.model from HF repo
+        hf_dir = SAFETENSORS_PATHS.get("gemma", Path()).parent
+        spm_path = hf_dir / "tokenizer.model"
+        if spm_path.exists():
+            try:
+                import sentencepiece as spm
+                sp = spm.SentencePieceProcessor()
+                sp.Load(str(spm_path))
+                eos = sp.PieceToId("<eos>") or sp.PieceToId("</s>") or 1
+                _tok_cache[model_name] = ("spm", sp, eos)
+                return _tok_cache[model_name]
+            except Exception as e:
+                print(f"[warn] spm load failed: {e}")
+        gemma_dir = XSHARD_PATHS["gemma"].parent
+        for gname in ("gemma-3-1b-it-f16.gguf", "gemma-3-1b-it-q8_0.gguf", "gemma-3-1b-it-q4_1.gguf"):
+            gguf_path = gemma_dir / gname
+            if gguf_path.exists():
+                enc = _load_gemma_tokenizer(gguf_path)
+                if enc:
+                    _tok_cache[model_name] = enc
+                    return enc
 
     # Fallback: GPT-2 tokenizer (output will be approximate)
     try:
@@ -385,30 +471,27 @@ def get_tokenizer(model_name: str):
 
 
 def _load_gemma_tokenizer(gguf_path: Path):
-    """Extract SentencePiece tokenizer from GGUF metadata."""
+    """Load Gemma tokenizer via llama-cpp-python (handles GGUF vocab natively)."""
     try:
-        import tempfile, os
-        gguf_py = Path(r"C:\Users\canna\.ASX.cpp\llama-b9968-bin-win-cpu-x64\llama.cpp\gguf-py")
-        if not gguf_py.exists():
-            raise FileNotFoundError("gguf-py not found")
-        sys.path.insert(0, str(gguf_py))
-        from gguf import GGUFReader
-        reader = GGUFReader(str(gguf_path))
-        sp_bytes = None
-        for field in reader.fields.values():
-            if "tokenizer" in field.name and "model" in field.name:
-                sp_bytes = bytes(field.parts[-1])
-                break
-        if not sp_bytes:
-            return None
-        tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".model")
-        tmp.write(sp_bytes); tmp.close()
-        import sentencepiece as spm
-        sp = spm.SentencePieceProcessor()
-        sp.Load(tmp.name)
-        os.unlink(tmp.name)
-        eos = sp.PieceToId("</s>") or sp.PieceToId("<eos>") or 1
-        return ("spm", sp, eos)
+        from llama_cpp import Llama
+        # vocab_only=True loads just the tokenizer, no weights into memory
+        llm = Llama(model_path=str(gguf_path), vocab_only=True, verbose=False)
+        eos = llm.token_eos()
+
+        class _LlamaTok:
+            def __init__(self, llm, eos):
+                self._llm = llm
+                self._eos = eos
+            def Encode(self, text):
+                return self._llm.tokenize(text.encode(), add_bos=True, special=True)
+            def Decode(self, ids):
+                return self._llm.detokenize(ids).decode("utf-8", errors="replace")
+            def PieceToId(self, piece):
+                ids = self._llm.tokenize(piece.encode(), add_bos=False, special=True)
+                return ids[0] if ids else 0
+
+        tok = _LlamaTok(llm, eos)
+        return ("spm", tok, eos)
     except Exception as e:
         print(f"[warn] could not load Gemma tokenizer: {e}")
         return None
@@ -452,7 +535,11 @@ def eos_id(tok) -> int:
 #  Sampling + generation
 # ---------------------------------------------------------------------------
 
-def sample(logits: np.ndarray, temperature: float, top_k: int) -> int:
+def sample(logits: np.ndarray, temperature: float, top_k: int,
+           recent: list[int] | None = None, rep_penalty: float = 1.3) -> int:
+    if recent:
+        for tid in set(recent):
+            logits[tid] = logits[tid] / rep_penalty if logits[tid] > 0 else logits[tid] * rep_penalty
     logits = logits / max(temperature, 1e-6)
     if top_k > 1:
         kth = np.sort(logits)[-top_k]

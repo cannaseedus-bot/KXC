@@ -1,0 +1,35 @@
+{
+  "kernel": "FusedAttention",
+  "kdml_version": "0.1.0",
+  "dml_op": "MatMul",
+  "dml_type_int": 2,
+  "kernelClass": "tensor_attention_fused",
+  "collapseClass": "attention.fused",
+  "threads": [64, 1, 1],
+  "params": {
+    "transpose_b": true,
+    "alpha": 0.125,
+    "fused_softmax": true
+  },
+  "input_shapes": [[64]],
+  "output_shapes": [[64]],
+  "caps": {
+    "waveOps": false,
+    "heapTier": 1,
+    "bindingTier": 1,
+    "uma": true
+  },
+  "sek": {
+    "needsDecompress":   false,
+    "needsSoftmax":      true,
+    "needsMatMul":       true,
+    "kvInt4":            false,
+    "needsMoERoute":     false,
+    "needsMoEExpertFFN": false,
+    "needsMoECombine":   false,
+    "needsPhaseMatch":   false
+  },
+  "layers": ["MATRIX", "SCXQ2", "SCXQ7", "SCO/1", "IDB"],
+  "registryMatched": true,
+  "lawful": true
+}

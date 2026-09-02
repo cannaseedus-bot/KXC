@@ -1,0 +1,35 @@
+{
+  "kernel": "fold_backward",
+  "kdml_version": "0.1.0",
+  "dml_op": "MatMul",
+  "dml_type_int": 2,
+  "kernelClass": "generic-compute",
+  "collapseClass": "compute.generic",
+  "threads": [32, 1, 1],
+  "params": {
+    "transpose_a": false,
+    "transpose_b": false,
+    "alpha": 1.0
+  },
+  "input_shapes": [[32]],
+  "output_shapes": [[32]],
+  "caps": {
+    "waveOps": false,
+    "heapTier": 1,
+    "bindingTier": 1,
+    "uma": true
+  },
+  "sek": {
+    "needsDecompress":   false,
+    "needsSoftmax":      false,
+    "needsMatMul":       true,
+    "kvInt4":            false,
+    "needsMoERoute":     false,
+    "needsMoEExpertFFN": false,
+    "needsMoECombine":   false,
+    "needsPhaseMatch":   false
+  },
+  "layers": ["MATRIX", "SCXQ2", "SCXQ7", "SCO/1", "IDB"],
+  "registryMatched": false,
+  "lawful": true
+}

@@ -1,0 +1,33 @@
+{
+  "kernel": "fold_clamp",
+  "kdml_version": "0.1.0",
+  "dml_op": "Custom",
+  "dml_type_int": 19,
+  "kernelClass": "generic-compute",
+  "collapseClass": "compute.generic",
+  "threads": [64, 1, 1],
+  "params": {
+    "op": "passthrough"
+  },
+  "input_shapes": [[64]],
+  "output_shapes": [[64]],
+  "caps": {
+    "waveOps": false,
+    "heapTier": 1,
+    "bindingTier": 1,
+    "uma": true
+  },
+  "sek": {
+    "needsDecompress":   false,
+    "needsSoftmax":      false,
+    "needsMatMul":       false,
+    "kvInt4":            false,
+    "needsMoERoute":     false,
+    "needsMoEExpertFFN": false,
+    "needsMoECombine":   false,
+    "needsPhaseMatch":   false
+  },
+  "layers": ["MATRIX", "SCXQ2", "SCXQ7", "SCO/1", "IDB"],
+  "registryMatched": false,
+  "lawful": true
+}

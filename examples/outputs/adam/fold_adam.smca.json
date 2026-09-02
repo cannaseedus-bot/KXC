@@ -1,0 +1,28 @@
+{
+  "kernel": "fold_adam",
+  "target": "all",
+  "threads": [32, 1, 1],
+  "caps": {
+    "waveOps": false,
+    "heapTier": 1,
+    "bindingTier": 1,
+    "uma": true
+  },
+  "smca": {
+    "kernelClass": "generic-compute",
+    "collapseClass": "compute.generic",
+    "lawful": true,
+    "registryMatched": false,
+    "layers": ["MATRIX", "SCXQ2", "SCXQ7", "SCO/1", "IDB"],
+    "requires": [],
+    "forbids": [],
+    "notes": [
+      "Kernel class resolved via SMCA registry.",
+      "MATRIX: source K'uhul parsed into AST.",
+      "SCXQ2: semantic ops lowered into backend-neutral IR.",
+      "SCXQ7: legality and caps-aware optimization applied.",
+      "SCO/1: backend emitters produce executable artifacts.",
+      "IDB: sidecar metadata emitted for external verification."
+    ]
+  }
+}
