@@ -310,97 +310,128 @@ namespace Micronaut.Streaming.Adapter
             public long   Nbytes { get; set; }
         }
 
-        // Run xshard_info.exe and parse its JSONL output.
-        // Each output line is a JSON object with at minimum {id, state, fold, nbytes}.
-        // Pass foldFilter to limit to one fold lane; null = all shards.
+        // Enumerate shards from an open XShardSession for one fold.
+        // xshard_info.exe has no JSONL mode — this reads the parsed manifest directly.
+        // State is reported as "pending" (we do not read the state block here; xshard_adapt
+        // tracks trained status in its --ledger and via the state block in the xshard file).
         public static List<ShardInfoResult> QueryShardInfo(
-            string toolchainDir, string xshardPath, string foldFilter = null)
+            XShardSession session, string foldFilter = null)
         {
-            var args = $"\"{xshardPath}\"";
-            if (!string.IsNullOrEmpty(foldFilter))
-                args += $" --fold {foldFilter}";
-
-            var output = RunExe(Path.Combine(toolchainDir, "xshard_info.exe"), args);
             var results = new List<ShardInfoResult>();
-
-            foreach (var line in output.Split('\n', StringSplitOptions.RemoveEmptyEntries))
+            foreach (var e in session.Shards)
             {
-                try
-                {
-                    using var doc = JsonDocument.Parse(line.Trim());
-                    var r = new ShardInfoResult();
-                    var root = doc.RootElement;
-                    if (root.TryGetProperty("id",     out var v)) r.Id     = v.GetString() ?? "";
-                    if (root.TryGetProperty("state",  out v))     r.State  = v.GetString() ?? "";
-                    if (root.TryGetProperty("fold",   out v))     r.Fold   = v.GetString() ?? "";
-                    if (root.TryGetProperty("nbytes", out v))     r.Nbytes = v.GetInt64();
-                    results.Add(r);
-                }
-                catch { }
+                if (!string.IsNullOrEmpty(foldFilter) && e.Fold != foldFilter) continue;
+                results.Add(new ShardInfoResult {
+                    Id     = e.Id,
+                    State  = "pending",
+                    Fold   = e.Fold,
+                    Nbytes = e.Nbytes,
+                });
             }
             return results;
         }
 
+        // Overload: shell to xshard_info.exe --state-only and parse the summary line
+        // for a quick trained/pending count without an open session.
+        public static (int trained, int pending) QueryShardState(
+            string toolchainDir, string xshardPath)
+        {
+            var output = RunExe(Path.Combine(toolchainDir, "xshard_info.exe"),
+                                $"\"{xshardPath}\" --state-only");
+            int trained = 0, pending = 0;
+            foreach (var line in output.Split('\n'))
+            {
+                var t = line.Trim();
+                // Parse: "state: trained=N  pending=M  ..."
+                if (!t.StartsWith("state:")) continue;
+                foreach (var part in t.Split(' ', StringSplitOptions.RemoveEmptyEntries))
+                {
+                    var kv = part.Split('=');
+                    if (kv.Length != 2) continue;
+                    if (kv[0] == "trained") int.TryParse(kv[1], out trained);
+                    if (kv[0] == "pending") int.TryParse(kv[1], out pending);
+                }
+            }
+            return (trained, pending);
+        }
+
         // Run xshard_backward.exe to write a gradient xshard.
+        // tokenBinPath   — raw bytes streamed as FNV content signal (any binary; UTF-8 JSONL works).
+        //                  xshard_backward only processes F32 shards — quantized folds (Sek/Wo/Yax/Pop)
+        //                  are skipped; use fold=Chen for norm tensors which are always F32.
         // gradXshardPath — output path for the gradient XSHARD/1 file.
         // fold           — fold lane being trained (Pop/Wo/Yax/Sek/Chen/Xul).
-        // Returns the stdout from the tool (may include diagnostic JSON).
+        // Returns the stdout from the tool.
         public static string WriteGradientXShard(
             string toolchainDir, string srcXshardPath,
-            string gradXshardPath, string fold)
+            string tokenBinPath, string gradXshardPath, string fold,
+            float gradScale = 1e-3f, float weightScale = 1e-4f, int maxShards = 1)
         {
-            var args = $"\"{srcXshardPath}\" --grad-out \"{gradXshardPath}\" --fold {fold}";
+            var args = $"\"{srcXshardPath}\" --token-bin \"{tokenBinPath}\" --output \"{gradXshardPath}\"" +
+                       $" --fold {fold} --max-shards {maxShards}" +
+                       $" --grad-scale {gradScale:G6} --weight-scale {weightScale:G6}";
             return RunExe(Path.Combine(toolchainDir, "xshard_backward.exe"), args);
         }
 
         // Run xshard_adapt.exe to apply fold-gated Adam and mark shards TRAINED.
-        // learningRate — Adam α (default 1e-4).
-        // beta1/beta2  — Adam momentum params.
+        //
+        // Two modes:
+        //   gradXshardPath != null → load gradients from a grad XSHARD/1 file (--grad-xshard).
+        //                           Matching is by tensor name; use when you have real gradients.
+        //   gradXshardPath == null → probe gradient = weight * gradScale (--grad-scale).
+        //                           Covers all F32 shards in the fold with no external file needed.
+        //                           Use this for the curriculum probe-signal approach.
+        //
+        // Requires --shader <path> so pass shaderPath pointing at xshard_adapt_fold.cso.
+        // Defaults to dry-run; pass apply=true to commit the update in-place.
         // Returns stdout from the tool.
         public static string ApplyFoldAdapt(
-            string toolchainDir, string xshardPath, string gradXshardPath,
+            string toolchainDir, string xshardPath, string shaderPath,
             string fold, float learningRate = 1e-4f,
-            float beta1 = 0.9f, float beta2 = 0.999f)
+            float gradScale = 5e-4f, float weightDecay = 0f,
+            string gradXshardPath = null, int maxShards = 200,
+            bool apply = true)
         {
-            var args = $"\"{xshardPath}\" --grad \"{gradXshardPath}\" --fold {fold}" +
-                       $" --lr {learningRate:G6} --beta1 {beta1:G6} --beta2 {beta2:G6}";
+            var args = $"\"{xshardPath}\" --fold {fold}" +
+                       $" --lr {learningRate:G6} --weight-decay {weightDecay:G6}" +
+                       $" --max-shards {maxShards} --shader \"{shaderPath}\"";
+            if (gradXshardPath != null)
+                args += $" --grad-xshard \"{gradXshardPath}\"";
+            else
+                args += $" --grad-scale {gradScale:G6}";
+            if (apply) args += " --apply";
             return RunExe(Path.Combine(toolchainDir, "xshard_adapt.exe"), args);
         }
 
-        // Orchestrate a full fold training step:
-        //   1. Query pending shards via xshard_info
-        //   2. Stream fold weights via XShardSession (caller supplies the session)
-        //   3. Write gradient xshard via xshard_backward
-        //   4. Apply fold-gated Adam via xshard_adapt
-        // Returns count of pending shards processed; 0 if fold is already fully trained.
+        // Orchestrate a full fold training step using the probe-gradient curriculum path.
+        //
+        // Uses xshard_adapt --grad-scale (probe gradient = weight * gradScale) to update
+        // all F32 shards in the fold lane without a separate backward pass.
+        // xshard_backward + --grad-xshard is reserved for when you have real loss gradients.
+        //
+        // The fold gate (--fold) ensures only the target fold's tensors move.
+        // For Gemma 3 1B, Chen is the only F32 fold; Sek/Wo/Yax/Pop are quantized (skipped).
+        //
+        // shaderPath — absolute path to xshard_adapt_fold.cso
+        // Returns count of shards committed; 0 if fold has no F32 shards.
         public static async Task<int> TrainFoldStepAsync(
             string toolchainDir, XShardSession session,
-            string xshardPath, string fold,
-            float learningRate = 1e-4f,
-            CancellationToken ct = default)
+            string xshardPath, string fold, string shaderPath,
+            float learningRate = 1e-4f, float gradScale = 5e-4f,
+            int maxShards = 200, CancellationToken ct = default)
         {
-            var pending = QueryShardInfo(toolchainDir, xshardPath, fold)
-                          .FindAll(s => s.State == "pending");
+            var shards = QueryShardInfo(session, fold);
+            if (shards.Count == 0) return 0;
 
-            if (pending.Count == 0) return 0;
+            ct.ThrowIfCancellationRequested();
 
-            // Stream fold weights through the session so the caller's training loop
-            // can access raw quantized bytes fold-by-fold.
-            int streamed = 0;
-            await foreach (var (entry, _) in session.StreamFoldAsync(fold, ct))
-            {
-                ct.ThrowIfCancellationRequested();
-                streamed++;
-            }
+            // Probe-gradient fold adapt — all F32 shards in this fold lane.
+            ApplyFoldAdapt(toolchainDir, xshardPath, shaderPath, fold,
+                           learningRate, gradScale,
+                           gradXshardPath: null, maxShards: maxShards, apply: true);
 
-            // Gradient write — grad output lives beside the source file.
-            var gradPath = xshardPath.Replace(".xshard", $".{fold}.grad.xshard");
-            WriteGradientXShard(toolchainDir, xshardPath, gradPath, fold);
-
-            // Fold-gated Adam update + TRAINED marking.
-            ApplyFoldAdapt(toolchainDir, xshardPath, gradPath, fold, learningRate);
-
-            return pending.Count;
+            await Task.CompletedTask;
+            return shards.Count;
         }
 
         // Canonical fold sequence — phase order Pop(0) → Xul(5π/3).
@@ -408,13 +439,14 @@ namespace Micronaut.Streaming.Adapter
         public static readonly string[] FoldSequence =
             { "Pop", "Wo", "Yax", "Sek", "Chen", "Xul" };
 
-        // Train every fold in phase order, one fold at a time.
-        // Skips folds with no pending shards (already trained or no tensors in that lane).
-        // progress callback receives (fold, pendingCount) before each fold step.
+        // Train every fold in phase order using probe-gradient curriculum.
+        // Skips folds with no F32 shards (quantized folds like Sek/Wo/Yax are no-ops).
+        // progress callback receives (fold, shardCount) before each fold step.
         public static async Task<int> TrainAllFoldsAsync(
             string toolchainDir, XShardSession session,
-            string xshardPath,
-            float learningRate = 1e-4f,
+            string xshardPath, string shaderPath,
+            float learningRate = 1e-4f, float gradScale = 5e-4f,
+            int maxShardsPerFold = 200,
             Action<string, int> progress = null,
             CancellationToken ct = default)
         {
@@ -424,15 +456,14 @@ namespace Micronaut.Streaming.Adapter
             {
                 ct.ThrowIfCancellationRequested();
 
-                var pending = QueryShardInfo(toolchainDir, xshardPath, fold)
-                              .FindAll(s => s.State == "pending");
+                var shards = QueryShardInfo(session, fold);
+                if (shards.Count == 0) continue;
 
-                if (pending.Count == 0) continue;
-
-                progress?.Invoke(fold, pending.Count);
+                progress?.Invoke(fold, shards.Count);
 
                 int trained = await TrainFoldStepAsync(
-                    toolchainDir, session, xshardPath, fold, learningRate, ct);
+                    toolchainDir, session, xshardPath, fold, shaderPath,
+                    learningRate, gradScale, maxShardsPerFold, ct);
 
                 totalTrained += trained;
             }
@@ -460,6 +491,98 @@ namespace Micronaut.Streaming.Adapter
                 throw new Exception($"{Path.GetFileName(exePath)} exit {p.ExitCode}: {stderr.Trim()}");
             }
             return stdout;
+        }
+    }
+
+    // Routes a resolved fold phase to the model XShard whose topology best covers it.
+    //
+    // Gemma 3 1B topology:    Chen:157  Sek:104  Wo:52  Yax:26  Pop:5
+    // GPT-2 Large topology:   Chen:182  Sek:144  Wo:72  Yax:72  Pop:2
+    // Qwen-Coder (AST specialist, NOT in main routing — access directly):
+    //                         Sek:168   Wo:48    Chen:49 Yax:24  Pop:3
+    //
+    // Default routing:
+    //   Pop  → Gemma     (embedding/pos; generalist base)
+    //   Wo   → Gemma     (FFN gate/up; Gemma has more FFN capacity)
+    //   Yax  → Gpt2Large (FFN down; 36-layer depth, 72 shards vs Gemma's 26)
+    //   Sek  → Gpt2Large (attention Q/K/V/O; 20-head × 36 layers = 144 shards)
+    //   Chen → Gpt2Large (layer-norm; 36 layers × 2 norms = 182 shards, deepest norm stack)
+    //   Xul  → Gemma     (lm_head; generalist output)
+    //
+    // Qwen-Coder is a standalone AST/coder specialist. It is not in the default
+    // routing table but can be assigned via FoldOverrides when the request is
+    // code/AST-domain ("asx" = AST in stack terminology).
+    //
+    // The router never touches model files — it decides which XShardSession to open
+    // per fold so the runtime streams weights from the specialist model.
+    public sealed class FoldRouter
+    {
+        public string GemmaXshardPath    { get; }
+        public string Gpt2LargeXshardPath { get; }
+        public string? QwenXshardPath    { get; }
+
+        // Per-fold override: fold name → "Gemma", "Gpt2Large", or "Qwen"
+        public Dictionary<string, string> FoldOverrides { get; } = new();
+
+        private static readonly Dictionary<string, string> DefaultRouting =
+            new(StringComparer.Ordinal)
+            {
+                ["Pop"]  = "Gemma",
+                ["Wo"]   = "Gemma",
+                ["Yax"]  = "Gpt2Large",
+                ["Sek"]  = "Gpt2Large",
+                ["Chen"] = "Gpt2Large",
+                ["Xul"]  = "Gemma",
+            };
+
+        public FoldRouter(string gemmaXshardPath, string gpt2LargeXshardPath, string? qwenXshardPath = null)
+        {
+            GemmaXshardPath     = gemmaXshardPath     ?? throw new ArgumentNullException(nameof(gemmaXshardPath));
+            Gpt2LargeXshardPath = gpt2LargeXshardPath ?? throw new ArgumentNullException(nameof(gpt2LargeXshardPath));
+            QwenXshardPath      = qwenXshardPath;
+        }
+
+        // Resolve which model owns the given fold, honouring any overrides.
+        public string ModelForFold(string fold)
+        {
+            if (FoldOverrides.TryGetValue(fold, out var ov)) return ov;
+            return DefaultRouting.TryGetValue(fold, out var def) ? def : "Gemma";
+        }
+
+        // Open the XShardSession for the model that owns the given fold.
+        // Caller must dispose the returned session.
+        public XShardSession OpenSessionForFold(string fold)
+        {
+            var path = ModelForFold(fold) switch
+            {
+                "Gpt2Large" => Gpt2LargeXshardPath,
+                "Qwen"      => QwenXshardPath ?? GemmaXshardPath,
+                _           => GemmaXshardPath,
+            };
+            return AdaptiveContentModelAdapter.OpenXShard(path);
+        }
+
+        // Stream fold shards from the appropriate specialist model, yielding
+        // (entry, rawBytes, modelName) for each shard in manifest order.
+        // Disposes the session after enumeration completes.
+        public async IAsyncEnumerable<(XShardEntry Entry, byte[] Raw, string Model)>
+            StreamFoldFromSpecialistAsync(string fold,
+                [System.Runtime.CompilerServices.EnumeratorCancellation]
+                CancellationToken ct = default)
+        {
+            var model   = ModelForFold(fold);
+            using var s = OpenSessionForFold(fold);
+            await foreach (var (entry, raw) in s.StreamFoldAsync(fold, ct))
+                yield return (entry, raw, model);
+        }
+
+        // Return the routing table as a display string.
+        public string DescribeRouting()
+        {
+            var sb = new System.Text.StringBuilder();
+            foreach (var fold in XShardTrainer.FoldSequence)
+                sb.Append(fold).Append(" → ").AppendLine(ModelForFold(fold));
+            return sb.ToString();
         }
     }
 }
