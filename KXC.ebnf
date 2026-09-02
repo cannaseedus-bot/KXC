@@ -193,6 +193,28 @@ khlc-val    = "css-c" | "wgsl" | "hlsl" | "node" | "sw.js" | "html"
  * The agents don't add computation; they route CSS's existing computation to
  * the right execution surface.
  *
+ * WebView2 / WebGL2 / WebGPU:
+ *   PRIMEOS already embeds WebView2 (Microsoft.Web.WebView2 NuGet, PRIMEOSShell.xaml).
+ *   Modern WebView2 runtimes (Edge 113+, mid-2023) ship WebGPU enabled by default —
+ *   navigator.gpu is available in primeos-app.html with no additional flags.
+ *   WebGL2 has been available in WebView2 since Chromium 56.
+ *   WebGPU uses the D3D12 backend on Windows, so Intel HD 4600 is reachable.
+ *   Full pipeline via $KHLC = wgsl:
+ *     klslc emits WGSL source
+ *       -> C# bridge: MainWebView.CoreWebView2.ExecuteScriptAsync(wgsl_source)
+ *       -> navigator.gpu.requestAdapter() inside WebView2
+ *       -> device.createComputePipeline(wgsl_source)
+ *       -> GPU (D3D12 backend)
+ *   $Runtime = WGSL + $Host = Browser maps to this path in the cap-decl grammar.
+ *
+ * KSHTML naming clarification:
+ *   KSHTML (drivers/klsl/kshtml-runtime.kuhul) is a tree PARSER, not a renderer.
+ *   It reads XML/XHTML/MathML structure and produces an AST.
+ *   Rendering is WebView2's job — they are complementary:
+ *     KSHTML   reads structure  (XML -> AST -> CSS-C annotations -> klslc)
+ *     WebView2 renders + runs  (HTML/CSS/JS/WebGPU in Chromium)
+ *   KSHTML never touches the GPU; WebView2 does via WebGL2 / WebGPU.
+ *
  * MathML extension:
  *   MathML adds a browser-native expression AST — no parsing step invented.
  *   Every MathML element IS an AST node:
