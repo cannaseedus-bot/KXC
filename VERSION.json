@@ -32,7 +32,7 @@
   },
   "registry": {
     "path": "versions/kxc-v1.0.0/registry",
-    "canonical_source": "C:/public_html/MX2LM/codex/AS-XCFE/registry/kxc",
+    "canonical_source": "versions/kxc-v1.0.0/registry",
     "files": [
       "kernel-aliases.json",
       "kernel-classes.json",

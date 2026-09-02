@@ -1,0 +1,49 @@
+[Pop fold_backward]
+  (*
+   * fold_backward — xshard gradient kernel (xshard-backward format)
+   * Reads forward hidden state from SHM, computes gradients via
+   * reverse-mode autodiff, writes grad xshard for xshard_adapt.
+   * grad_source: probe:weight*grad_scale  (Adam, lr=1e-05)
+   *)
+
+  [Wo grad_out  tensor<float32, [seq, vocab]>]
+  [Wo weights   tensor<float32, [shard, d]>]
+  [Wo fold      string]
+  [Wo grad_clip float32]
+
+  [K'ayab']
+    (* Read hidden state written by fold_forward *)
+    [Pop hidden = shm_read("fwd_hidden")]
+    [Pop fold_phase = shm_read(fold)]
+
+    (* Backward through lm_head / final norm *)
+    [Yax grad_out]
+    [Sek ⊗ grad_out weights -> d_hidden]
+
+    (* Backward through MLP — SwiGLU gradient *)
+    [Yax d_hidden]
+    [Sek ⊗ d_hidden weights -> d_gate]
+    [Sek ⊗ d_hidden weights -> d_up]
+    [Sek silu_grad(d_gate) ⊕ d_up -> d_mlp]
+    [Ch'en d_hidden d_mlp]
+
+    (* Backward through attention — QKV gradient *)
+    [Sek ⊗ d_hidden weights -> d_qkv]
+    [Ch'en d_hidden d_qkv]
+
+    (* Backward through embedding lookup *)
+    [Sek ⊗ d_hidden weights -> d_embed]
+    [Ch'en grad_weights d_embed]
+
+    (* Gradient clipping *)
+    [Sek grad_norm = l2_norm(grad_weights)]
+    [Sek clip_ratio = min(1.0, grad_clip / grad_norm)]
+    [Sek grad_weights ⊗ clip_ratio -> grad_weights]
+
+    (* Write gradient xshard (arch=xshard-backward) *)
+    [Wo fold_tag = fold_phase]
+    [Xul xshard_write(grad_weights, arch: "xshard-backward", fold: fold_tag)]
+
+    [Ch'en output grad_weights]
+  [Kumk'u]
+[Xul]

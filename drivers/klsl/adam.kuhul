@@ -1,0 +1,59 @@
+[Pop fold_adam]
+  (*
+   * fold_adam — Adam optimizer kernel for xshard weight updates.
+   * Reads grad xshard written by fold_backward, applies Adam update rule,
+   * writes updated weight xshard. State (m, v, step) persisted in SHM.
+   * Defaults: lr=1e-05, beta1=0.9, beta2=0.999, eps=1e-8
+   *)
+
+  [Wo grad_weights tensor<float32, [shard, d]>]
+  [Wo weights      tensor<float32, [shard, d]>]
+  [Wo lr           float32]
+  [Wo beta1        float32]
+  [Wo beta2        float32]
+  [Wo eps          float32]
+
+  [K'ayab']
+    (* Restore Adam state from SHM (zero-initialised on first call) *)
+    [Pop m    = shm_read("adam.m",    default: 0.0)]
+    [Pop v    = shm_read("adam.v",    default: 0.0)]
+    [Pop step = shm_read("adam.step", default: 0)]
+
+    [Yax grad_weights]
+    [Yax weights]
+
+    (* First moment: m = beta1 * m + (1 - beta1) * g *)
+    [Sek beta1 ⊗ m -> m_scaled]
+    [Sek (1.0 - beta1) ⊗ grad_weights -> g_scaled]
+    [Sek m_scaled ⊕ g_scaled -> m]
+
+    (* Second moment: v = beta2 * v + (1 - beta2) * g^2 *)
+    [Sek beta2 ⊗ v -> v_scaled]
+    [Sek grad_weights ⊗ grad_weights -> g_sq]
+    [Sek (1.0 - beta2) ⊗ g_sq -> g_sq_scaled]
+    [Sek v_scaled ⊕ g_sq_scaled -> v]
+
+    (* Bias-correction step *)
+    [Sek step ⊕ 1 -> step]
+    [Sek 1.0 - pow(beta1, step) -> bc1]
+    [Sek 1.0 - pow(beta2, step) -> bc2]
+    [Sek m / bc1 -> m_hat]
+    [Sek v / bc2 -> v_hat]
+
+    (* Weight update: w = w - lr * m_hat / (sqrt(v_hat) + eps) *)
+    [Sek sqrt(v_hat) ⊕ eps -> denom]
+    [Sek m_hat / denom -> delta]
+    [Sek lr ⊗ delta -> lr_delta]
+    [Sek weights - lr_delta -> weights]
+
+    (* Persist updated Adam state *)
+    [Xul shm_write(m,    key: "adam.m")]
+    [Xul shm_write(v,    key: "adam.v")]
+    [Xul shm_write(step, key: "adam.step")]
+
+    (* Emit updated weights as xshard *)
+    [Xul xshard_write(weights)]
+
+    [Ch'en output weights]
+  [Kumk'u]
+[Xul]

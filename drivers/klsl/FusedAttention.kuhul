@@ -1,0 +1,26 @@
+[Pop FusedAttention]
+  [Muwan dispatch 64 1 1]
+
+  (* Capability flags — KXC uses these to compose cssc backend modules *)
+  [Sek needsMatMul    true]
+  [Sek needsSoftmax   true]
+  [Sek needsCausalMask true]
+  [Sek needsRoPE      true]
+  [Sek needsGQA       true]
+  [Sek needsSoftcap   true]
+
+  (* Input shape bindings *)
+  [Wo Q  tensor<float32, [n_heads,     seq, head_dim]>]
+  [Wo K  tensor<float32, [n_kv_heads,  seq, head_dim]>]
+  [Wo V  tensor<float32, [n_kv_heads,  seq, head_dim]>]
+  [Wo cos tensor<float32, [seq, head_dim]>]
+  [Wo sin tensor<float32, [seq, head_dim]>]
+
+  (* Tunable parameters *)
+  [Sek scale      float32]
+  [Sek attn_softcap float32]
+  [Sek gqa_ratio  int32]
+
+  (* Output *)
+  [Ch'en out tensor<float32, [n_heads, seq, head_dim]>]
+[Xul]

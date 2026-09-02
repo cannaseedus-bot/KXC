@@ -1,0 +1,45 @@
+[Pop fold_forward]
+  (*
+   * fold_forward — xshard forward pass kernel
+   * Routes to Gemma / GPT-2 Large / Qwen via fold phase tag.
+   * Folds: Pop/Wo/Xul -> Gemma  |  Yax/Sek/Chen -> GPT-2  |  Sek+Wo (AST) -> Qwen
+   *)
+
+  [Wo tokens  tensor<int32,   [seq]>]
+  [Wo weights tensor<float32, [shard, d]>]
+  [Wo fold    string]
+
+  [K'ayab']
+    (* Read SHM fold-phase to select model branch *)
+    [Pop fold_phase = shm_read(fold)]
+
+    (* Load token embeddings from xshard binding *)
+    [Yax tokens]
+    [Yax weights]
+    [Sek ⊗ tokens weights -> embed]
+
+    (* Attention block — causal masked, GQA, RoPE *)
+    [Sek attn_softcap = 30.0]
+    [Sek ⊗ embed embed -> qkv]
+    [Sek ⊕ qkv attn_softcap -> scores]
+    [Ch'en hidden qkv]
+
+    (* MLP block — SwiGLU *)
+    [Yax hidden]
+    [Sek ⊗ hidden weights -> gate]
+    [Sek ⊗ hidden weights -> up]
+    [Sek silu(gate) ⊗ up -> mlp]
+    [Ch'en hidden mlp]
+
+    (* Final norm and lm_head projection *)
+    [Sek ⊗ hidden weights -> logits]
+    [Sek logit_softcap = 50.0]
+    [Sek tanh(logits / logit_softcap) * logit_softcap -> logits]
+
+    (* Write logits + hidden state to SHM for backward *)
+    [Xul shm_write(logits)]
+    [Xul shm_write(hidden, key: "fwd_hidden")]
+
+    [Ch'en output logits]
+  [Kumk'u]
+[Xul]

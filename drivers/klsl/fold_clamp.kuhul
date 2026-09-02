@@ -1,0 +1,33 @@
+[Pop fold_clamp]
+  (*
+   * fold_clamp — gradient / activation clamping kernel.
+   * Two modes:
+   *   grad_clip  — L2-norm clamp applied to gradient tensor (--grad-clip 1.0)
+   *   value_clip — element-wise hard clamp for logits / activations
+   * Mode selected via the 'mode' input binding.
+   *)
+
+  [Wo tensor    tensor<float32, [shard, d]>]
+  [Wo clip_norm float32]
+  [Wo clip_lo   float32]
+  [Wo clip_hi   float32]
+  [Wo mode      string]
+
+  [K'ayab']
+    [Yax tensor]
+
+    (* Gradient L2-norm clip (mode = "grad") *)
+    [Pop is_grad = (mode == "grad")]
+    [Sek if(is_grad) l2_norm(tensor) -> g_norm]
+    [Sek if(is_grad) min(1.0, clip_norm / g_norm) -> clip_ratio]
+    [Sek if(is_grad) tensor ⊗ clip_ratio -> tensor]
+
+    (* Element-wise value clamp (mode = "value") *)
+    [Pop is_value = (mode == "value")]
+    [Sek if(is_value) clamp(tensor, clip_lo, clip_hi) -> tensor]
+
+    [Xul shm_write(tensor, key: "clamped")]
+
+    [Ch'en output tensor]
+  [Kumk'u]
+[Xul]

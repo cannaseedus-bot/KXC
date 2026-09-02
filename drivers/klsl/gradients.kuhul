@@ -1,0 +1,43 @@
+[Pop fold_gradients]
+  (*
+   * fold_gradients — gradient accumulation kernel.
+   * Accumulates gradients from multiple fold_backward calls before
+   * an Adam step. Applies grad_scale probe (grad_source: probe:weight*grad_scale).
+   * Flushes accumulated gradient to SHM when step_count reaches flush_every.
+   * Defaults: grad_scale=0.0005, flush_every=1 (accumulate all folds first)
+   *)
+
+  [Wo grad_in    tensor<float32, [shard, d]>]
+  [Wo grad_scale float32]
+  [Wo flush_every int32]
+
+  [K'ayab']
+    (* Load running accumulator from SHM (zero-init on first call) *)
+    [Pop accum      = shm_read("grad.accum",      default: 0.0)]
+    [Pop accum_step = shm_read("grad.accum_step", default: 0)]
+
+    [Yax grad_in]
+
+    (* Apply probe scaling: g = grad_in * grad_scale *)
+    [Sek grad_scale ⊗ grad_in -> g_scaled]
+
+    (* Accumulate *)
+    [Sek accum ⊕ g_scaled -> accum]
+    [Sek accum_step ⊕ 1 -> accum_step]
+
+    (* Check flush threshold *)
+    [Sek accum_step % flush_every -> remainder]
+
+    (* Write accumulator back to SHM regardless *)
+    [Xul shm_write(accum,      key: "grad.accum")]
+    [Xul shm_write(accum_step, key: "grad.accum_step")]
+
+    (* On flush: emit accumulated gradient and reset accumulator *)
+    [Pop flush = (remainder == 0)]
+    [Xul if(flush) xshard_write(accum, arch: "xshard-backward")]
+    [Xul if(flush) shm_write(0.0, key: "grad.accum")]
+    [Xul if(flush) shm_write(0,   key: "grad.accum_step")]
+
+    [Ch'en output accum]
+  [Kumk'u]
+[Xul]

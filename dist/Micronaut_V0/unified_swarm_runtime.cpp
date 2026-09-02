@@ -43,23 +43,23 @@ Phase string_to_phase(const std::string& s) {
 
 std::string fold_to_string(Fold f) {
     switch (f) {
-        case Fold::COMPUTE: return "COMPUTE";
-        case Fold::CONTROL: return "CONTROL";
-        case Fold::STATE: return "STATE";
-        case Fold::UI: return "UI";
-        case Fold::META: return "META";
-        case Fold::DATA: return "DATA";
-        default: return "UNASSIGNED";
+        case Fold::Pop:  return "Pop";
+        case Fold::Wo:   return "Wo";
+        case Fold::Yax:  return "Yax";
+        case Fold::Sek:  return "Sek";
+        case Fold::Chen: return "Chen";
+        case Fold::Xul:  return "Xul";
+        default:         return "UNASSIGNED";
     }
 }
 
 Fold string_to_fold(const std::string& s) {
-    if (s == "COMPUTE") return Fold::COMPUTE;
-    if (s == "CONTROL") return Fold::CONTROL;
-    if (s == "STATE") return Fold::STATE;
-    if (s == "UI") return Fold::UI;
-    if (s == "META") return Fold::META;
-    if (s == "DATA") return Fold::DATA;
+    if (s == "Pop")  return Fold::Pop;
+    if (s == "Wo")   return Fold::Wo;
+    if (s == "Yax")  return Fold::Yax;
+    if (s == "Sek")  return Fold::Sek;
+    if (s == "Chen") return Fold::Chen;
+    if (s == "Xul")  return Fold::Xul;
     return Fold::UNASSIGNED;
 }
 
@@ -466,194 +466,194 @@ void UnifiedRuntime::print_swarm_status() const {
 std::vector<json> load_embedded_agent_configs() {
     std::vector<json> configs;
     
-    // COMPUTE Fold agents
+    // Sek fold — tensor compute / inference / graphics / shader (π phase)
     configs.push_back({
-        {"id", "BR-1"}, {"type", "mixture-of-experts"}, {"fold", "COMPUTE"},
+        {"id", "BR-1"}, {"type", "mixture-of-experts"}, {"fold", "Sek"},
         {"port", 3172}, {"endpoint", "http://127.0.0.1:3172/dispatch"},
         {"role", "router"}, {"priority", 100}
     });
     
     configs.push_back({
-        {"id", "OV-1"}, {"type", "tensor"}, {"fold", "COMPUTE"},
+        {"id", "OV-1"}, {"type", "tensor"}, {"fold", "Sek"},
         {"port", 3174}, {"endpoint", "http://127.0.0.1:3174/dispatch"},
         {"role", "compute"}, {"priority", 80}
     });
     
     configs.push_back({
-        {"id", "DX-1"}, {"type", "tensor"}, {"fold", "COMPUTE"},
+        {"id", "DX-1"}, {"type", "tensor"}, {"fold", "Sek"},
         {"port", 3177}, {"endpoint", "http://127.0.0.1:3177/dispatch"},
         {"role", "compute"}
     });
     
     configs.push_back({
-        {"id", "IM-1"}, {"type", "semantic"}, {"fold", "COMPUTE"},
+        {"id", "IM-1"}, {"type", "semantic"}, {"fold", "Sek"},
         {"port", 3178}, {"endpoint", "http://127.0.0.1:3178/dispatch"},
         {"role", "inference"}
     });
     
     configs.push_back({
-        {"id", "D3D-1"}, {"type", "tensor"}, {"fold", "COMPUTE"},
+        {"id", "D3D-1"}, {"type", "tensor"}, {"fold", "Sek"},
         {"port", 3187}, {"endpoint", "http://127.0.0.1:3187/dispatch"},
         {"role", "graphics"}
     });
     
     configs.push_back({
-        {"id", "GX-1"}, {"type", "tensor"}, {"fold", "COMPUTE"},
+        {"id", "GX-1"}, {"type", "tensor"}, {"fold", "Sek"},
         {"port", 3202}, {"endpoint", "http://127.0.0.1:3202/dispatch"},
         {"role", "graphics"}
     });
     
     configs.push_back({
-        {"id", "SCX-8"}, {"type", "mixture-of-experts"}, {"fold", "COMPUTE"},
+        {"id", "SCX-8"}, {"type", "mixture-of-experts"}, {"fold", "Sek"},
         {"port", 3203}, {"endpoint", "http://127.0.0.1:3203/dispatch"},
         {"role", "expert"}
     });
     
     configs.push_back({
-        {"id", "SMG-1"}, {"type", "semantic"}, {"fold", "COMPUTE"},
+        {"id", "SMG-1"}, {"type", "semantic"}, {"fold", "Sek"},
         {"port", 3204}, {"endpoint", "http://127.0.0.1:3204/dispatch"},
         {"role", "model"}
     });
     
     configs.push_back({
-        {"id", "SXME-1"}, {"type", "compiler"}, {"fold", "COMPUTE"},
+        {"id", "SXME-1"}, {"type", "compiler"}, {"fold", "Sek"},
         {"port", 3205}, {"endpoint", "http://127.0.0.1:3205/dispatch"},
         {"role", "shader"}
     });
     
     configs.push_back({
-        {"id", "S7-1"}, {"type", "supernaut"}, {"fold", "COMPUTE"},
+        {"id", "S7-1"}, {"type", "supernaut"}, {"fold", "Sek"},
         {"port", 3207}, {"endpoint", "http://127.0.0.1:3207/dispatch"},
         {"role", "supernaut"}, {"priority", 250}
     });
     
-    // CONTROL Fold agents
+    // Wo fold — flow control / weight / mask (π/3 phase)
     configs.push_back({
-        {"id", "FG-1"}, {"type", "fold-controller"}, {"fold", "CONTROL"},
+        {"id", "FG-1"}, {"type", "fold-controller"}, {"fold", "Wo"},
         {"port", 3176}, {"endpoint", "http://127.0.0.1:3176/dispatch"},
         {"role", "controller"}, {"priority", 200}
     });
     
-    // STATE Fold agents
+    // Yax fold — K-index / enumerate / state (2π/3 phase)
     configs.push_back({
-        {"id", "KX-1"}, {"type", "compiler"}, {"fold", "STATE"},
+        {"id", "KX-1"}, {"type", "compiler"}, {"fold", "Yax"},
         {"port", 3175}, {"endpoint", "http://127.0.0.1:3175/dispatch"},
         {"role", "compiler"}, {"priority", 95}
     });
     
-    // UI Fold agents
+    // Xul fold — output / entropy / UI surface (5π/3 phase)
     configs.push_back({
-        {"id", "VM-1"}, {"type", "semantic"}, {"fold", "UI"},
+        {"id", "VM-1"}, {"type", "semantic"}, {"fold", "Xul"},
         {"port", 3173}, {"endpoint", "http://127.0.0.1:3173/dispatch"},
         {"role", "creative"}, {"priority", 90}
     });
     
     configs.push_back({
-        {"id", "WB-1"}, {"type", "semantic"}, {"fold", "UI"},
+        {"id", "WB-1"}, {"type", "semantic"}, {"fold", "Xul"},
         {"port", 3188}, {"endpoint", "http://127.0.0.1:3188/dispatch"},
         {"role", "visualization"}
     });
     
     configs.push_back({
-        {"id", "DT-1"}, {"type", "tool-workshop"}, {"fold", "UI"},
+        {"id", "DT-1"}, {"type", "tool-workshop"}, {"fold", "Xul"},
         {"port", 3197}, {"endpoint", "http://127.0.0.1:3197/dispatch"},
         {"role", "desktop"}
     });
     
-    // META Fold agents (15 total)
+    // Chen fold — collect / V-gather / meta / planning (4π/3 phase)
     configs.push_back({
-        {"id", "CM-1"}, {"type", "compiler"}, {"fold", "META"},
+        {"id", "CM-1"}, {"type", "compiler"}, {"fold", "Chen"},
         {"port", 3179}, {"endpoint", "http://127.0.0.1:3179/dispatch"},
         {"role", "compression"}
     });
     
     configs.push_back({
-        {"id", "PM-1"}, {"type", "semantic"}, {"fold", "META"},
+        {"id", "PM-1"}, {"type", "semantic"}, {"fold", "Chen"},
         {"port", 8001}, {"endpoint", "http://127.0.0.1:8001/dispatch"},
         {"role", "planner"}
     });
     
     configs.push_back({
-        {"id", "PSISE-1"}, {"type", "coder"}, {"fold", "META"},
+        {"id", "PSISE-1"}, {"type", "coder"}, {"fold", "Chen"},
         {"port", 3180}, {"endpoint", "http://127.0.0.1:3180/dispatch"},
         {"role", "codegen"}
     });
     
     configs.push_back({
-        {"id", "PYIDE-1"}, {"type", "coder"}, {"fold", "META"},
+        {"id", "PYIDE-1"}, {"type", "coder"}, {"fold", "Chen"},
         {"port", 3181}, {"endpoint", "http://127.0.0.1:3181/dispatch"},
         {"role", "codegen"}
     });
     
     configs.push_back({
-        {"id", "BATCH-1"}, {"type", "coder"}, {"fold", "META"},
+        {"id", "BATCH-1"}, {"type", "coder"}, {"fold", "Chen"},
         {"port", 3182}, {"endpoint", "http://127.0.0.1:3182/dispatch"},
         {"role", "codegen"}
     });
     
     configs.push_back({
-        {"id", "SHELL-1"}, {"type", "tool-workshop"}, {"fold", "META"},
+        {"id", "SHELL-1"}, {"type", "tool-workshop"}, {"fold", "Chen"},
         {"port", 3183}, {"endpoint", "http://127.0.0.1:3183/dispatch"},
         {"role", "shell"}
     });
     
     configs.push_back({
-        {"id", "FM-1"}, {"type", "tool-workshop"}, {"fold", "META"},
+        {"id", "FM-1"}, {"type", "tool-workshop"}, {"fold", "Chen"},
         {"port", 3184}, {"endpoint", "http://127.0.0.1:3184/dispatch"},
         {"role", "filesystem"}
     });
     
     configs.push_back({
-        {"id", "WSL-1"}, {"type", "tool-workshop"}, {"fold", "META"},
+        {"id", "WSL-1"}, {"type", "tool-workshop"}, {"fold", "Chen"},
         {"port", 3194}, {"endpoint", "http://127.0.0.1:3194/dispatch"},
         {"role", "linux"}
     });
     
     configs.push_back({
-        {"id", "AR-1"}, {"type", "supernaut"}, {"fold", "META"},
+        {"id", "AR-1"}, {"type", "supernaut"}, {"fold", "Chen"},
         {"port", 3195}, {"endpoint", "http://127.0.0.1:3195/dispatch"},
         {"role", "runtime"}, {"priority", 150}
     });
     
     configs.push_back({
-        {"id", "BC-1"}, {"type", "compiler"}, {"fold", "META"},
+        {"id", "BC-1"}, {"type", "compiler"}, {"fold", "Chen"},
         {"port", 3196}, {"endpoint", "http://127.0.0.1:3196/dispatch"},
         {"role", "compilation"}
     });
     
     configs.push_back({
-        {"id", "SH-1"}, {"type", "tool-workshop"}, {"fold", "META"},
+        {"id", "SH-1"}, {"type", "tool-workshop"}, {"fold", "Chen"},
         {"port", 3198}, {"endpoint", "http://127.0.0.1:3198/dispatch"},
         {"role", "scripting"}
     });
     
     configs.push_back({
-        {"id", "SCM-1"}, {"type", "tool-workshop"}, {"fold", "META"},
+        {"id", "SCM-1"}, {"type", "tool-workshop"}, {"fold", "Chen"},
         {"port", 3199}, {"endpoint", "http://127.0.0.1:3199/dispatch"},
         {"role", "version-control"}
     });
     
     configs.push_back({
-        {"id", "SSH-1"}, {"type", "policy"}, {"fold", "META"},
+        {"id", "SSH-1"}, {"type", "policy"}, {"fold", "Chen"},
         {"port", 3200}, {"endpoint", "http://127.0.0.1:3200/dispatch"},
         {"role", "security"}
     });
     
     configs.push_back({
-        {"id", "WK-1"}, {"type", "fold-manager"}, {"fold", "META"},
+        {"id", "WK-1"}, {"type", "fold-manager"}, {"fold", "Chen"},
         {"port", 3201}, {"endpoint", "http://127.0.0.1:3201/dispatch"},
         {"role", "workspace"}
     });
     
-    // DATA Fold agents
+    // Pop fold — observe / embed / raw data input (0 phase)
     configs.push_back({
-        {"id", "DQ-1"}, {"type", "fold-manager"}, {"fold", "DATA"},
+        {"id", "DQ-1"}, {"type", "fold-manager"}, {"fold", "Pop"},
         {"port", 3186}, {"endpoint", "http://127.0.0.1:3186/dispatch"},
         {"role", "data"}
     });
     
     configs.push_back({
-        {"id", "DST-1"}, {"type", "fold-manager"}, {"fold", "DATA"},
+        {"id", "DST-1"}, {"type", "fold-manager"}, {"fold", "Pop"},
         {"port", 3206}, {"endpoint", "http://127.0.0.1:3206/dispatch"},
         {"role", "data"}
     });
