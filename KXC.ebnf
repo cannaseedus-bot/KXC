@@ -187,10 +187,32 @@ khlc-val    = "css-c" | "wgsl" | "hlsl" | "node" | "sw.js" | "html"
 
 (* ── CSS is already a cascading math engine — nothing invented ──────────────── *)
 (*
+ * CSS is a declarative dataflow engine with a built-in constraint solver, a
+ * priority resolution algorithm, and a time-series state machine — running
+ * natively in every browser.  CSS-C bridges that engine to KLSL GPU kernels.
+ * The agents don't add computation; they route CSS's existing computation to
+ * the right execution surface.
+ *
  * CSS-C is a bridge, not an invention.  The structural equivalences between CSS
  * and the khanary fold/SHM/dispatch system were already present in both languages.
  * CSS-C makes those equivalences explicit and lets each reader parse its own half:
  * kxc reads [brackets], klslc reads $declarations, the browser reads CSS.
+ *
+ * Scope note — what holds as structural identity vs analogy:
+ *   IDENTITY (same algorithm, different notation):
+ *     cascade resolution, @layer ordering, !important reverse cascade,
+ *     --custom-property propagation, inherit/revert/initial, specificity scoring,
+ *     CSS Grid constraint solving, @keyframes state machine.
+ *   ANALOGY (related concept, not the same operation):
+ *     color-mix() as encryption, specificity as cryptographic hash — CSS has no
+ *     hash primitive; SHA-256 in SCXQ2 operates on actual bytes.
+ *   OUT OF SCOPE for CSS alone (requires browser APIs alongside CSS):
+ *     fetch(), WebSocket, @font-face network loading — these are browser APIs,
+ *     not CSS.  CSS has no network stack.
+ *   TURING COMPLETENESS:
+ *     CSS alone is not Turing complete.  It can simulate finite automata via
+ *     hover + sibling selectors, but requires the DOM + user interaction as the
+ *     tape head.  Houdini paint worklets extend this but introduce JavaScript.
  *
  * CSS already provides:
  *   calc() min() max() clamp()     — arithmetic over the full property space
