@@ -193,6 +193,30 @@ khlc-val    = "css-c" | "wgsl" | "hlsl" | "node" | "sw.js" | "html"
  * The agents don't add computation; they route CSS's existing computation to
  * the right execution surface.
  *
+ * MathML extension:
+ *   MathML adds a browser-native expression AST — no parsing step invented.
+ *   Every MathML element IS an AST node:
+ *     <msup><mi>x</mi><mn>2</mn></msup>  = AST node for x²
+ *     <mtable>                            = matrix structure
+ *     <mrow>                             = grouping / parenthesisation
+ *     <mo>                               = operator node
+ *   CSS can already query the MathML DOM:
+ *     :has(msup)   = expression contains exponentiation
+ *     :has(mfrac)  = expression contains division
+ *     :has(mo)     = expression contains an operator
+ *   Custom properties on MathML elements = compiler annotations for klslc.
+ *   KSHTML (drivers/klsl/kshtml-runtime.kuhul) already parses the XML.
+ *   Full pipeline, nothing invented:
+ *     MathML DOM (expression AST)
+ *       -> CSS-C annotates / queries the tree (custom props as KLSL op tags)
+ *       -> KSHTML reads the XML structure (existing runtime)
+ *       -> klslc compiles annotated nodes -> KLSL / WGSL kernel
+ *       -> GPU
+ *   Scope note: CSS does NOT evaluate mathematical expressions.
+ *   differentiate() / gradient() as CSS functions do not exist.
+ *   The computation happens in klslc + the generated kernel, not in CSS.
+ *   CSS's role is annotation and structural query of the MathML AST.
+ *
  * CSS-C is a bridge, not an invention.  The structural equivalences between CSS
  * and the khanary fold/SHM/dispatch system were already present in both languages.
  * CSS-C makes those equivalences explicit and lets each reader parse its own half:
