@@ -1,0 +1,5 @@
+[Pop backward_pass_test]
+  [Muwan dispatch 64 1 1]
+  [Sek needsGradClip true]
+  [Sek needsShmRead true]
+[Xul]

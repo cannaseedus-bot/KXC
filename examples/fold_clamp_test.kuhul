@@ -1,0 +1,4 @@
+[Pop fold_clamp_test]
+  [Muwan dispatch 256 1 1]
+  [Sek needsValueClamp true]
+[Xul]

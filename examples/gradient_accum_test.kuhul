@@ -1,0 +1,4 @@
+[Pop gradient_accum_test]
+  [Muwan dispatch 64 1 1]
+  [Sek needsGradAccum true]
+[Xul]

@@ -47,6 +47,26 @@
         "collapseClass": "attention.fused"
       },
       {
+        "trigger": "[Sek needsAdam true]",
+        "kernelClass": "adam_optimizer",
+        "collapseClass": "training.optimizer"
+      },
+      {
+        "trigger": "[Sek needsGradAccum true]",
+        "kernelClass": "gradient_accum",
+        "collapseClass": "training.accum"
+      },
+      {
+        "trigger": "[Sek needsSiluGrad true] OR ([Sek needsGradClip true] AND [Sek needsShmRead true])",
+        "kernelClass": "backward_pass",
+        "collapseClass": "training.backward"
+      },
+      {
+        "trigger": "[Sek needsValueClamp true] OR [Sek needsGradClip true]",
+        "kernelClass": "fold_clamp",
+        "collapseClass": "training.clamp"
+      },
+      {
         "trigger": "all other kernels",
         "kernelClass": "generic-compute",
         "collapseClass": "compute.generic"
@@ -58,7 +78,7 @@
       "moe_combine",
       "phase_match"
     ],
-    "next_milestone": "extend classifier to dispatch MoE and phase-match classes from kernel name or [Sek] property signals"
+    "next_milestone": "extend classifier to dispatch MoE and phase-match classes from [Sek] property signals"
   },
   "outputs": [
     ".hlsl",
@@ -71,7 +91,11 @@
     { "source": "examples/fused_attention_full.kuhul",    "kernelClass": "tensor_attention_fused", "registryMatched": true },
     { "source": "examples/fused_attention_simple.kuhul",  "kernelClass": "tensor_attention_fused", "registryMatched": true },
     { "source": "examples/binary_split_test.kuhul",       "kernelClass": "generic-compute",        "registryMatched": true },
-    { "source": "examples/neural_layer_kuhul_test.kuhul", "kernelClass": "generic-compute",        "registryMatched": true }
+    { "source": "examples/neural_layer_kuhul_test.kuhul", "kernelClass": "generic-compute",        "registryMatched": true },
+    { "source": "examples/adam_optimizer_test.kuhul",     "kernelClass": "adam_optimizer",         "registryMatched": true },
+    { "source": "examples/gradient_accum_test.kuhul",     "kernelClass": "gradient_accum",         "registryMatched": true },
+    { "source": "examples/backward_pass_test.kuhul",      "kernelClass": "backward_pass",          "registryMatched": true },
+    { "source": "examples/fold_clamp_test.kuhul",         "kernelClass": "fold_clamp",             "registryMatched": true }
   ],
   "smca_registry": {
     "path": "SMCA-registry",

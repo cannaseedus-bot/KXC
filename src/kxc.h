@@ -21,6 +21,13 @@ struct KernelDesc {
     bool needsTangentFrame   = false;  // tangent + bitangent from pos/nrm/uv scalar arrays
     bool needsMeshlet        = false;  // meshlet frustum + cone culling pass
     bool needsVertexProcess  = false;  // generic scalar-array vertex processing w/ stride/offset
+    // training kernel flags (Sek fold — xshard_adapt / xshard_backward pipeline)
+    bool needsAdam           = false;  // Adam m/v moment update + weight step
+    bool needsGradAccum      = false;  // fold-phase gradient accumulator with flush threshold
+    bool needsSiluGrad       = false;  // SiLU activation backward (SwiGLU MLP gradient path)
+    bool needsGradClip       = false;  // L2-norm gradient clipping
+    bool needsShmRead        = false;  // reads fwd_hidden from SHM (marks backward path)
+    bool needsValueClamp     = false;  // element-wise hard clamp on logits / activations
 };
 
 // ── Backend-neutral IR (SCXQ2 layer) ─────────────────────────────────────────

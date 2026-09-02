@@ -1,0 +1,4 @@
+[Pop adam_optimizer_test]
+  [Muwan dispatch 64 1 1]
+  [Sek needsAdam true]
+[Xul]

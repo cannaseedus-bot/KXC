@@ -52,6 +52,28 @@ static void classify(const KernelDesc& d, KernelIR& ir) {
         ir.collapseClass = "mesh.vertex";
         ir.requires_     = {"scalar_arrays", "stride_offset_uniform"};
         ir.forbids       = {"vec3f_layout"};
+    } else if (d.needsAdam) {
+        ir.kernelClass   = "adam_optimizer";
+        ir.collapseClass = "training.optimizer";
+        ir.requires_     = {"shmAccess"};
+        ir.forbids       = {};
+    } else if (d.needsGradAccum) {
+        ir.kernelClass   = "gradient_accum";
+        ir.collapseClass = "training.accum";
+        ir.requires_     = {"shmAccess"};
+        ir.forbids       = {};
+    } else if (d.needsSiluGrad || (d.needsGradClip && d.needsShmRead)) {
+        // reverse-mode autodiff path: SiLU backward OR grad-clip+SHM read together
+        ir.kernelClass   = "backward_pass";
+        ir.collapseClass = "training.backward";
+        ir.requires_     = {"shmAccess"};
+        ir.forbids       = {};
+    } else if (d.needsValueClamp || d.needsGradClip) {
+        // standalone clamp without SHM read → fold_clamp (lighter than full backward)
+        ir.kernelClass   = "fold_clamp";
+        ir.collapseClass = "training.clamp";
+        ir.requires_     = {};
+        ir.forbids       = {};
     } else {
         ir.kernelClass   = "generic-compute";
         ir.collapseClass = "compute.generic";
