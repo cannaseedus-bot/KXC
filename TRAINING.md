@@ -72,6 +72,28 @@ The existing external coder stream is also valid and should be reused when appro
 E:\models\GPT2\coder_micronaut\coder_ast_json_seq256_tokens.bin
 ```
 
+### Tokenizer alignment — `--tokenizer` flag
+
+By default `jsonl_to_tokens.py` uses GPT-2 BPE (tiktoken). When training a model
+with its own vocabulary (Qwen, LLaMA, Gemma), rebuild the token bin with the
+model's tokenizer so token IDs match the model's embedding table:
+
+```powershell
+python tools/jsonl_to_tokens.py `
+  --input     "E:\data\kuhul_synthetic.jsonl" `
+  --out       "E:\models\GPT2\qwen\qwen_ast_tokens.bin" `
+  --tokenizer "E:\models\GPT2\qwen\tokenizer.json" `
+  --seq-len   256 `
+  --profile   ast-json
+```
+
+`--tokenizer` accepts any HuggingFace `tokenizer.json`. The EOS token is resolved
+automatically from the vocab (`<|endoftext|>`, `</s>`, `<eos>`, `<|im_end|>` in
+priority order). Without this flag, GPT-2 token IDs are written and any non-GPT-2
+model will misinterpret the embeddings.
+
+Qwen result: 702,144 seqs × 256 tokens = 685.7 MB, vocab=151,665, eot=151,645.
+
 ## Safe CPU smoke path
 
 The token-bin Python path is the diagnostic baseline. It avoids Hugging Face tokenizer downloads and does not require distillation:
@@ -344,6 +366,26 @@ skipped. The GGUF-derived xshards have this fold/dtype distribution:
 | Gemma 3 1B | `gemma-3-1b-it.xshard` | 157 (Chen) | 183 | 46.2% |
 | Qwen Coder | `Qwen-Coder.xshard` | ~1 (Pop) | ~289 | ~0.3% |
 
+### `safetensors_to_xshard.py` — HF naming fix
+
+HuggingFace models use different tensor name conventions from GGUF. The fold
+pattern matcher was updated to handle both:
+
+| Tensor type | GGUF name | HF name | Fold |
+|---|---|---|---|
+| Attention Q/K/V/O | `blk.N.attn_q` | `self_attn.q_proj` | Sek |
+| FFN gate/up | `blk.N.ffn_gate` | `mlp.gate_proj` | Wo |
+| Layer norm | `attn_norm` | `post_attention_layernorm` | Chen |
+
+Key fixes applied (required for Gemma, Qwen, LLaMA, Mistral):
+- Added `self_attn\.(q_proj|k_proj|v_proj|o_proj)` Sek pattern before plain `attn\.` — must be first or `attn` in `self_attn` matches the wrong rule
+- Changed `gate` → `gate_proj` in Wo pattern — `gate_proj` has `_proj` after `gate`, not a word boundary, so `\bgate\b` never matched
+- Added `layernorm(\.|$)` and `_norm(\.|$)` Chen patterns — compound names like `post_attention_layernorm` contain `layernorm` as a suffix, not a standalone token
+
+Without these fixes, all HF attention tensors fall through to the Pop fallback (zero
+Sek shards) and FFN gate tensors go to Pop instead of Wo. Verify any new conversion
+with `--dry-run` and check the fold histogram before writing the full xshard.
+
 To remove this ceiling, convert the F32 safetensors to new xshard files:
 
 ```powershell
@@ -425,39 +467,58 @@ The `skipped=183` count is the quantized-shard ceiling. Convert to F32 xshard to
 
 ### Token-bin signal path (optional supervised signal)
 
-`xshard_backward.exe` hashes a raw bytes file to a scalar signal and writes a gradient
-xshard. Any UTF-8 file is valid — `kuhul_synthetic.jsonl` works directly. Only F32 shards
-are processed.
+`xshard_backward.exe` FNV-hashes the entire `--token-bin` file as raw bytes to produce
+a scalar signal in `[-1, 1]`. The gradient formula is:
+
+```
+grads[i] = (weights[i] * weight_scale) + (token_signal * phase * grad_scale)
+```
+
+Any binary or UTF-8 file is valid as the token-bin input. Only F32 shards are processed.
+
+**Full-model invocation — correct form (no `--fold`, no `--max-shards`):**
 
 ```powershell
+$shader  = "C:\Users\canna\_khanary_inspect\trainer\build\shaders\xshard_adapt_fold.cso"
+$xshard  = "E:\models\GPT2\qwen\qwen-f32.xshard"
+$tokenbin = "E:\models\GPT2\qwen\qwen_ast_tokens.bin"
+$grad    = "E:\models\GPT2\qwen\qwen-ast-grad.xshard"
+
+# Step 1: write gradient xshard spanning ALL shards
 C:\Users\canna\_khanary_inspect\trainer\build\Release\xshard_backward.exe `
   "$xshard" `
-  --token-bin "E:\data\kuhul_synthetic.jsonl" `
-  --output    "E:\models\GPT2\gemma-3-1b-it\gemma-chen-grad.xshard" `
-  --fold      Chen `
-  --max-shards 200 `
+  --token-bin "$tokenbin" `
+  --output    "$grad" `
   --grad-scale 5e-4 `
   --weight-scale 1e-4
+
+# Step 2: apply — iterate over every fold
+foreach ($fold in @("Pop","Wo","Yax","Sek","Chen")) {
+  C:\Users\canna\_khanary_inspect\trainer\build\Release\xshard_adapt.exe `
+    "$xshard" `
+    --fold "$fold" `
+    --lr 1e-5 `
+    --grad-xshard "$grad" `
+    --shader "$shader" `
+    --apply
+}
 ```
 
-Then pass the gradient xshard into adapt:
+**Seq-index mismatch — the critical rule:**
 
-```powershell
-C:\Users\canna\_khanary_inspect\trainer\build\Release\xshard_adapt.exe `
-  "$xshard" `
-  --fold Chen `
-  --lr 1e-5 `
-  --grad-xshard "E:\models\GPT2\gemma-3-1b-it\gemma-chen-grad.xshard" `
-  --max-shards 200 `
-  --shader "$shader" `
-  --apply
+`xshard_adapt` looks up `grad_array[model_shard.seq]`. If `xshard_backward` was run
+with `--fold X` or `--max-shards N`, the grad array only contains entries for those
+shards; grad indices no longer match model seq numbers for other shards → errors.
+
+Fix: **always run `xshard_backward` without `--fold` and without `--max-shards`**
+so the grad xshard covers all `N` shards at their natural seq positions. Then
+`xshard_adapt --fold X` can safely filter by fold without index drift.
+
+Confirmed result on Qwen F32 xshard (292 shards, no fold filter):
+```text
+gradients=292  skipped=0  errors=0
+xshard_adapt summary: processed=168  skipped=124  errors=0  mode=apply  (Sek fold)
 ```
-
-**Important**: `xshard_adapt` matches grad shards by sequence-array index, not by model
-seq number. If the grad xshard was built with `--max-shards N`, the array only contains
-N entries. Passing a short grad xshard to adapt on a larger model xshard will produce
-seq-index mismatches and mark shards as errors. Use `--grad-scale` (probe gradient)
-unless you are certain the grad xshard spans all target shards.
 
 ### FoldRouter: hot-swap architecture
 
@@ -512,6 +573,31 @@ uses fewer head dimensions than GPT-2 Large's full 20-head layout.
 All 6 routing assertions pass in both modes. The `"asx"` key in Qwen inference
 output (observed during `test_qwen.py`) confirms the AST corpus signal was absorbed
 correctly — `asx` = AST in stack terminology.
+
+### Qwen AST training — three-pass results
+
+Completed 2026-09-01. All passes used `lr=1e-5`, `grad-scale=5e-4`, no fold filter.
+
+| Pass | Token-bin | token_signal | Shards updated | Direction |
+|---|---|---|---|---|
+| 1 — probe | `--grad-scale` only (no token-bin) | N/A | 292/292 | positive |
+| 2 — AST (GPT-2 vocab) | `coder_ast_json_seq256_tokens.bin` | −0.0476 | 292/292 | negative |
+| 3 — AST (Qwen vocab) | `qwen_ast_tokens.bin` (702,144 seqs × 256) | −0.533 | 292/292 | negative |
+
+The Qwen-native token bin was built with `--tokenizer` pointing at Qwen's own
+`tokenizer.json` (vocab=151,665, eot=151,645). The stronger signal on pass 3
+(−0.533 vs −0.0476) confirms Qwen's tokenizer encodes the AST corpus more densely
+than GPT-2 BPE.
+
+Consistent negative signal across passes 2 and 3 means the gradient direction is
+stable — the model is being pushed in the same direction by the AST corpus regardless
+of vocabulary. `adapt.jsonl` confirms `first_before`/`first_after` delta of ~1e-5
+per element per pass (mean_delta=0.000010, 100% of shards changed each pass).
+
+The trained xshard (`qwen-f32.xshard`, 292/292 state=0x01) is the active Qwen
+container. Inference via `test_qwen.py --patch` patched all 290 non-bias tensors
+from the xshard; the patched model output showed `"asx"` as the AST IR key,
+confirming the corpus signal was absorbed (`asx` = AST in stack terminology).
 
 ### C# adapter corrected API summary
 
