@@ -316,3 +316,204 @@ For resumed runs on space-constrained disks, use `--save-every 0 --shard-every 0
 to emit only the final checkpoint and final shard set. The trainer also skips the
 initial checkpoint boundary when resuming, preventing an unnecessary duplicate
 snapshot at the starting step.
+
+## XShard fold training (Gemma / Qwen hot-swap)
+
+This is the primary GPU training path for models that already have XShard containers.
+It does **not** use SafeTensors, LoRA, or HuggingFace trainers. All weight updates
+go through `xshard_adapt.exe` (D3D11 compute shader) on the HD 4600.
+
+### Model inventory
+
+| File | Size | Format | Role |
+|---|---|---|---|
+| `E:\models\gemma-3-1b-it-hf\model.safetensors` | 3814.3 MB | F32 × 344 | Unquantized Gemma — Pop/Wo/Xul specialist |
+| `E:\models\GPT2\gemma-3-1b-it\gemma-3-1b-it-f32.xshard` | ~3814 MB | F32 xshard | Active training container — Gemma |
+| `E:\models\GPT2\lg-GPT2\model.safetensors` | ~3000 MB | F32 × 472 | Unquantized GPT-2 Large — Yax/Sek/Chen specialist |
+| `E:\models\GPT2\lg-GPT2\lg-gpt2-f32.xshard` | ~3000 MB | F32 xshard | Active training container — GPT-2 Large |
+| `E:\models\GPT2\qwen\model.safetensors` | 1884.6 MB | F32 × 292 | Unquantized Qwen — AST/coder specialist only |
+| `E:\models\GPT2\qwen\qwen-f32.xshard` | 1884.7 MB | F32 xshard | Active training container — Qwen (292/292 trained) |
+
+### XShard containers and the quantized-shard ceiling
+
+`xshard_adapt.exe` only updates `dtype == "F32"` shards; quantized shards (Q4_1, Q8_0) are
+skipped. The GGUF-derived xshards have this fold/dtype distribution:
+
+| Model | Xshard | F32 shards | Quantized shards | Training ceiling |
+|---|---|---|---|---|
+| Gemma 3 1B | `gemma-3-1b-it.xshard` | 157 (Chen) | 183 | 46.2% |
+| Qwen Coder | `Qwen-Coder.xshard` | ~1 (Pop) | ~289 | ~0.3% |
+
+To remove this ceiling, convert the F32 safetensors to new xshard files:
+
+```powershell
+# Gemma 3 1B — Pop/Wo/Xul specialist (344 shards, all F32)
+python tools/safetensors_to_xshard.py `
+  --input  "E:\models\gemma-3-1b-it-hf\model.safetensors" `
+  --output "E:\models\GPT2\gemma-3-1b-it\gemma-3-1b-it-f32.xshard" `
+  --arch   gemma --model gemma-3-1b-it-f32
+
+# GPT-2 Large — Yax/Sek/Chen specialist (472 shards, all F32)
+python tools/safetensors_to_xshard.py `
+  --input  "E:\models\GPT2\lg-GPT2\model.safetensors" `
+  --output "E:\models\GPT2\lg-GPT2\lg-gpt2-f32.xshard" `
+  --arch   gpt2 --model lg-gpt2-f32
+
+# Qwen-Coder — AST specialist only (292 shards, all F32)
+python tools/safetensors_to_xshard.py `
+  --input  "E:\models\GPT2\qwen\model.safetensors" `
+  --output "E:\models\GPT2\qwen\qwen-f32.xshard" `
+  --arch   gpt2 --model qwen-coder-f32
+```
+
+The resulting xshards have **all** tensors as F32; xshard_adapt will update every fold.
+All three conversions are already complete — xshards are present on disk.
+
+### Fold histogram (specialist routing basis)
+
+F32 xshard shard counts (all folds trainable):
+
+| Fold | Gemma 3 1B | GPT-2 Large | Qwen-Coder | Routed to |
+|---|---|---|---|---|
+| Pop | 5 | 2 | 3 | **Gemma** (generalist embedding) |
+| Wo | 52 | 72 | 48 | **Gemma** (FFN gate/up capacity) |
+| Yax | 26 | 72 | 24 | **GPT-2 Large** (2.8× more FFN-down shards) |
+| Sek | 104 | 144 | 168 | **GPT-2 Large** (20-head × 36 layers) |
+| Chen | 157 | 182 | 49 | **GPT-2 Large** (36 layers × 2 norms = deepest stack) |
+| Xul | — | — | — | **Gemma** (lm_head, generalist output) |
+
+Qwen-Coder is not in the main routing table. It is an AST/coder specialist
+(`"asx"` = AST in stack terminology) injected via `FoldOverrides` for code-domain
+requests only.
+
+GPT-2 Large (36 layers, hidden=1280, 20 heads) has the deepest norm and attention
+stacks across all three models, making it the natural specialist for the
+computation-heavy Yax/Sek/Chen folds.
+
+### Probe-gradient training (no external gradient file required)
+
+`xshard_adapt --grad-scale` generates an internal probe gradient:
+`grads[i] = weights[i] * grad_scale`. No forward pass or loss is needed. This is
+the proven path for HD 4600.
+
+**Shader must be an absolute path.** The default `../shaders/xshard_adapt_fold.cso`
+only resolves correctly when CWD is the Release directory. Pass it explicitly:
+
+```powershell
+$shader = "C:\Users\canna\_khanary_inspect\trainer\build\shaders\xshard_adapt_fold.cso"
+$xshard = "E:\models\GPT2\gemma-3-1b-it\gemma-3-1b-it.xshard"
+
+# Train Chen fold (F32 norm tensors — confirmed working)
+C:\Users\canna\_khanary_inspect\trainer\build\Release\xshard_adapt.exe `
+  "$xshard" `
+  --fold Chen `
+  --lr 1e-5 `
+  --grad-scale 5e-4 `
+  --max-shards 200 `
+  --shader "$shader" `
+  --apply
+```
+
+Confirmed result (GGUF-derived xshard, probe gradient, `kuhul_synthetic.jsonl` token signal −0.762):
+
+```text
+[D3D11Engine] Intel(R) HD Graphics 4600  FL=0xb100
+processed=157  skipped=183  errors=0  mode=apply
+```
+
+The `skipped=183` count is the quantized-shard ceiling. Convert to F32 xshard to eliminate it.
+
+### Token-bin signal path (optional supervised signal)
+
+`xshard_backward.exe` hashes a raw bytes file to a scalar signal and writes a gradient
+xshard. Any UTF-8 file is valid — `kuhul_synthetic.jsonl` works directly. Only F32 shards
+are processed.
+
+```powershell
+C:\Users\canna\_khanary_inspect\trainer\build\Release\xshard_backward.exe `
+  "$xshard" `
+  --token-bin "E:\data\kuhul_synthetic.jsonl" `
+  --output    "E:\models\GPT2\gemma-3-1b-it\gemma-chen-grad.xshard" `
+  --fold      Chen `
+  --max-shards 200 `
+  --grad-scale 5e-4 `
+  --weight-scale 1e-4
+```
+
+Then pass the gradient xshard into adapt:
+
+```powershell
+C:\Users\canna\_khanary_inspect\trainer\build\Release\xshard_adapt.exe `
+  "$xshard" `
+  --fold Chen `
+  --lr 1e-5 `
+  --grad-xshard "E:\models\GPT2\gemma-3-1b-it\gemma-chen-grad.xshard" `
+  --max-shards 200 `
+  --shader "$shader" `
+  --apply
+```
+
+**Important**: `xshard_adapt` matches grad shards by sequence-array index, not by model
+seq number. If the grad xshard was built with `--max-shards N`, the array only contains
+N entries. Passing a short grad xshard to adapt on a larger model xshard will produce
+seq-index mismatches and mark shards as errors. Use `--grad-scale` (probe gradient)
+unless you are certain the grad xshard spans all target shards.
+
+### FoldRouter: hot-swap architecture
+
+`FoldRouter` in `dist/Micronaut_V0/AdaptiveContentModelAdapter.cs` routes each fold
+phase to the specialist model's xshard without touching the model files.
+
+**Constructor** (updated 2026-09-01):
+```csharp
+new FoldRouter(gemmaXshardPath, gpt2LargeXshardPath, qwenXshardPath: null)
+```
+Qwen is optional — pass it only when enabling AST specialist overrides.
+
+**Default routing table:**
+```csharp
+["Pop"]  → Gemma      // embedding/pos; generalist base
+["Wo"]   → Gemma      // FFN gate/up; Gemma has more FFN capacity
+["Yax"]  → Gpt2Large  // FFN down; 36-layer depth, 72 shards vs Gemma's 26
+["Sek"]  → Gpt2Large  // attention Q/K/V/O; 20-head × 36 layers = 144 shards
+["Chen"] → Gpt2Large  // layer-norm; 36 layers × 2 norms = 182 shards
+["Xul"]  → Gemma      // lm_head; generalist output
+```
+
+To route a code/AST request through Qwen, inject at runtime:
+```csharp
+router.FoldOverrides["Sek"] = "Qwen";   // Qwen has 168 attention shards
+router.FoldOverrides["Wo"]  = "Qwen";   // Qwen AST FFN gate specialization
+```
+
+The router opens an `XShardSession` for the specialist and streams tensors from it.
+Neither model file is modified. `StreamFoldFromSpecialistAsync` yields
+`(XShardEntry, byte[] raw, string model)` tuples for runtime consumption.
+
+### C# adapter corrected API summary
+
+Three flag bugs were fixed in `AdaptiveContentModelAdapter.cs` (2026-08-29):
+
+| Method | Old (broken) flag | Fixed flag |
+|---|---|---|
+| `WriteGradientXShard` | `--grad-out` | `--output`; added `--token-bin` parameter |
+| `ApplyFoldAdapt` | `--grad`, `--beta1`, `--beta2` | `--grad-xshard`; removed beta flags; added `--shader`, `--apply` |
+| `QueryShardInfo` | Tried to parse JSONL from xshard_info stdout | Reads `XShardSession.Shards` directly |
+
+`QueryShardState` was added as a separate method that calls `xshard_info --state-only`
+and parses the `state: trained=N pending=M` text summary.
+
+### Trainer EXE and shader paths
+
+```text
+EXEs:    C:\Users\canna\_khanary_inspect\trainer\build\Release\
+           xshard_adapt.exe
+           xshard_backward.exe
+           xshard_info.exe
+           gpt2_trainer.exe
+
+Shader:  C:\Users\canna\_khanary_inspect\trainer\build\shaders\
+           xshard_adapt_fold.cso      ← always pass as absolute path
+```
+
+`xshard_info --state-only` prints one summary line: `state: trained=N pending=M error=K progress=P%`.
